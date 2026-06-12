@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FUTMUNDI — El juego de fútbol NFT más épico del mundo</title>
+<meta name="description" content="FUTMUNDI: torneos globales, futbolistas NFT y partidos en vivo." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+// Backend seguro para validar admin por firma TON.
+// En producción cambia esto por tu API, ej: "https://api.tudominio.com".
+window.FM_ADMIN_API_BASE = '';
+</script>
+<style>
+:root{
+  /* Paleta verde militar oscuro + neón + dorado/azul (ESPN broadcast) */
+  --fm-gold:#f4c542; --fm-gold-soft:#ffe27a; --fm-gold-deep:#7a5410;
+  --fm-blue:#3fbfff; --fm-blue-deep:#0a4a72;
+  --fm-cyan:#39ff88;          /* verde neón (acento activo) */
+  --fm-cyan-deep:#1d5a2a;     /* verde militar medio */
+  --fm-text:#e8f5e2; --fm-text-dim:#7a9785;
+  --fm-bg:#070d09;            /* verde militar casi negro */
+  --fm-surface:#0e1a12;
+  --fm-surface-2:#152419;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Rajdhani","Oswald",system-ui,sans-serif;
+  color:var(--fm-text);
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(57,255,136,.10), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 50% 100%, rgba(63,191,255,.06), transparent 70%),
+    linear-gradient(180deg, #0a1410 0%, var(--fm-bg) 60%, #050a07 100%);
+  min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;
+}
+/* Subtle field-line pattern overlay for broadcast feel */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    repeating-linear-gradient(90deg, rgba(57,255,136,.018) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, rgba(57,255,136,.014) 0 1px, transparent 1px 64px);
+  mask-image:radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+body > *{position:relative;z-index:1}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 10px;font-size:11px;letter-spacing:.15em;text-transform:uppercase}
+.statusbar{display:flex;gap:14px;color:var(--fm-text-dim);flex-wrap:wrap}
+.statusbar b{color:var(--fm-gold)}
+.statusbar .lvl b{color:var(--fm-text)}
+.close{font-size:26px;color:var(--fm-text-dim);transition:color .2s,transform .2s}
+.close:hover{color:var(--fm-gold);transform:rotate(90deg)}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 10px}
+.chip{
+  background:linear-gradient(180deg,rgba(29,90,42,.6),rgba(7,30,15,.8));
+  border:1px solid rgba(57,255,136,.35);border-radius:999px;padding:5px 12px;
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fm-cyan);
+  box-shadow:0 0 12px rgba(57,255,136,.18), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 12px 16px;text-align:center}
+.title{
+  font-family:"Oswald",sans-serif;font-weight:700;letter-spacing:.18em;
+  font-size:clamp(36px,8vw,68px);
+  background:linear-gradient(180deg,#fff 0%,var(--fm-cyan) 45%,var(--fm-gold) 75%,var(--fm-gold-deep) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 2px 18px rgba(57,255,136,.25);margin-bottom:4px;line-height:1;
+}
+.sub{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--fm-text-dim);margin-bottom:18px}
+
+/* Stage */
+.stage{
+  width:100%;max-width:640px;
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+  justify-items:center;gap:6px;margin-bottom:22px;
+}
+.rail{display:flex;flex-direction:column;gap:18px;padding:4px 2px}
+
+/* Icon button — sin recuadro, ícono flotante con glow profesional */
+.icon-btn{
+  position:relative;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  width:62px;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+.icon-btn:hover{transform:translateY(-3px)}
+.icon-btn .glyph{
+  position:relative;
+  width:46px;height:46px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--fm-cyan);
+  filter:
+    drop-shadow(0 2px 0 rgba(0,0,0,.55))
+    drop-shadow(0 6px 10px rgba(0,0,0,.65))
+    drop-shadow(0 0 12px rgba(79,217,196,.45));
+  transition:color .25s,filter .3s,transform .3s;
+}
+.icon-btn:hover .glyph{
+  color:var(--fm-gold-soft);
+  filter:
+    drop-shadow(0 2px 0 rgba(0,0,0,.55))
+    drop-shadow(0 8px 14px rgba(0,0,0,.7))
+    drop-shadow(0 0 18px rgba(232,195,74,.7));
+  transform:scale(1.08);
+}
+.icon-btn .glyph svg{width:42px;height:42px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s ease}
+.icon-btn:hover .glyph svg{transform:scale(1.06)}
+.icon-btn.gold .glyph{
+  color:var(--fm-gold);
+  filter:
+    drop-shadow(0 2px 0 rgba(0,0,0,.55))
+    drop-shadow(0 6px 10px rgba(0,0,0,.65))
+    drop-shadow(0 0 16px rgba(232,195,74,.6));
+}
+.icon-btn .lbl{
+  font-family:"Oswald",sans-serif;font-weight:600;font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--fm-text);
+  text-shadow:0 1px 6px rgba(0,0,0,.85), 0 0 12px rgba(0,0,0,.6);
+  transition:color .2s, letter-spacing .25s;
+}
+.icon-btn:hover .lbl{color:var(--fm-gold);letter-spacing:.22em}
+
+/* Numeric badge */
+.icon-btn .badge{
+  position:absolute;top:-4px;right:2px;
+  min-width:18px;height:18px;padding:0 5px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#ff5a3c,#c12a14);
+  color:#fff;border-radius:999px;
+  font-family:"Oswald",sans-serif;font-size:10px;font-weight:700;line-height:1;
+  border:1.5px solid var(--fm-bg);
+  box-shadow:0 2px 6px rgba(193,42,20,.55), 0 0 0 1px rgba(255,255,255,.08) inset;
+  animation:pulse 2.2s ease-in-out infinite;
+  z-index:2;
+}
+.icon-btn .badge.gold{
+  background:linear-gradient(180deg,var(--fm-gold-soft),var(--fm-gold) 55%,var(--fm-gold-deep));
+  color:#1a1003;box-shadow:0 2px 6px rgba(232,195,74,.55);
+}
+
+/* Hero — pedestal & centered */
+.hero-wrap{
+  position:relative;
+  width:100%;max-width:340px;
+  aspect-ratio:1;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto;
+  isolation:isolate;
+}
+/* Light halo behind */
+.hero-wrap::before{
+  content:"";position:absolute;
+  width:78%;height:78%;top:8%;left:11%;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(232,195,74,.38), rgba(79,217,196,.14) 55%, transparent 72%);
+  filter:blur(38px);
+  z-index:-2;
+  animation:halo 5s ease-in-out infinite;
+}
+/* Pedestal/shadow under trophy */
+.hero-wrap::after{
+  content:"";position:absolute;
+  bottom:-2%;left:50%;transform:translateX(-50%);
+  width:62%;height:14%;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(232,195,74,.55) 0%,
+      rgba(232,195,74,.25) 25%,
+      rgba(0,0,0,.65) 55%,
+      transparent 75%);
+  filter:blur(10px);
+  z-index:-1;
+  animation:pedestal 4s ease-in-out infinite;
+}
+.hero-img{
+  position:relative;
+  width:100%;height:100%;
+  object-fit:contain;object-position:center;
+  filter:drop-shadow(0 28px 30px rgba(0,0,0,.75)) drop-shadow(0 0 24px rgba(232,195,74,.18));
+  animation:fl 4s ease-in-out infinite;
+}
+/* Fallback placeholder if image missing */
+.hero-fallback{
+  width:80%;height:80%;border-radius:50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.25), transparent 50%),
+    radial-gradient(circle at 50% 60%, var(--fm-gold), var(--fm-gold-deep) 70%, #2a1a05);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Oswald";font-weight:700;font-size:48px;color:#1a1003;
+  box-shadow:inset 0 -10px 30px rgba(0,0,0,.4), inset 0 6px 18px rgba(255,255,255,.25);
+  animation:fl 4s ease-in-out infinite;
+}
+
+/* CTA — sin recuadro, imagen fotográfica con halo */
+.actions{width:100%;max-width:420px;display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:0 8px}
+.btn-play{
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  aspect-ratio:1;width:100%;
+  background:transparent;border:none;padding:0;
+  cursor:pointer;
+  transition:transform .3s ease, filter .3s ease;
+  filter:
+    drop-shadow(0 10px 18px rgba(0,0,0,.7))
+    drop-shadow(0 0 22px rgba(232,195,74,.25));
+}
+.btn-play::before{
+  content:"";position:absolute;inset:8%;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(232,195,74,.35), rgba(79,217,196,.12) 55%, transparent 72%);
+  filter:blur(20px);
+  z-index:-1;
+  animation:halo 5s ease-in-out infinite;
+}
+.btn-play .ill{
+  width:100%;height:100%;
+  display:block;
+  -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 58%, transparent 78%);
+  mask-image:radial-gradient(circle at 50% 50%, #000 58%, transparent 78%);
+}
+.btn-play .ill img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .4s ease;
+}
+.btn-play:hover{transform:translateY(-3px) scale(1.03);filter:drop-shadow(0 14px 22px rgba(0,0,0,.75)) drop-shadow(0 0 32px rgba(232,195,74,.55))}
+.btn-play:hover .ill img{transform:scale(1.06)}
+
+/* Tabbar — sin recuadros, íconos flotantes */
+.tabbar{
+  display:grid;grid-template-columns:repeat(4,1fr);padding:14px 8px 18px;
+  background:transparent;border:none;
+}
+.tab{
+  display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;
+  font-family:"Oswald",sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--fm-text-dim);transition:color .2s, transform .2s;
+  background:transparent;
+}
+.tab svg{
+  width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)) drop-shadow(0 0 8px rgba(79,217,196,.25));
+  transition:filter .25s;
+}
+.tab:hover,.tab.active{color:var(--fm-gold)}
+.tab:hover svg,.tab.active svg{filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)) drop-shadow(0 0 12px rgba(232,195,74,.6))}
+.tab:hover{transform:translateY(-2px)}
+
+/* Animations */
+@keyframes glow{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -2px 0 rgba(0,0,0,.25),0 0 20px rgba(232,195,74,.35)}50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -2px 0 rgba(0,0,0,.25),0 0 40px rgba(232,195,74,.65)}}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes halo{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes pedestal{0%,100%{transform:translateX(-50%) scale(1);opacity:.9}50%{transform:translateX(-50%) scale(.88);opacity:1}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
+@media (max-width:380px){
+  .icon-btn{width:54px}
+  .icon-btn .glyph{width:42px;height:42px}
+  .icon-btn .glyph svg{width:24px;height:24px}
+  .icon-btn .lbl{font-size:9px;letter-spacing:.12em}
+  .rail{gap:14px}
+  .hero-wrap{max-width:240px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
+
+/* ===== ESPN broadcast accents ===== */
+.m-broadcast-bar{
+  display:flex;align-items:center;gap:8px;margin:-4px 0 12px;
+  font-family:"Oswald";font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--fm-cyan);
+}
+.m-broadcast-bar::before{
+  content:"●";color:#ff3b3b;font-size:14px;animation:pulse 1.8s infinite;
+  text-shadow:0 0 8px rgba(255,59,59,.7);
+}
+.m-broadcast-bar .live{color:#ff5a3c;font-weight:700}
+.m-broadcast-bar .sep{flex:1;height:1px;background:linear-gradient(90deg,rgba(57,255,136,.4),transparent)}
+
+/* Reward badge dorado/azul */
+.m-reward-strip{
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(90deg, rgba(244,197,66,.12), rgba(63,191,255,.12));
+  border:1px solid rgba(244,197,66,.35);border-radius:18px;padding:10px 14px;
+  margin-bottom:12px;
+}
+.m-reward-strip .lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-text-dim);font-family:"Oswald"}
+.m-reward-strip .val{
+  font-family:"Oswald";font-weight:700;font-size:18px;
+  background:linear-gradient(180deg,#fff,var(--fm-gold) 50%,var(--fm-gold-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.m-reward-strip .blue{
+  background:linear-gradient(180deg,#fff,var(--fm-blue) 50%,var(--fm-blue-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* 3D Stadium (CSS-only) */
+.stadium3d{
+  perspective:900px;
+  aspect-ratio:16/10;border-radius:22px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 30%, #0d2218 0%, #050a07 80%);
+  border:1px solid rgba(57,255,136,.25);
+  position:relative;margin-bottom:12px;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 8px 24px rgba(0,0,0,.4);
+}
+.stadium3d .field{
+  position:absolute;left:50%;top:55%;
+  width:88%;aspect-ratio:16/9;
+  transform:translate(-50%,-50%) rotateX(58deg);
+  transform-style:preserve-3d;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 8%, transparent 8% 16%),
+    linear-gradient(180deg,#1e6b3a 0%,#0f4a25 100%);
+  border-radius:6px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,.4),
+    0 30px 50px rgba(57,255,136,.25);
+}
+.stadium3d .field::before{
+  content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;
+  background:rgba(255,255,255,.4);transform:translateX(-50%);
+}
+.stadium3d .field::after{
+  content:"";position:absolute;left:50%;top:50%;
+  width:24%;aspect-ratio:1;border-radius:50%;
+  border:2px solid rgba(255,255,255,.4);
+  transform:translate(-50%,-50%);
+}
+.stadium3d .stands{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(57,255,136,.25), transparent 60%),
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(244,197,66,.10), transparent 60%);
+  pointer-events:none;
+}
+.stadium3d .lights{
+  position:absolute;top:6%;left:0;right:0;height:30%;
+  background:radial-gradient(ellipse 30% 100% at 20% 0%, rgba(255,255,255,.18), transparent 60%),
+             radial-gradient(ellipse 30% 100% at 80% 0%, rgba(255,255,255,.18), transparent 60%);
+  pointer-events:none;
+}
+.stadium3d .badge{
+  position:absolute;top:10px;left:10px;
+  background:rgba(0,0,0,.6);border:1px solid rgba(57,255,136,.4);
+  border-radius:999px;padding:4px 10px;font-family:"Oswald";font-size:10px;
+  letter-spacing:.18em;color:var(--fm-cyan);
+}
+
+/* Isometric pitch card */
+.iso-pitch{
+  aspect-ratio:1.4;border-radius:22px;overflow:hidden;position:relative;
+  background:linear-gradient(180deg,#0d1f14,#050a07);
+  border:1px solid rgba(57,255,136,.25);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.5);
+}
+.iso-pitch .turf{
+  width:78%;aspect-ratio:1.6;
+  transform:rotateX(60deg) rotateZ(-45deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 10%, transparent 10% 20%),
+    linear-gradient(135deg,#2a8a4a,#155a2a);
+  border:2px solid rgba(255,255,255,.35);
+  border-radius:6px;
+  box-shadow:
+    0 20px 40px rgba(57,255,136,.3),
+    inset 0 0 0 8px rgba(255,255,255,.06);
+  position:relative;
+}
+.iso-pitch .turf::after{
+  content:"";position:absolute;left:50%;top:50%;
+  width:24%;aspect-ratio:1;border-radius:50%;
+  border:2px solid rgba(255,255,255,.4);
+  transform:translate(-50%,-50%);
+}
+.iso-pitch.arena .turf{background:linear-gradient(135deg,#3a3a8a,#1a1a4a);}
+.iso-pitch.barrial .turf{background:linear-gradient(135deg,#8a6b3a,#5a3e1a);}
+
+/* Stadium picker grid */
+.stadium-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stadium-card{
+  background:linear-gradient(180deg,rgba(21,36,25,.75),rgba(7,13,9,.9));
+  border:1px solid rgba(57,255,136,.22);border-radius:22px;padding:10px;
+  cursor:pointer;transition:all .25s;text-align:center;
+}
+.stadium-card:hover{transform:translateY(-3px);border-color:var(--fm-cyan);box-shadow:0 8px 20px rgba(57,255,136,.25)}
+.stadium-card .iso-pitch{aspect-ratio:1.6;margin-bottom:8px;border-radius:14px}
+.stadium-card .name{font-family:"Oswald";font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--fm-text)}
+.stadium-card .meta{font-size:10px;color:var(--fm-cyan);letter-spacing:.1em;margin-top:2px}
+.stadium-card.gold{border-color:var(--fm-gold)}
+.stadium-card.gold .name{color:var(--fm-gold)}
+
+/* Title gradient now: white → neon-green → gold (broadcast) */
+
+/* ===== Modal ===== */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(2,10,9,.78);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:none;align-items:flex-start;justify-content:center;z-index:1000;
+  padding:24px 14px;overflow-y:auto;
+  animation:fadeIn .25s ease;
+}
+.modal-backdrop.open{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+
+.modal{
+  position:relative;width:100%;max-width:420px;
+  background:
+    radial-gradient(ellipse at top, rgba(57,255,136,.14), transparent 55%),
+    linear-gradient(180deg, var(--fm-surface) 0%, #050a07 100%);
+  border:1px solid rgba(57,255,136,.30);
+  border-radius:28px;
+  box-shadow:
+    0 30px 60px rgba(0,0,0,.75),
+    0 0 0 1px rgba(57,255,136,.08) inset,
+    0 0 50px rgba(57,255,136,.15);
+  padding:20px 20px 24px;
+  animation:slideUp .35s cubic-bezier(.34,1.56,.64,1);
+  margin:auto;
+  overflow:hidden;
+}
+.modal::before{
+  content:"";position:absolute;inset:0;border-radius:28px;pointer-events:none;
+  background:linear-gradient(135deg, rgba(57,255,136,.18), transparent 30%, transparent 70%, rgba(244,197,66,.12));
+  mix-blend-mode:screen;opacity:.7;
+}
+.modal > *{position:relative;z-index:1}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-title{
+  font-family:"Oswald",sans-serif;font-weight:700;letter-spacing:.22em;
+  font-size:14px;text-transform:uppercase;
+  background:linear-gradient(180deg,#fff 0%,var(--fm-gold) 60%,var(--fm-gold-deep) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  display:flex;align-items:center;gap:8px;
+}
+.modal-title::before{content:"";width:6px;height:18px;background:linear-gradient(180deg,var(--fm-gold-soft),var(--fm-gold-deep));border-radius:2px;box-shadow:0 0 8px var(--fm-gold)}
+.modal-close{
+  width:30px;height:30px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:22px;color:var(--fm-text-dim);
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);
+  transition:all .25s;
+}
+.modal-close:hover{color:var(--fm-gold);transform:rotate(90deg);border-color:var(--fm-gold)}
+
+/* Hero card (tournament style) */
+.m-hero{
+  position:relative;
+  background:
+    linear-gradient(180deg,rgba(21,36,25,.85),rgba(7,13,9,.9));
+  border:1px solid rgba(57,255,136,.25);
+  border-radius:24px;padding:20px 16px 22px;text-align:center;
+  margin-bottom:14px;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 8px 24px rgba(0,0,0,.4);
+}
+.m-hero::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at top, rgba(232,195,74,.18), transparent 60%);
+  pointer-events:none;
+}
+.m-hero h3{
+  font-family:"Oswald",sans-serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--fm-text-dim);margin-bottom:8px;font-weight:600;
+}
+.m-bignum{
+  font-family:"Oswald",sans-serif;font-size:44px;font-weight:700;letter-spacing:.04em;
+  background:linear-gradient(180deg,#fff,var(--fm-gold) 55%,var(--fm-gold-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 2px 14px rgba(232,195,74,.3);line-height:1;
+}
+.m-bignum small{font-size:18px;color:var(--fm-cyan);-webkit-text-fill-color:var(--fm-cyan);margin-left:6px;letter-spacing:.14em}
+.m-trophy{
+  width:78px;height:78px;border-radius:50%;margin:6px auto 10px;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,.4), transparent 50%),
+    radial-gradient(circle at 50% 60%, var(--fm-gold), var(--fm-gold-deep) 70%, #2a1a05);
+  display:flex;align-items:center;justify-content:center;font-size:38px;
+  box-shadow:inset 0 -8px 20px rgba(0,0,0,.4), 0 8px 24px rgba(232,195,74,.35);
+  position:relative;z-index:1;
+}
+
+/* Countdown */
+.m-count{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px;
+  position:relative;z-index:1;
+}
+.m-count div{
+  background:rgba(0,0,0,.45);border:1px solid rgba(57,255,136,.25);border-radius:14px;
+  padding:6px 4px;
+}
+.m-count b{
+  display:block;font-family:"Oswald";font-size:18px;color:var(--fm-text);font-weight:700;
+}
+.m-count span{font-size:9px;letter-spacing:.14em;color:var(--fm-text-dim);text-transform:uppercase}
+
+/* Section title */
+.m-section{
+  font-family:"Oswald",sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--fm-cyan);margin:6px 0 10px;text-align:center;
+  display:flex;align-items:center;gap:8px;
+}
+.m-section::before,.m-section::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--fm-cyan-deep),transparent)}
+
+/* Prize tiers grid */
+.m-prizes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.m-prize{
+  background:linear-gradient(180deg,rgba(21,36,25,.85),rgba(7,13,9,.85));
+  border:1px solid rgba(57,255,136,.22);border-radius:18px;
+  padding:10px 6px;text-align:center;position:relative;
+}
+.m-prize.gold{border-color:var(--fm-gold);box-shadow:0 0 18px rgba(244,197,66,.4), inset 0 0 12px rgba(244,197,66,.08)}
+.m-prize .pos{
+  position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(180deg,var(--fm-gold-soft),var(--fm-gold-deep));
+  color:#1a1003;font-family:"Oswald";font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:8px;letter-spacing:.12em;
+}
+.m-prize .val{
+  font-family:"Oswald";font-size:20px;font-weight:700;color:var(--fm-gold);
+  margin-top:6px;line-height:1;
+}
+.m-prize .lbl{font-size:9px;letter-spacing:.14em;color:var(--fm-text-dim);text-transform:uppercase;margin-top:2px}
+
+/* Stat rows */
+.m-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.m-stat{
+  background:linear-gradient(180deg,rgba(21,36,25,.7),rgba(7,13,9,.85));border:1px solid rgba(57,255,136,.18);border-radius:18px;
+  padding:10px;display:flex;align-items:center;gap:10px;
+}
+.m-stat .ico{
+  width:36px;height:36px;border-radius:12px;
+  background:linear-gradient(180deg,rgba(57,255,136,.25),rgba(29,90,42,.5));border:1px solid rgba(57,255,136,.3);
+  display:flex;align-items:center;justify-content:center;color:var(--fm-cyan);
+  font-size:16px;flex-shrink:0;
+}
+.m-stat b{display:block;font-family:"Oswald";font-size:18px;color:var(--fm-text)}
+.m-stat span{font-size:9px;letter-spacing:.12em;color:var(--fm-text-dim);text-transform:uppercase}
+
+/* List rows */
+.m-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.m-row{
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,rgba(21,36,25,.65),rgba(7,13,9,.8));border:1px solid rgba(57,255,136,.15);border-radius:20px;
+  padding:10px 12px;
+}
+.m-row .icn{
+  width:38px;height:38px;border-radius:14px;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(57,255,136,.25),rgba(29,90,42,.4));border:1px solid rgba(57,255,136,.3);
+  display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--fm-gold);
+}
+.m-row .meta{flex:1;min-width:0}
+.m-row .meta b{display:block;font-family:"Oswald";font-size:13px;color:var(--fm-text);letter-spacing:.05em}
+.m-row .meta span{font-size:11px;color:var(--fm-text-dim)}
+.m-row .right{font-family:"Oswald";font-size:14px;color:var(--fm-gold);font-weight:700}
+
+/* CTA buttons */
+.m-cta{
+  width:100%;padding:15px;border-radius:22px;
+  font-family:"Oswald",sans-serif;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  font-size:13px;color:#1a1003;
+  background:linear-gradient(180deg,var(--fm-gold-soft),var(--fm-gold) 55%,var(--fm-gold-deep));
+  border:1px solid var(--fm-gold);
+  box-shadow:0 4px 14px rgba(232,195,74,.4), inset 0 1px 0 rgba(255,255,255,.5);
+  transition:all .25s;cursor:pointer;
+}
+.m-cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(232,195,74,.55), inset 0 1px 0 rgba(255,255,255,.5)}
+.m-cta.ghost{
+  background:transparent;color:var(--fm-cyan);
+  border:1px solid var(--fm-cyan-deep);box-shadow:none;
+}
+.m-cta.ghost:hover{background:rgba(79,217,196,.08);color:var(--fm-gold);border-color:var(--fm-gold)}
+
+/* Result chips (victory/draw/loss) */
+.m-results{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.m-result{
+  text-align:center;padding:12px 4px;border-radius:18px;
+  background:linear-gradient(180deg,rgba(21,36,25,.7),rgba(7,13,9,.85));border:1px solid rgba(57,255,136,.22);
+}
+.m-result b{display:block;font-family:"Oswald";font-size:16px;color:var(--fm-gold)}
+.m-result span{font-size:9px;letter-spacing:.14em;color:var(--fm-text-dim);text-transform:uppercase}
+.m-result.win{border-color:#3fae6b;box-shadow:0 0 10px rgba(63,174,107,.2)}
+.m-result.win b{color:#7ddc9b}
+.m-result.draw{border-color:var(--fm-gold)}
+.m-result.lose{border-color:#c1432a}
+.m-result.lose b{color:#ff8a72}
+
+.m-warn{
+  background:rgba(193,67,42,.1);border:1px solid rgba(193,67,42,.3);
+  color:#ffb09b;border-radius:8px;padding:8px 10px;font-size:11px;
+  text-align:center;margin-bottom:10px;
+}
+
+.m-stadium{
+  aspect-ratio:16/10;border-radius:22px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 14px, transparent 14px 28px),
+    radial-gradient(ellipse at center, #1a6b4e 0%, #0a3a2b 70%);
+  border:1px solid rgba(79,217,196,.3);
+  position:relative;display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;overflow:hidden;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.5);
+}
+.m-stadium::before{
+  content:"";position:absolute;width:60%;height:80%;
+  border:2px solid rgba(255,255,255,.25);border-radius:6px;
+}
+.m-stadium::after{
+  content:"";position:absolute;width:18%;aspect-ratio:1;border-radius:50%;
+  border:2px solid rgba(255,255,255,.25);
+}
+.m-stadium .ball{
+  position:relative;z-index:2;font-size:36px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.6));
+}
+
+
+/* === Market & Futbolista (v23) === */
+.m-tabs{display:flex;gap:6px;margin-bottom:12px;background:rgba(0,0,0,.35);border:1px solid rgba(57,255,136,.18);border-radius:14px;padding:4px}
+.m-tab{flex:1;padding:8px 4px;font-family:"Oswald";font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fm-text-dim);border-radius:10px;transition:.2s;cursor:pointer;background:none;border:none}
+.m-tab.active{background:linear-gradient(180deg,rgba(57,255,136,.25),rgba(29,90,42,.4));color:var(--fm-cyan);box-shadow:inset 0 0 0 1px rgba(57,255,136,.35)}
+.m-panel{display:none}
+.m-panel.active{display:block;animation:fadeIn .2s}
+.shop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;max-height:380px;overflow-y:auto;padding-right:4px}
+.shop-grid::-webkit-scrollbar{width:6px}
+.shop-grid::-webkit-scrollbar-thumb{background:rgba(57,255,136,.25);border-radius:4px}
+.shop-card{background:linear-gradient(180deg,rgba(21,36,25,.75),rgba(7,13,9,.9));border:1px solid rgba(57,255,136,.22);border-radius:16px;padding:10px 8px;text-align:center;position:relative;transition:.2s}
+.shop-card:hover{transform:translateY(-2px);border-color:var(--fm-gold);box-shadow:0 6px 18px rgba(244,197,66,.2)}
+.shop-card.free{border-color:var(--fm-cyan);box-shadow:0 0 14px rgba(57,255,136,.25)}
+.shop-card.elite{border-color:var(--fm-gold);box-shadow:0 0 14px rgba(244,197,66,.3)}
+.shop-card .av{width:54px;height:54px;border-radius:50%;margin:0 auto 6px;background:linear-gradient(135deg,rgba(57,255,136,.3),rgba(29,90,42,.5));border:1px solid rgba(57,255,136,.4);display:flex;align-items:center;justify-content:center;font-size:24px}
+.shop-card .nm{font-family:"Oswald";font-size:12px;font-weight:600;color:var(--fm-text);letter-spacing:.04em;line-height:1.1;min-height:26px;display:flex;align-items:center;justify-content:center}
+.shop-card .tg{font-size:9px;letter-spacing:.12em;color:var(--fm-text-dim);text-transform:uppercase;margin-top:3px}
+.shop-card .pr{margin-top:6px;font-family:"Oswald";font-size:13px;font-weight:700;color:var(--fm-gold)}
+.shop-card .pr small{font-size:9px;color:var(--fm-cyan);letter-spacing:.1em;margin-left:3px}
+.shop-card .free-tag{font-family:"Oswald";font-size:12px;font-weight:700;color:var(--fm-cyan);margin-top:6px;letter-spacing:.1em}
+
+/* Futbolista slots */
+.slot-area{background:linear-gradient(180deg,rgba(21,36,25,.65),rgba(7,13,9,.85));border:1px solid rgba(57,255,136,.22);border-radius:18px;padding:12px;margin-bottom:12px}
+.slot-area .lbl{font-family:"Oswald";font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-cyan);margin-bottom:8px;text-align:center}
+.assign-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.assign-slot{aspect-ratio:1;border:1.5px dashed rgba(57,255,136,.35);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(0,0,0,.25);color:var(--fm-text-dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.assign-slot .ic{font-size:22px;opacity:.6}
+.main-slot{aspect-ratio:1;max-width:120px;margin:0 auto;border:2px dashed rgba(244,197,66,.4);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.3);color:var(--fm-text-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:6px}
+.main-slot .ic{font-size:34px;opacity:.5;margin-bottom:4px}
+.slots-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.nft-slot{aspect-ratio:1;border:1px dashed rgba(57,255,136,.25);border-radius:10px;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;color:rgba(122,151,133,.5);font-size:16px}
+.nft-slot.filled{border-style:solid;border-color:var(--fm-gold);background:linear-gradient(135deg,rgba(244,197,66,.15),rgba(29,90,42,.3));color:var(--fm-gold)}
+.nft-info{display:flex;justify-content:space-around;padding:8px 0;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fm-text-dim);text-align:center}
+.nft-info b{display:block;font-family:"Oswald";font-size:14px;color:var(--fm-text)}
+.nft-bar{height:6px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;border:1px solid rgba(57,255,136,.2);margin:4px 0 8px}
+.nft-bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--fm-cyan),var(--fm-gold))}
+
+
+/* ===== Fixes producción / accesibilidad ===== */
+.hidden{display:none!important}
+.m-cta:disabled,
+button:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.25)}
+.btn-play .ill{border-radius:50%;background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.14),transparent 38%),linear-gradient(135deg,rgba(57,255,136,.18),rgba(244,197,66,.16));}
+.modal:focus{outline:2px solid rgba(57,255,136,.55);outline-offset:4px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+</style>
+
+</head>
+<body>
+<header class="header">
+  <div class="statusbar">
+    <span>PTS: <b>104</b></span>
+    <span class="lvl">Nivel: <b>1</b></span>
+    <span>🏆 4.0</span>
+    <span>OVR: 0</span>
+  </div>
+  <button class="close" aria-label="Cerrar">×</button>
+</header>
+<div class="chips">
+  <span class="chip">👥 Referidos</span>
+  <span class="chip" id="ton-chip" style="display:none">UQ…</span>
+  <span class="chip" id="admin-chip" style="display:none">🛡️ ADMIN</span>
+  <div id="ton-connect" style="display:inline-flex"></div>
+</div>
+
+<main>
+  <h1 class="title">FUTMUNDI</h1>
+  <p class="sub">El juego de fútbol NFT más épico del mundo</p>
+
+  <div class="stage">
+    <!-- Riel izquierdo -->
+    <aside class="rail" aria-label="Progreso">
+      <!-- Logros: trofeo custom con asas y base -->
+      <button class="icon-btn gold" type="button" aria-label="Logros" data-modal="logros">
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <path d="M7 4h10v3.5a5 5 0 0 1-10 0V4Z"/>
+            <path d="M17 5.5h3v1.5a3 3 0 0 1-3 3"/>
+            <path d="M7 5.5H4v1.5a3 3 0 0 0 3 3"/>
+            <path d="M10 12.5h4l-.5 3.5h-3l-.5-3.5Z"/>
+            <path d="M9 19h6"/>
+            <path d="M8 21h8"/>
+          </svg>
+        </span>
+        <span class="lbl">Logros</span>
+      </button>
+
+      <!-- Goles: balón con red -->
+      <button class="icon-btn" type="button" aria-label="Goles" data-modal="goles">
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="8.5"/>
+            <path d="M12 6.5 8.2 9.3l1.5 4.5h4.6l1.5-4.5L12 6.5Z"/>
+            <path d="M12 6.5V3.5M8.2 9.3 5.4 7.8M15.8 9.3l2.8-1.5M9.7 13.8 8 18M14.3 13.8 16 18"/>
+          </svg>
+        </span>
+        <span class="lbl">Goles</span>
+      </button>
+
+      <!-- Reclamos: regalo con lazo + badge numérico -->
+      <button class="icon-btn" type="button" aria-label="Reclamos diarios" data-modal="reclamos">
+        <span class="badge">3</span>
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <path d="M3.5 11h17v9.5h-17z"/>
+            <path d="M2.5 7.5h19v3.5h-19z"/>
+            <path d="M12 7.5v13"/>
+            <path d="M12 7.5c-1.2-2.5-2.6-4-4.5-4a2.2 2.2 0 0 0 0 4Z"/>
+            <path d="M12 7.5c1.2-2.5 2.6-4 4.5-4a2.2 2.2 0 0 1 0 4Z"/>
+          </svg>
+        </span>
+        <span class="lbl">Reclamos</span>
+      </button>
+
+      <!-- Nivel: estrella con galón -->
+      <button class="icon-btn" type="button" aria-label="Nivel" data-modal="nivel">
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <path d="m12 3 2.6 5.4 5.9.9-4.3 4.1 1 5.9L12 16.6 6.8 19.3l1-5.9-4.3-4.1 5.9-.9L12 3Z"/>
+            <path d="M9.5 11.5 12 13l2.5-1.5"/>
+          </svg>
+        </span>
+        <span class="lbl">Nivel</span>
+      </button>
+    </aside>
+
+    <!-- Héroe central -->
+    <div class="hero-wrap">
+      <img class="hero-img" src="assets/img/hero.jpg" alt="Futbolista FUTMUNDI" loading="eager" decoding="async" width="512" height="512" />
+      <div class="hero-fallback" style="display:none">FM</div>
+    </div>
+
+    <!-- Riel derecho -->
+    <aside class="rail" aria-label="Billetera y torneo">
+      <!-- Depósito: cartera con flecha entrando -->
+      <button class="icon-btn gold" type="button" aria-label="Depósito" data-modal="deposito">
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <path d="M3.5 9h17v10.5h-17z"/>
+            <path d="M3.5 9V6.5h13V9"/>
+            <circle cx="16.5" cy="14" r="1.4"/>
+            <path d="M12 2.5v6"/>
+            <path d="m9.5 6 2.5 2.5L14.5 6"/>
+          </svg>
+        </span>
+        <span class="lbl">Depósito</span>
+      </button>
+
+      <!-- Torneo: copa con cintas -->
+      <button class="icon-btn" type="button" aria-label="Torneo" data-modal="torneo">
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 3h8l-.5 4.5a3.5 3.5 0 0 1-7 0L8 3Z"/>
+            <path d="M16 4.5h3v2a3 3 0 0 1-3 3"/>
+            <path d="M8 4.5H5v2a3 3 0 0 0 3 3"/>
+            <path d="M10.5 11.5h3l-.4 3.5h-2.2l-.4-3.5Z"/>
+            <path d="M9 18.5h6"/>
+            <path d="M7 21h10"/>
+            <path d="M9 18.5 8 21M15 18.5 16 21"/>
+          </svg>
+        </span>
+        <span class="lbl">Torneo</span>
+      </button>
+
+      <!-- Retiro: cartera con flecha saliendo -->
+      <button class="icon-btn" type="button" aria-label="Retiro" data-modal="retiro">
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <path d="M3.5 9h17v10.5h-17z"/>
+            <path d="M3.5 9V6.5h13V9"/>
+            <circle cx="16.5" cy="14" r="1.4"/>
+            <path d="M12 8.5v-6"/>
+            <path d="m9.5 5 2.5-2.5L14.5 5"/>
+          </svg>
+        </span>
+        <span class="lbl">Retiro</span>
+      </button>
+
+      <!-- Referido: 2 personas + flecha de invitación + badge -->
+      <button class="icon-btn" type="button" aria-label="Referido" data-modal="referido">
+        <span class="badge gold">+2</span>
+        <span class="glyph">
+          <svg viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3.2"/>
+            <path d="M2.8 19.5a6.2 6.2 0 0 1 12.4 0"/>
+            <circle cx="17.5" cy="9.5" r="2.3"/>
+            <path d="M15.5 19.5a4.6 4.6 0 0 1 6.7-4.4"/>
+            <path d="M19 4.5v3M17.5 6h3"/>
+          </svg>
+        </span>
+        <span class="lbl">Referido</span>
+      </button>
+    </aside>
+  </div>
+
+  <div class="actions">
+    <button class="btn-play" type="button" aria-label="Jugar en el Estadio" data-modal="estadio">
+      <span class="ill" aria-hidden="true">
+        <img src="assets/img/estadio.svg" alt="" loading="lazy" width="512" height="512" />
+      </span>
+    </button>
+    <button class="btn-play" type="button" aria-label="Jugar en la Cancha" data-modal="cancha">
+      <span class="ill" aria-hidden="true">
+        <img src="assets/img/cancha.svg" alt="" loading="lazy" width="512" height="512" />
+      </span>
+    </button>
+  </div>
+</main>
+
+<nav class="tabbar">
+  <button class="tab active" type="button" data-modal="market">
+    <svg viewBox="0 0 24 24"><path d="M3 7h18l-2 12H5L3 7Z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
+    Market
+  </button>
+  <button class="tab" type="button" data-modal="futbolista">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 3 2.5 4.5L19 9l-3 4 1 5-5-2.5L7 18l1-5-3-4 4.5-1.5L12 3Z"/></svg>
+    Futbolista
+  </button>
+  <button class="tab" type="button" data-modal="ranking-tab">
+    <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V11"/><path d="M12 21V5"/><path d="M18 21v-7"/></svg>
+    Ranking
+  </button>
+  <button class="tab" type="button" data-modal="entrena">
+    <svg viewBox="0 0 24 24"><path d="M3 12h2M19 12h2M6 8v8M18 8v8M9 6v12M15 6v12"/></svg>
+    Entrena.
+  </button>
+</nav>
+
+<!-- Modal infra -->
+<div class="modal-backdrop" id="fm-modal" role="dialog" aria-modal="true" aria-labelledby="fm-modal-title">
+  <div class="modal" id="fm-modal-inner" tabindex="-1"></div>
+</div>
+
+<script>
+const TEMPLATES = {
+  logros: {
+    title: "Logros",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">PROGRESO</span><span class="sep"></span><span>5 💎 cada 1000 pts</span></div>
+      <div class="m-hero">
+        <div class="m-trophy">🏆</div>
+        <h3>Cada partido ganado</h3>
+        <div class="m-bignum">+15<small>PTS</small></div>
+      </div>
+      <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">
+        Cada 1.000 pts en un logro = <b>5 💎 Brown</b>
+      </div>
+      <div class="m-section">Tipos de logro</div>
+      <div class="m-list" style="max-height:280px;overflow:auto">
+        <div class="m-row"><div class="icn">🎯</div><div class="meta"><b>Pase largo</b><span>620 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🎯</div><div class="meta"><b>Pase corto</b><span>880 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🎯</div><div class="meta"><b>Pase medio</b><span>340 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🦶</div><div class="meta"><b>Interior</b><span>410 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🦶</div><div class="meta"><b>Empeine</b><span>520 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🦶</div><div class="meta"><b>Exterior</b><span>180 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🦶</div><div class="meta"><b>Tacón</b><span>60 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🧠</div><div class="meta"><b>Cabeza</b><span>290 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🕳️</div><div class="meta"><b>Pase hueco</b><span>140 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🧱</div><div class="meta"><b>Pase de pared</b><span>220 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">↗️</div><div class="meta"><b>Centro</b><span>360 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">⬅️</div><div class="meta"><b>Pase atrás</b><span>410 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🌀</div><div class="meta"><b>Pase curvo</b><span>95 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🥅</div><div class="meta"><b>Saque de meta</b><span>120 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">⚽</div><div class="meta"><b>Saque de centro</b><span>80 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🚩</div><div class="meta"><b>Saque de banda</b><span>240 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🎯</div><div class="meta"><b>Tiro libre directo</b><span>70 / 1000</span></div><div class="right">5💎</div></div>
+        <div class="m-row"><div class="icn">🎯</div><div class="meta"><b>Tiro libre indirecto</b><span>55 / 1000</span></div><div class="right">5💎</div></div>
+      </div>
+      <button class="m-cta">Reclamar logros listos</button>`
+  },
+  goles: {
+    title: "Recompensas por Goles",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">GOLES</span><span class="sep"></span><span>Gemas Brown</span></div>
+      <div class="m-hero">
+        <div class="m-trophy">⚽</div>
+        <h3>Goles anotados</h3>
+        <div class="m-bignum">128</div>
+      </div>
+      <div class="m-warn" style="background:rgba(244,197,66,.08);border-color:rgba(244,197,66,.3);color:var(--fm-gold)">
+        Cada vez que reclames tus 100 goles del tipo, el contador se reinicia
+      </div>
+      <div class="m-section">Tipos de gol y recompensa</div>
+      <div class="m-list">
+        <div class="m-row"><div class="icn">🦵</div><div class="meta"><b>Volea o media volea</b><span>Cada 100 goles · 10 💎</span></div><div class="right">42/100</div></div>
+        <div class="m-row"><div class="icn">🤸</div><div class="meta"><b>Chilena o tijera</b><span>Cada 100 goles · 50 💎</span></div><div class="right">8/100</div></div>
+        <div class="m-row"><div class="icn">🎯</div><div class="meta"><b>Tiro colocado / rosca</b><span>Cada 100 goles · 55 💎</span></div><div class="right">35/100</div></div>
+        <div class="m-row"><div class="icn">💥</div><div class="meta"><b>Tiro potente</b><span>Cada 100 goles · 100 💎</span></div><div class="right">24/100</div></div>
+        <div class="m-row"><div class="icn">🏟️</div><div class="meta"><b>Gol olímpico</b><span>Cada 100 goles · 150 💎 · difícil</span></div><div class="right">2/100</div></div>
+        <div class="m-row"><div class="icn">🥇</div><div class="meta"><b>Gol de oro / plata</b><span>Cada 100 goles · 500 💎 · muy difícil</span></div><div class="right">1/100</div></div>
+      </div>
+      <button class="m-cta">Reclamar disponibles</button>`
+  },
+  reclamos: {
+    title: "Recompensa Diaria",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">DAILY</span><span class="sep"></span><span>Check-in diario</span></div>
+      <div class="m-hero">
+        <div class="m-trophy">🎁</div>
+        <h3>Día 3 disponible</h3>
+        <div class="m-bignum">2<small>GEMAS</small></div>
+        <div class="m-count">
+          <div><b>04</b><span>Hrs</span></div>
+          <div><b>10</b><span>Min</span></div>
+          <div><b>59</b><span>Seg</span></div>
+          <div><b>D3</b><span>Día</span></div>
+        </div>
+      </div>
+      <div class="m-section">Racha semanal</div>
+      <div class="m-prizes" style="grid-template-columns:repeat(7,1fr);gap:6px">
+        <div class="m-prize"><div class="val">1💎</div><div class="lbl">D1</div></div>
+        <div class="m-prize"><div class="val">+2pts</div><div class="lbl">D2</div></div>
+        <div class="m-prize gold"><span class="pos">HOY</span><div class="val">2💎</div><div class="lbl">D3</div></div>
+        <div class="m-prize"><div class="val">+3pts</div><div class="lbl">D4</div></div>
+        <div class="m-prize"><div class="val">3💎</div><div class="lbl">D5</div></div>
+        <div class="m-prize"><div class="val">+4pts</div><div class="lbl">D6</div></div>
+        <div class="m-prize"><div class="val">4💎</div><div class="lbl">D7</div></div>
+      </div>
+      <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan);margin-top:10px">
+        Bonus mensual: completa los 30 días sin fallar y gana <b>100 💎</b>
+      </div>
+      <div class="m-section">Progreso del mes</div>
+      <div style="height:8px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;border:1px solid rgba(79,217,196,.2)">
+        <div style="width:10%;height:100%;background:linear-gradient(90deg,var(--fm-cyan),var(--fm-gold))"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--fm-text-dim);margin-top:6px;letter-spacing:.1em">
+        <span>3 / 30 días</span><span>+100 💎</span>
+      </div>
+      <div style="height:10px"></div>
+      <button class="m-cta">Hacer check-in</button>`
+  },
+  nivel: {
+    title: "Nivel del NFT",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">NIVEL</span><span class="sep"></span><span>Progresión de tu jugador</span></div>
+      <div class="m-hero">
+        <div class="m-trophy">⭐</div>
+        <h3>Nivel actual</h3>
+        <div class="m-bignum">1</div>
+        <div style="margin-top:14px;position:relative;z-index:1">
+          <div style="height:10px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;border:1px solid rgba(79,217,196,.2)">
+            <div style="width:10%;height:100%;background:linear-gradient(90deg,var(--fm-cyan),var(--fm-gold))"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--fm-text-dim);margin-top:6px;letter-spacing:.1em">
+            <span>100 / 1000 EXP</span><span>Siguiente: Nv. 2</span>
+          </div>
+        </div>
+      </div>
+      <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">
+        Cada partido ganado = <b>+5 EXP</b> · 1000 EXP = subes de nivel
+      </div>
+      <div class="m-section">Beneficio por nivel</div>
+      <div class="m-list">
+        <div class="m-row"><div class="icn">💎</div><div class="meta"><b>+3% generación de gemas</b><span>Acumulable por cada nivel alcanzado</span></div><div class="right">+3%</div></div>
+        <div class="m-row"><div class="icn">🎯</div><div class="meta"><b>Bonus actual</b><span>Nivel 1 → +3% sobre tus gemas</span></div><div class="right">x1.03</div></div>
+      </div>`
+  },
+  ranking: {
+    title: "Ranking",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">RANKINGS</span><span class="sep"></span><span>Mundial · S1</span></div>
+      <div class="m-hero">
+        <h3>Tu posición</h3>
+        <div class="m-bignum">#247</div>
+        <div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1">de 12.480 jugadores</div>
+      </div>
+      <div class="m-section">Top mundial</div>
+      <div class="m-list">
+        <div class="m-row"><div class="icn">🥇</div><div class="meta"><b>NeoStriker</b><span>BR · 9.840 PTS</span></div><div class="right">#1</div></div>
+        <div class="m-row"><div class="icn">🥈</div><div class="meta"><b>Maradonita</b><span>AR · 9.612 PTS</span></div><div class="right">#2</div></div>
+        <div class="m-row"><div class="icn">🥉</div><div class="meta"><b>Iniesta_X</b><span>ES · 9.405 PTS</span></div><div class="right">#3</div></div>
+      </div>`
+  },
+  retiro: {
+    title: "Retiro",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">WITHDRAW</span><span class="sep"></span><span>Red TON · USDT</span></div>
+      <div class="m-hero"><h3>Saldo disponible</h3><div class="m-bignum" id="r-balance">3200<small>💎</small></div></div>
+      <div class="m-warn">Mínimo 160 💎 · Máximo 3200 💎 · Comisión 5% + 32 💎</div>
+      <div class="m-section">Wallet TON</div>
+      <div class="m-row" style="margin-bottom:10px"><div class="icn">💰</div><div class="meta" style="flex:1"><input id="r-wallet" placeholder="UQ... wallet TON" style="width:100%;background:transparent;border:none;color:var(--fm-text);font-family:'Oswald';letter-spacing:.04em;outline:none;font-size:13px"/><span>Pega tu dirección TON</span></div></div>
+      <div class="m-section">Monto a retirar</div>
+      <div class="m-row" style="margin-bottom:10px"><div class="icn">💎</div><div class="meta" style="flex:1"><input id="r-amount" type="number" min="160" max="3200" placeholder="160 - 3200" style="width:100%;background:transparent;border:none;color:var(--fm-text);font-family:'Oswald';font-size:14px;outline:none"/><span id="r-net">Recibirás: — 💎</span></div></div>
+      <div class="m-section">Captcha</div>
+      <div class="m-row" style="margin-bottom:12px;align-items:center"><div class="icn" id="r-captcha-q" style="font-family:'Oswald';font-size:14px">3 + 4</div><div class="meta" style="flex:1"><input id="r-captcha" type="number" placeholder="Respuesta" style="width:100%;background:transparent;border:none;color:var(--fm-text);font-family:'Oswald';font-size:14px;outline:none"/><span>Confirma que no eres un bot</span></div></div>
+      <div id="r-msg" class="m-warn" style="display:none"></div>
+      <button class="m-cta" id="r-submit">Confirmar retiro</button>`
+  },
+  deposito: {
+    title: "Depósito",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">DEPOSIT</span><span class="sep"></span><span>USDT · Red TON</span></div>
+      <div class="m-hero"><div class="m-trophy">💎</div><h3>Compra Gemas</h3><div class="m-bignum">USDT<small>TON</small></div></div>
+      <div class="m-section">Paquetes</div>
+      <div class="m-list" id="dep-packs">
+        <div class="m-row dep-pack" data-gems="320" data-usdt="10" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>320 💎</b><span>10 USDT</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="1600" data-usdt="50" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>1.600 💎</b><span>50 USDT</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="4000" data-usdt="125" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>4.000 💎</b><span>125 USDT</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="16000" data-usdt="500" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>16.000 💎</b><span>500 USDT</span></div><div class="right">Comprar</div></div>
+      </div>
+      <div id="dep-detail" style="display:none">
+        <div class="m-section">Datos de depósito</div>
+        <div class="m-hero"><h3>Monto</h3><div class="m-bignum" id="dep-usdt">— USDT</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="dep-gems">— 💎</div></div>
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente USDT en la red <b>TON</b></div>
+        <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato de depósito</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div><button class="right" id="dep-copy" style="background:none;border:none;color:var(--fm-gold);cursor:pointer;font-family:'Oswald'">Copiar</button></div>
+        <button class="m-cta ghost" id="dep-back">Volver a paquetes</button>
+      </div>`
+  },
+  torneo: {
+    title: "Torneo",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">TOURNAMENT</span><span class="sep"></span><span>10 USDT · Red TON</span></div>
+      <div class="m-hero">
+        <div class="m-trophy">🏆</div>
+        <h3>Torneo Mundial Semanal</h3>
+        <div class="m-bignum" id="t-status">42 / 100</div>
+        <div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1">Se habilita al alcanzar 100 usuarios con NFT</div>
+      </div>
+      <div class="m-section">Inicio Lunes · Cierre Sábado</div>
+      <div class="m-count">
+        <div><b id="t-d">--</b><span>Días</span></div>
+        <div><b id="t-h">--</b><span>Hrs</span></div>
+        <div><b id="t-m">--</b><span>Min</span></div>
+        <div><b id="t-s">--</b><span>Seg</span></div>
+      </div>
+      <div class="m-section">Premios</div>
+      <div class="m-prizes">
+        <div class="m-prize gold"><span class="pos">1°</span><div class="val">3.000</div><div class="lbl">💎 + DT 🇩🇪 + Zapatillas</div></div>
+        <div class="m-prize"><span class="pos">2°</span><div class="val">1.500</div><div class="lbl">💎 + Uniforme Oro</div></div>
+        <div class="m-prize"><span class="pos">3°</span><div class="val">500</div><div class="lbl">💎</div></div>
+      </div>
+      <div class="m-section">Ranking & registros</div>
+      <div class="m-list">
+        <div class="m-row"><div class="icn">🥇</div><div class="meta"><b>···d1fb</b><span>9.840 PTS</span></div><div class="right">#1</div></div>
+        <div class="m-row"><div class="icn">🥈</div><div class="meta"><b>···7vg2</b><span>9.612 PTS</span></div><div class="right">#2</div></div>
+        <div class="m-row"><div class="icn">🥉</div><div class="meta"><b>···a91c</b><span>9.405 PTS</span></div><div class="right">#3</div></div>
+      </div>
+      <div id="t-deposit" style="display:none">
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía <b>10 USDT</b> en red <b>TON</b> al contrato:</div>
+        <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div></div>
+      </div>
+      <button class="m-cta" id="t-register">Inscribirme — 10 USDT</button>
+      <div id="t-msg" class="m-warn" style="display:none;margin-top:10px"></div>`
+  },
+  referido: {
+    title: "Referidos",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">REFERIDOS</span><span class="sep"></span><span>Gana 10% por amigo</span></div>
+      <div class="m-hero">
+        <div class="m-trophy">👥</div>
+        <h3>Comisión por referido</h3>
+        <div class="m-bignum">10<small>%</small></div>
+        <div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1">de todo lo que gane tu invitado</div>
+      </div>
+      <div class="m-section">Tu enlace de invitación</div>
+      <div class="m-row" style="margin-bottom:12px" id="ref-link-row">
+        <div class="icn">🔗</div>
+        <div class="meta"><b id="ref-link">t.me/FutmundiBot?start=X4K9</b><span>Toca para copiar</span></div>
+      </div>
+      <div class="m-section">Compartir en</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button class="m-cta" id="ref-tg" style="background:linear-gradient(135deg,#229ED9,#1d8bc0);color:#fff">✈️ Telegram</button>
+        <button class="m-cta" id="ref-wa" style="background:linear-gradient(135deg,#25D366,#1ebe57);color:#fff">💬 WhatsApp</button>
+      </div>
+      <div style="height:14px"></div>
+      <div class="m-section">Tus referidos</div>
+      <div class="m-list">
+        <div class="m-row"><div class="icn">🟢</div><div class="meta"><b>2 amigos activos</b><span>Ganancia acumulada · 120 💎</span></div><div class="right">+10%</div></div>
+      </div>`
+  },
+  estadio: {
+    title: "Selección de Estadio",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">LIVE</span><span class="sep"></span><span>FM · CH 01</span></div>
+      <div class="stadium3d">
+        <div class="stands"></div>
+        <div class="lights"></div>
+        <div class="field"></div>
+        <div class="badge">Estadio Mundial · 80k</div>
+      </div>
+      <div class="m-reward-strip">
+        <span class="lbl">Premio total</span>
+        <span class="val">5.000 💎</span>
+      </div>
+      <div class="m-count" style="margin-bottom:12px">
+        <div><b>4d</b><span>Días</span></div>
+        <div><b>10h</b><span>Hrs</span></div>
+        <div><b>59m</b><span>Min</span></div>
+        <div><b>54s</b><span>Seg</span></div>
+      </div>
+      <div class="m-section">Distribución de premios</div>
+      <div class="m-prizes">
+        <div class="m-prize gold"><span class="pos">1°</span><div class="val">2.600</div><div class="lbl">Gemas</div></div>
+        <div class="m-prize"><span class="pos">2°</span><div class="val">1.500</div><div class="lbl">Gemas</div></div>
+        <div class="m-prize"><span class="pos">3°</span><div class="val">500</div><div class="lbl">Gemas</div></div>
+      </div>
+      <button class="m-cta">Inscribirme — 100 💎</button>`
+  },
+  cancha: {
+    title: "Futcancha",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">PRÁCTICA</span><span class="sep"></span><span>elige tu cancha</span></div>
+      <div class="m-section">Ganancias por partido</div>
+      <div class="m-results">
+        <div class="m-result win"><b>+45</b><span>Victoria</span></div>
+        <div class="m-result draw"><b>+15</b><span>Empate</span></div>
+        <div class="m-result lose"><b>-10</b><span>Derrota</span></div>
+      </div>
+      <div class="m-section">Elige tu cancha</div>
+      <div class="stadium-grid">
+        <div class="stadium-card gold">
+          <div class="iso-pitch"><div class="turf"></div></div>
+          <div class="name">Cancha Mundial</div>
+          <div class="meta">Élite · +2 pts</div>
+        </div>
+        <div class="stadium-card">
+          <div class="iso-pitch arena"><div class="turf"></div></div>
+          <div class="name">Arena Indoor</div>
+          <div class="meta">Fácil · +1 pt</div>
+        </div>
+        <div class="stadium-card">
+          <div class="iso-pitch barrial"><div class="turf"></div></div>
+          <div class="name">Barrial</div>
+          <div class="meta">Fácil · +1 pt</div>
+        </div>
+        <div class="stadium-card">
+          <div class="iso-pitch"><div class="turf"></div></div>
+          <div class="name">Liga Mundial</div>
+          <div class="meta">Casual</div>
+        </div>
+      </div>
+      <button class="m-cta">Jugar partido amistoso</button>`
+  },
+  market: {
+    title: "Market",
+    body: `
+      <div class="m-tabs" data-tabs="market">
+        <button class="m-tab active" data-tab="m-players">Jugadores</button>
+        <button class="m-tab" data-tab="m-unif">Uniformes</button>
+        <button class="m-tab" data-tab="m-zap">Zapatillas</button>
+        <button class="m-tab" data-tab="m-dt">DT</button>
+      </div>
+      <div class="m-panel active" id="m-players">
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">
+          Cada NFT: 4 balones de estamina · 100% durabilidad · −0.8% por balón · <b>Máx 20 NFT por usuario</b>
+        </div>
+        <div class="shop-grid"><div class="shop-card free"><div class="av">🇧🇷</div><div class="nm">Neymar</div><div class="tg">Inicial</div><div class="free-tag">GRATIS</div></div><div class="shop-card"><div class="av">🇨🇴</div><div class="nm">James Rodríguez</div><div class="tg">Estrella</div><div class="pr">320<small>💎</small></div></div><div class="shop-card"><div class="av">🇨🇱</div><div class="nm">Alexis Sánchez</div><div class="tg">Estrella</div><div class="pr">640<small>💎</small></div></div><div class="shop-card"><div class="av">🏴</div><div class="nm">Harry Kane</div><div class="tg">Goleador</div><div class="pr">960<small>💎</small></div></div><div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Pedri</div><div class="tg">Maestro</div><div class="pr">1.280<small>💎</small></div></div><div class="shop-card"><div class="av">🇧🇷</div><div class="nm">Vinicius Jr</div><div class="tg">Velocista</div><div class="pr">1.600<small>💎</small></div></div><div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Rodri</div><div class="tg">Mediocampo</div><div class="pr">1.920<small>💎</small></div></div><div class="shop-card"><div class="av">🇫🇷</div><div class="nm">Mbappé</div><div class="tg">Velocista</div><div class="pr">2.080<small>💎</small></div></div><div class="shop-card"><div class="av">🇳🇴</div><div class="nm">Haaland</div><div class="tg">Goleador</div><div class="pr">2.240<small>💎</small></div></div><div class="shop-card elite"><div class="av">🇪🇸</div><div class="nm">Lamine Yamal</div><div class="tg">Promesa</div><div class="pr">4.000<small>💎</small></div></div><div class="shop-card elite"><div class="av">🏴</div><div class="nm">Bellingham</div><div class="tg">Élite</div><div class="pr">5.120<small>💎</small></div></div><div class="shop-card elite"><div class="av">🇦🇷</div><div class="nm">Lionel Messi</div><div class="tg">Leyenda</div><div class="pr">6.400<small>💎</small></div></div><div class="shop-card elite"><div class="av">🇵🇹</div><div class="nm">Cristiano R.</div><div class="tg">Leyenda</div><div class="pr">16.000<small>💎</small></div></div></div>
+      </div>
+      <div class="m-panel" id="m-unif">
+        <div class="m-warn" style="background:rgba(244,197,66,.08);border-color:rgba(244,197,66,.3);color:var(--fm-gold)">
+          Los uniformes potencian el atributo Físico de tu jugador
+        </div>
+        <div class="shop-grid"><div class="shop-card"><div class="av">🥉</div><div class="nm">Uniforme Bronce</div><div class="tg">+1000 Físico</div><div class="pr">500<small>💎</small></div></div><div class="shop-card elite"><div class="av">🥇</div><div class="nm">Uniforme Oro</div><div class="tg">+1500 Físico</div><div class="pr">1.200<small>💎</small></div></div><div class="shop-card elite"><div class="av">🛡️</div><div class="nm">Uniforme Platinium</div><div class="tg">+3000 Físico</div><div class="pr">2.000<small>💎</small></div></div><div class="shop-card elite"><div class="av">💠</div><div class="nm">Uniforme Diamante</div><div class="tg">+4000 Físico</div><div class="pr">2.500<small>💎</small></div></div></div>
+      </div>
+      <div class="m-panel" id="m-zap">
+        <div class="m-warn" style="background:rgba(63,191,255,.08);border-color:rgba(63,191,255,.3);color:var(--fm-blue)">
+          Las zapatillas aumentan tu Velocidad
+        </div>
+        <div class="shop-grid"><div class="shop-card"><div class="av">👟</div><div class="nm">Modelo 1980</div><div class="tg">+15% Velocidad</div><div class="pr">300<small>💎</small></div></div><div class="shop-card"><div class="av">👟</div><div class="nm">Modelo 2000</div><div class="tg">+35% Velocidad</div><div class="pr">500<small>💎</small></div></div><div class="shop-card elite"><div class="av">🥾</div><div class="nm">Modelo 2010</div><div class="tg">+45% Velocidad</div><div class="pr">1.000<small>💎</small></div></div><div class="shop-card elite"><div class="av">🥾</div><div class="nm">Modelo 2020</div><div class="tg">+65% Velocidad</div><div class="pr">1.500<small>💎</small></div></div></div>
+      </div>
+      <div class="m-panel" id="m-dt">
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">
+          Los entrenadores dan un boost general al jugador asignado
+        </div>
+        <div class="shop-grid"><div class="shop-card"><div class="av">🇵🇹</div><div class="nm">DT Portugal</div><div class="tg">+15% Boost</div><div class="pr">300<small>💎</small></div></div><div class="shop-card"><div class="av">🇧🇷</div><div class="nm">DT Brasil</div><div class="tg">+15% Boost</div><div class="pr">300<small>💎</small></div></div><div class="shop-card"><div class="av">🇩🇪</div><div class="nm">DT Alemania</div><div class="tg">+35% Boost</div><div class="pr">800<small>💎</small></div></div><div class="shop-card"><div class="av">🇪🇸</div><div class="nm">DT España</div><div class="tg">+35% Boost</div><div class="pr">800<small>💎</small></div></div><div class="shop-card elite"><div class="av">🇦🇷</div><div class="nm">DT Argentina</div><div class="tg">+65% Boost</div><div class="pr">2.000<small>💎</small></div></div></div>
+      </div>
+      <button class="m-cta">Ir a la tienda completa</button>`
+  },
+  futbolista: {
+    title: "Tu Futbolista",
+    body: `
+      <div class="m-tabs" data-tabs="fut">
+        <button class="m-tab active" data-tab="f-eq">Equipar</button>
+        <button class="m-tab" data-tab="f-pl">Jugadores</button>
+        <button class="m-tab" data-tab="f-un">Uniformes</button>
+        <button class="m-tab" data-tab="f-za">Zapatillas</button>
+        <button class="m-tab" data-tab="f-dt">DT</button>
+      </div>
+
+      <div class="m-panel active" id="f-eq">
+        <div class="slot-area">
+          <div class="lbl">Jugador seleccionado</div>
+          <div class="main-slot"><div class="ic">⚽</div>Coloca tu<br>jugador NFT</div>
+          <div class="nft-info">
+            <div><b>0</b><span>OVR</span></div>
+            <div><b>4/4</b><span>Estamina</span></div>
+            <div><b>100%</b><span>Durabilidad</span></div>
+          </div>
+          <div class="nft-bar"><span style="width:100%"></span></div>
+          <div class="lbl" style="margin-top:6px">Complementos asignados</div>
+          <div class="assign-grid" style="grid-template-columns:1fr 1fr">
+            <div class="assign-slot"><div class="ic">👕</div>Uniforme</div>
+            <div class="assign-slot"><div class="ic">👟</div>Zapatillas</div>
+          </div>
+        </div>
+        <button class="m-cta ghost">Comprar primer NFT en Market</button>
+      </div>
+
+      <div class="m-panel" id="f-pl">
+        <div class="lbl" style="font-family:'Oswald';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-cyan);margin-bottom:8px;text-align:center">20 Slots Jugadores · 0 / 20</div>
+        <div class="slots-grid"><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div></div>
+        <div style="height:10px"></div>
+        <div class="m-warn">Los slots se activan al comprar un NFT en el Market</div>
+      </div>
+
+      <div class="m-panel" id="f-un">
+        <div class="lbl" style="font-family:'Oswald';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-cyan);margin-bottom:8px;text-align:center">20 Slots Uniformes · 0 / 20</div>
+        <div class="slots-grid"><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div></div>
+      </div>
+
+      <div class="m-panel" id="f-za">
+        <div class="lbl" style="font-family:'Oswald';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-cyan);margin-bottom:8px;text-align:center">20 Slots Zapatillas · 0 / 20</div>
+        <div class="slots-grid"><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div></div>
+      </div>
+
+      <div class="m-panel" id="f-dt">
+        <div class="lbl" style="font-family:'Oswald';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-cyan);margin-bottom:8px;text-align:center">20 Slots Entrenadores · 0 / 20</div>
+        <div class="slots-grid"><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div><div class="nft-slot">+</div></div>
+      </div>`
+  },
+  "ranking-tab": {
+    title: "Ranking Global",
+    body: `
+      <div class="m-section">Liga actual · División Bronce</div>
+      <div class="m-list">
+        <div class="m-row"><div class="icn">🥇</div><div class="meta"><b>Carlos9</b><span>1.420 PTS</span></div><div class="right">#1</div></div>
+        <div class="m-row"><div class="icn">🥈</div><div class="meta"><b>SkillerXY</b><span>1.180 PTS</span></div><div class="right">#2</div></div>
+        <div class="m-row"><div class="icn">🥉</div><div class="meta"><b>Maradona22</b><span>980 PTS</span></div><div class="right">#3</div></div>
+        <div class="m-row"><div class="icn">⚽</div><div class="meta"><b>Tú</b><span>104 PTS</span></div><div class="right">#247</div></div>
+      </div>`
+  },
+  entrena: {
+    title: "Entrenamiento",
+    body: `
+      <div class="m-broadcast-bar"><span class="live">TRAINING</span><span class="sep"></span><span>USDT · Red TON</span></div>
+      <div class="m-hero">
+        <div class="m-trophy">💪</div>
+        <h3>Recupera y potencia tu NFT</h3>
+        <div class="m-bignum">+5%<small>NIVEL</small></div>
+        <div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1">Durabilidad 100% · 50% gemas en 24h</div>
+      </div>
+      <div class="m-section">Beneficios</div>
+      <div class="m-list">
+        <div class="m-row"><div class="icn">🛡️</div><div class="meta"><b>Durabilidad</b><span>Recupera al 100%</span></div><div class="right">✓</div></div>
+        <div class="m-row"><div class="icn">📈</div><div class="meta"><b>Nivel</b><span>+5% sobre el nivel actual</span></div><div class="right">+5%</div></div>
+        <div class="m-row"><div class="icn">💎</div><div class="meta"><b>Gemas en 24h</b><span>50% de las que genera jugando</span></div><div class="right">50%</div></div>
+      </div>
+      <div class="m-section">Selecciona tu NFT a entrenar</div>
+      <div class="m-list" id="tr-list">
+        <div class="m-row tr-nft" data-nft="Neymar" data-value="500" style="cursor:pointer"><div class="icn">🇧🇷</div><div class="meta"><b>Neymar</b><span>Toca para entrenar</span></div><div class="right">Entrenar</div></div>
+        <div class="m-row tr-nft" data-nft="James" data-value="320" style="cursor:pointer"><div class="icn">🇨🇴</div><div class="meta"><b>James Rodríguez</b><span>Toca para entrenar</span></div><div class="right">Entrenar</div></div>
+        <div class="m-row tr-nft" data-nft="Mbappe" data-value="2080" style="cursor:pointer"><div class="icn">🇫🇷</div><div class="meta"><b>Mbappé</b><span>Toca para entrenar</span></div><div class="right">Entrenar</div></div>
+      </div>
+      <div id="tr-pay" style="display:none">
+        <div class="m-hero"><h3>Pago en USDT (TON)</h3><div class="m-bignum" id="tr-usdt">— USDT</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="tr-nft-name">—</div></div>
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente USDT en la red <b>TON</b></div>
+        <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato de depósito</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div></div>
+        <button class="m-cta ghost" id="tr-back">Volver</button>
+      </div>`
+  }
+};
+
+const backdrop = document.getElementById('fm-modal');
+const inner = document.getElementById('fm-modal-inner');
+let activeTournamentTimer = null;
+let lastFocusedEl = null;
+
+function clearActiveTimers(){
+  if(activeTournamentTimer){
+    clearInterval(activeTournamentTimer);
+    activeTournamentTimer = null;
+  }
+}
+
+function escapeHTML(value){
+  return String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+
+function copyText(text){
+  if(navigator.clipboard && window.isSecureContext){
+    return navigator.clipboard.writeText(text);
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly','');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); } finally { ta.remove(); }
+  return Promise.resolve();
+}
+
+function isValidTonAddress(addr){
+  if(!addr) return false;
+  const a = String(addr).trim();
+  // User-friendly TON address (EQ/UQ...) or raw address from TonConnect (0:<64 hex>, -1:<64 hex>)
+  return /^([UE]Q)[A-Za-z0-9_-]{46,}$/.test(a) || /^-?\d+:[a-fA-F0-9]{64}$/.test(a);
+}
+
+function openModal(name){
+  const t = TEMPLATES[name];
+  if(!t) return;
+  clearActiveTimers();
+  lastFocusedEl = document.activeElement;
+  inner.innerHTML = `
+    <div class="modal-head">
+      <div class="modal-title" id="fm-modal-title">${escapeHTML(t.title)}</div>
+      <button class="modal-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+    ${t.body}`;
+  backdrop.classList.add('open');
+  // Tabs inside modals
+  inner.querySelectorAll('.m-tabs').forEach(tabs => {
+    tabs.querySelectorAll('.m-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        tabs.querySelectorAll('.m-tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        const target = t.getAttribute('data-tab');
+        inner.querySelectorAll('.m-panel').forEach(p => {
+          if(p.id === target) p.classList.add('active'); else p.classList.remove('active');
+        });
+      });
+    });
+  });
+  wireModal(name);
+  document.body.style.overflow = 'hidden';
+  const closeBtn = inner.querySelector('.modal-close');
+  closeBtn.addEventListener('click', closeModal);
+  requestAnimationFrame(() => closeBtn.focus());
+}
+
+// ===== App State (mini-app) =====
+function safeJSON(key, fallback){
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch(e){ return fallback; }
+}
+
+const STATE = {
+  refCode: 'X4K9',
+  botUser: 'FutmundiBot',
+  contract: 'EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs',
+  // Seguridad: la validación admin debe hacerse en backend mediante firma de wallet.
+  ADMIN_WALLET: null,
+  tonWallet: null,
+  adminApiBase: (window.FM_ADMIN_API_BASE || localStorage.getItem('fm_admin_api_base') || '').replace(/\/$/, ''),
+  adminToken: localStorage.getItem('fm_admin_token') || '',
+  isAdminVerified: false,
+  balanceGems: 3200,
+  maxPerNFT: 20,
+  owned: safeJSON('fm_owned', {}),
+  tournamentUsers: 42, // <100 → disabled
+  trainingPctOfNFT: 0.30, // INTERNAL — not shown to public
+  gemsPerUSDT: 32, // 320 gems = 10 USDT
+};
+window.STATE = STATE;
+
+// --- TON / Admin helpers ---
+function isAdminWallet(addr){
+  if(!addr) return false;
+  const a = addr.toLowerCase();
+  const admin = (STATE.ADMIN_WALLET || '').toLowerCase();
+  // Producción: validar admin en servidor con firma de wallet, no en frontend.
+  return !!admin && a === admin;
+}
+function isAdmin(){
+  return !!STATE.isAdminVerified;
+}
+
+// --- Admin seguro vía backend + TON proof ---
+function hasAdminApi(){
+  return !!STATE.adminApiBase;
+}
+
+function updateAdminChip(){
+  const chip = document.getElementById('admin-chip');
+  if(!chip) return;
+  chip.style.display = STATE.isAdminVerified ? '' : 'none';
+}
+
+function setAdminSession(token){
+  STATE.adminToken = token || '';
+  STATE.isAdminVerified = !!token;
+  if(token) localStorage.setItem('fm_admin_token', token);
+  else localStorage.removeItem('fm_admin_token');
+  updateAdminChip();
+}
+
+function clearAdminSession(){
+  setAdminSession('');
+}
+
+async function adminFetch(path, options = {}){
+  if(!hasAdminApi()) throw new Error('Admin API no configurada');
+  const headers = Object.assign({'Content-Type':'application/json'}, options.headers || {});
+  if(STATE.adminToken) headers.Authorization = 'Bearer ' + STATE.adminToken;
+  const res = await fetch(STATE.adminApiBase + path, Object.assign({}, options, {headers}));
+  let data = null;
+  try { data = await res.json(); } catch(e) { data = {}; }
+  if(!res.ok || data.ok === false){
+    throw new Error(data.error || ('HTTP ' + res.status));
+  }
+  return data;
+}
+
+async function prepareTonProofRequest(tcUI){
+  if(!hasAdminApi() || !tcUI || typeof tcUI.setConnectRequestParameters !== 'function') return;
+  try{
+    tcUI.setConnectRequestParameters({ state: 'loading' });
+    const data = await adminFetch('/api/admin/payload', { method:'GET' });
+    if(data.payload){
+      tcUI.setConnectRequestParameters({
+        state: 'ready',
+        value: { tonProof: data.payload }
+      });
+    } else {
+      try { tcUI.setConnectRequestParameters({ state: 'ready', value: {} }); } catch(_) {}
+    }
+  }catch(e){
+    console.warn('No se pudo preparar TON proof admin:', e.message);
+    try { tcUI.setConnectRequestParameters({ state: 'ready', value: {} }); } catch(_) {}
+  }
+}
+
+async function refreshAdminStatus(){
+  if(!hasAdminApi() || !STATE.adminToken) { updateAdminChip(); return; }
+  try{
+    const data = await adminFetch('/api/admin/status', { method:'GET' });
+    STATE.isAdminVerified = !!data.admin;
+    if(!STATE.isAdminVerified) localStorage.removeItem('fm_admin_token');
+    updateAdminChip();
+  }catch(e){
+    console.warn('Sesión admin inválida:', e.message);
+    clearAdminSession();
+  }
+}
+
+async function verifyTonProof(wallet){
+  if(!hasAdminApi() || !wallet || !wallet.account) return;
+  const tonProof = wallet.connectItems && wallet.connectItems.tonProof;
+  if(!tonProof || tonProof.name === 'ton_proof_error'){
+    await refreshAdminStatus();
+    return;
+  }
+  try{
+    const data = await adminFetch('/api/admin/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        address: wallet.account.address,
+        network: wallet.account.chain,
+        publicKey: wallet.account.publicKey,
+        proof: tonProof.proof || tonProof
+      })
+    });
+    if(data.admin && data.token){
+      setAdminSession(data.token);
+      toast('Admin verificado', true);
+    } else {
+      clearAdminSession();
+    }
+  }catch(e){
+    console.warn('No se pudo verificar admin:', e.message);
+    clearAdminSession();
+    // Prepara un nuevo payload para el próximo intento de conexión.
+    if(window.tonConnectUI) prepareTonProofRequest(window.tonConnectUI);
+  }
+}
+
+
+// --- Sistema de regalos NFT (interno mini-app) ---
+function getGifts(){
+  try { return JSON.parse(localStorage.getItem('fm_gifts') || '[]'); } catch(e){ return [] }
+}
+function saveGifts(g){ localStorage.setItem('fm_gifts', JSON.stringify(g)); }
+function findPendingGift(){
+  const gifts = getGifts();
+  const myWallet = (STATE.tonWallet||'').toLowerCase();
+  const myRef = (STATE.refCode||'').toUpperCase();
+  return gifts.find(g => !g.claimed && (
+    (g.toWallet && g.toWallet.toLowerCase() === myWallet) ||
+    (g.toRef && g.toRef.toUpperCase() === myRef)
+  ));
+}
+// Usuarios de prueba para el buscador admin
+const MOCK_USERS = [
+  {ref:'X4K9', internal:'user_104', wallet:'', name:'Tú (actual)'},
+  {ref:'A7Z2', internal:'user_882', wallet:'UQDf12AbC34EfGhIjKlMnOpQrStUvWxYz', name:'Carlos9'},
+  {ref:'B3M5', internal:'user_415', wallet:'UQBn77XxYyZz1234567890AbCdEfGhIjK', name:'SkillerXY'},
+  {ref:'K9P1', internal:'user_203', wallet:'UQAp09ZzXxYyWwVvUuTtSsRrQqPpOoNn', name:'Maradonita22'},
+];
+function saveOwned(){ localStorage.setItem('fm_owned', JSON.stringify(STATE.owned)); }
+
+function toast(msg, ok){
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(ok?'rgba(57,255,136,.95)':'rgba(193,67,42,.95)')+';color:#0a1410;padding:12px 18px;border-radius:14px;font-family:Oswald;letter-spacing:.14em;text-transform:uppercase;font-size:12px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.5)';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2600);
+}
+
+function wireModal(name){
+  if(name === 'referido'){
+    const link = `https://t.me/${STATE.botUser}?start=${STATE.refCode}`;
+    const txt = `🔥 Únete a FUTMUNDI — el juego de fútbol NFT más épico. Usa mi enlace: ${link}`;
+    inner.querySelector('#ref-link').textContent = link;
+    inner.querySelector('#ref-link-row').addEventListener('click', ()=>{
+      copyText(link).then(()=>toast('Enlace copiado', true));
+    });
+    inner.querySelector('#ref-tg').addEventListener('click', ()=>{
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(txt)}`,'_blank','noopener,noreferrer');
+    });
+    inner.querySelector('#ref-wa').addEventListener('click', ()=>{
+      window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank','noopener,noreferrer');
+    });
+  }
+  if(name === 'deposito'){
+    const detail = inner.querySelector('#dep-detail');
+    const packs  = inner.querySelector('#dep-packs');
+    inner.querySelectorAll('.dep-pack').forEach(p => p.addEventListener('click', ()=>{
+      const g = p.dataset.gems, u = p.dataset.usdt;
+      inner.querySelector('#dep-usdt').textContent = u + ' USDT';
+      inner.querySelector('#dep-gems').textContent = parseInt(g).toLocaleString() + ' 💎';
+      packs.style.display='none'; detail.style.display='block';
+    }));
+    inner.querySelector('#dep-back').addEventListener('click', ()=>{ detail.style.display='none'; packs.style.display='block'; });
+    inner.querySelector('#dep-copy').addEventListener('click', ()=>{
+      copyText(STATE.contract).then(()=>toast('Contrato copiado', true));
+    });
+  }
+  if(name === 'retiro'){
+    const amt = inner.querySelector('#r-amount');
+    const net = inner.querySelector('#r-net');
+    const msg = inner.querySelector('#r-msg');
+    const walletInput = inner.querySelector('#r-wallet');
+    if(STATE.tonWallet && walletInput && !walletInput.value) walletInput.value = STATE.tonWallet;
+    const a = Math.floor(Math.random()*9)+1, b = Math.floor(Math.random()*9)+1;
+    inner.querySelector('#r-captcha-q').textContent = `${a} + ${b}`;
+    inner.querySelector('#r-balance').innerHTML = STATE.balanceGems + '<small>💎</small>';
+    amt.addEventListener('input', ()=>{
+      const v = parseInt(amt.value)||0;
+      const recv = v>0 ? Math.max(0, Math.floor(v*0.95 - 32)) : 0;
+      net.textContent = `Recibirás: ${recv} 💎 (5% + 32 💎)`;
+    });
+    inner.querySelector('#r-submit').addEventListener('click', ()=>{
+      const v = parseInt(amt.value)||0;
+      const w = inner.querySelector('#r-wallet').value.trim();
+      const cap = parseInt(inner.querySelector('#r-captcha').value)||0;
+      msg.style.display='block';
+      if(!isValidTonAddress(w)){ msg.textContent='Wallet TON inválida'; return; }
+      if(v < 160 || v > 3200){ msg.textContent='Monto fuera de rango (160–3200 💎)'; return; }
+      if(v > STATE.balanceGems){ msg.textContent='Saldo insuficiente'; return; }
+      if(cap !== a+b){ msg.textContent='Captcha incorrecto'; return; }
+      msg.style.background='rgba(57,255,136,.1)'; msg.style.borderColor='rgba(57,255,136,.3)'; msg.style.color='var(--fm-cyan)';
+      msg.textContent = `Solicitud enviada. Contrato: ${STATE.contract.slice(0,8)}…`;
+      toast('Retiro solicitado', true);
+    });
+  }
+  if(name === 'torneo'){
+    inner.querySelector('#t-status').textContent = `${STATE.tournamentUsers} / 100`;
+    const btn = inner.querySelector('#t-register');
+    const msg = inner.querySelector('#t-msg');
+    const dep = inner.querySelector('#t-deposit');
+    // Countdown to next Saturday 23:59 (close)
+    function tick(){
+      const now = new Date();
+      const day = now.getDay(); // 0 Sun .. 6 Sat
+      const target = new Date(now);
+      const daysToSat = (6 - day + 7) % 7;
+      target.setDate(now.getDate() + daysToSat);
+      target.setHours(23,59,0,0);
+      if(target <= now) target.setDate(target.getDate() + 7);
+      let diff = Math.max(0, target - now);
+      const d = Math.floor(diff/86400000); diff -= d*86400000;
+      const h = Math.floor(diff/3600000);  diff -= h*3600000;
+      const m = Math.floor(diff/60000);    diff -= m*60000;
+      const s = Math.floor(diff/1000);
+      const dEl=inner.querySelector('#t-d'); if(!dEl) return;
+      dEl.textContent=d; inner.querySelector('#t-h').textContent=String(h).padStart(2,'0');
+      inner.querySelector('#t-m').textContent=String(m).padStart(2,'0');
+      inner.querySelector('#t-s').textContent=String(s).padStart(2,'0');
+    }
+    clearActiveTimers();
+    tick(); activeTournamentTimer = setInterval(tick, 1000);
+    if(STATE.tournamentUsers < 100){
+      btn.disabled = true; btn.style.opacity = .55; btn.style.cursor='not-allowed';
+      btn.textContent = `Bloqueado · faltan ${100 - STATE.tournamentUsers} usuarios`;
+    }
+    btn.addEventListener('click', ()=>{
+      if(STATE.tournamentUsers < 100){
+        msg.style.display='block'; msg.textContent='Torneo no disponible aún'; return;
+      }
+      dep.style.display='block';
+      msg.style.display='block'; msg.style.background='rgba(57,255,136,.1)'; msg.style.borderColor='rgba(57,255,136,.3)'; msg.style.color='var(--fm-cyan)';
+      msg.textContent='Envía 10 USDT (TON) al contrato indicado para confirmar tu registro.';
+    });
+  }
+  if(name === 'entrena'){
+    const pay = inner.querySelector('#tr-pay');
+    inner.querySelectorAll('.tr-nft').forEach(r => r.addEventListener('click', ()=>{
+      const val = parseFloat(r.dataset.value);
+      const usdt = (val * STATE.trainingPctOfNFT).toFixed(2); // internal calc
+      inner.querySelector('#tr-usdt').textContent = usdt + ' USDT';
+      inner.querySelector('#tr-nft-name').textContent = r.dataset.nft;
+      inner.querySelector('#tr-list').style.display='none';
+      pay.style.display='block';
+    }));
+    inner.querySelector('#tr-back').addEventListener('click', ()=>{
+      pay.style.display='none'; inner.querySelector('#tr-list').style.display='flex';
+    });
+  }
+  if(name === 'market'){
+    // Add Buy buttons + max 20 per NFT validation
+    inner.querySelectorAll('.shop-card').forEach(card => {
+      const nm = card.querySelector('.nm')?.textContent?.trim() || 'item';
+      const owned = STATE.owned[nm] || 0;
+      const btn = document.createElement('button');
+      btn.className = 'm-cta';
+      btn.dataset.action = 'buy';
+      btn.style.cssText = 'margin-top:6px;padding:6px 8px;font-size:10px;letter-spacing:.1em;border-radius:10px';
+      btn.textContent = `Comprar (${owned}/${STATE.maxPerNFT})`;
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const have = STATE.owned[nm] || 0;
+        if(have >= STATE.maxPerNFT){
+          toast(`Límite alcanzado: máx ${STATE.maxPerNFT} de "${nm}" por usuario`, false);
+          return;
+        }
+        STATE.owned[nm] = have + 1; saveOwned();
+        btn.textContent = `Comprar (${STATE.owned[nm]}/${STATE.maxPerNFT})`;
+        toast(`Compra realizada: ${nm}`, true);
+      });
+      card.appendChild(btn);
+    });
+  }
+  // Evita botones sin respuesta: toda CTA sin lógica propia informa estado backend.
+  inner.querySelectorAll('.m-cta:not([id]):not([data-action])').forEach(btn => {
+    if(btn.dataset.wiredGeneric) return;
+    btn.dataset.wiredGeneric = '1';
+    btn.addEventListener('click', () => toast('Función pendiente de conectar al backend', false));
+  });
+
+}
+
+function closeModal(){
+  clearActiveTimers();
+  backdrop.classList.remove('open');
+  inner.innerHTML = '';
+  document.body.style.overflow = '';
+  if(lastFocusedEl && typeof lastFocusedEl.focus === 'function') lastFocusedEl.focus();
+}
+backdrop.addEventListener('click', e => { if(e.target === backdrop) closeModal(); });
+document.addEventListener('keydown', e => {
+  if(!backdrop.classList.contains('open')) return;
+  if(e.key === 'Escape'){ closeModal(); return; }
+  if(e.key === 'Tab'){
+    const focusables = inner.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+    if(!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }
+});
+
+document.querySelectorAll('[data-modal]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(btn.classList.contains('tab')){
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
+    }
+    openModal(btn.getAttribute('data-modal'));
+  });
+});
+
+const appClose = document.querySelector('.close');
+if(appClose){
+  appClose.addEventListener('click', () => {
+    if(window.Telegram?.WebApp?.close){ window.Telegram.WebApp.close(); }
+    else if(history.length > 1){ history.back(); }
+    else { toast('No hay una ventana para cerrar', false); }
+  });
+}
+
+const heroImg = document.querySelector('.hero-img');
+if(heroImg){
+  heroImg.addEventListener('error', () => {
+    heroImg.style.display = 'none';
+    const fallback = heroImg.nextElementSibling;
+    if(fallback) fallback.style.display = 'flex';
+  });
+}
+</script>
+
+<script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
+<script>
+(function(){
+  try{
+    var manifestUrl = window.location.origin + '/tonconnect-manifest.json';
+    var tcUI = new TON_CONNECT_UI.TonConnectUI({
+      manifestUrl: manifestUrl,
+      buttonRootId: 'ton-connect',
+      uiPreferences: { theme: 'DARK' }
+    });
+    window.tonConnectUI = tcUI;
+    if(typeof prepareTonProofRequest === 'function') prepareTonProofRequest(tcUI);
+    if(typeof refreshAdminStatus === 'function') refreshAdminStatus();
+    function shortAddr(a){ return a ? a.slice(0,4)+'…'+a.slice(-4) : ''; }
+    function toUserFriendly(raw){
+      // raw form like "0:abcd..." — display as-is short; TonConnect SDK provides friendly via account.address (raw hex). Keep simple short.
+      return shortAddr(raw);
+    }
+    tcUI.onStatusChange(function(wallet){
+      var chip = document.getElementById('ton-chip');
+      var winp = document.querySelector('#r-wallet');
+      if(wallet && wallet.account){
+        var addr = wallet.account.address;
+        if(chip){ chip.style.display=''; chip.textContent = '🪙 ' + toUserFriendly(addr); }
+        window.STATE && (window.STATE.tonWallet = addr);
+        if(winp && !winp.value) winp.value = addr;
+        if(typeof verifyTonProof === 'function') verifyTonProof(wallet);
+      } else {
+        if(chip){ chip.style.display='none'; chip.textContent=''; }
+        window.STATE && (window.STATE.tonWallet = null);
+        if(typeof clearAdminSession === 'function') clearAdminSession();
+        if(typeof prepareTonProofRequest === 'function') prepareTonProofRequest(tcUI);
+      }
+    });
+  }catch(e){
+    console.error('TonConnect init failed', e);
+    var root = document.getElementById('ton-connect');
+    if(root){ root.innerHTML = '<button class="chip" type="button" disabled>Wallet no disponible</button>'; }
+  }
+})();
+</script>
+
+</body>
+</html>

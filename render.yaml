@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: futmundi-admin-backend
+    runtime: node
+    plan: free
+    rootDir: admin-backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_WALLETS
+        value: UQB9uFaCgM5HVntXHe-mq3xYiYjcLEzvgnZUCffNC5DR-7vg
+      - key: ADMIN_TOKEN_SECRET
+        generateValue: true
+      - key: TON_PROOF_TTL_SECONDS
+        value: "300"
+      - key: ADMIN_SESSION_TTL_SECONDS
+        value: "86400"
+      # Cambia estos valores en Render según tu dominio real del frontend.
+      # Ejemplo GitHub Pages:
+      # CORS_ORIGIN=https://tuusuario.github.io
+      # TON_PROOF_ALLOWED_DOMAINS=tuusuario.github.io
+      - key: CORS_ORIGIN
+        value: ""
+      - key: TON_PROOF_ALLOWED_DOMAINS
+        value: ""

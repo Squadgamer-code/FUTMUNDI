@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Estadio FUTMUNDI">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#39ff88" stop-opacity=".9"/>
+      <stop offset=".45" stop-color="#0f4a25"/>
+      <stop offset="1" stop-color="#050a07"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#ffe27a"/><stop offset="1" stop-color="#7a5410"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#070d09"/>
+  <circle cx="256" cy="256" r="220" fill="url(#g)" opacity=".9"/>
+  <ellipse cx="256" cy="300" rx="200" ry="120" fill="#07130b" opacity=".72"/>
+  <ellipse cx="256" cy="295" rx="170" ry="92" fill="#124f29" stroke="#e8f5e2" stroke-opacity=".45" stroke-width="6"/>
+  <path d="M108 295h296M256 205v180" stroke="#e8f5e2" stroke-opacity=".38" stroke-width="5"/>
+  <circle cx="256" cy="295" r="38" fill="none" stroke="#e8f5e2" stroke-opacity=".42" stroke-width="5"/>
+  <path d="M90 180c84-54 248-54 332 0" fill="none" stroke="url(#gold)" stroke-width="30" stroke-linecap="round" opacity=".95"/>
+  <path d="M72 410c84 58 284 58 368 0" fill="none" stroke="#3fbfff" stroke-width="20" stroke-linecap="round" opacity=".35"/>
+  <text x="256" y="122" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="38" fill="url(#gold)" letter-spacing="6">ESTADIO</text>
+</svg>

@@ -1145,7 +1145,7 @@ const TEMPLATES = {
       <div class="m-section">Tu enlace de invitación</div>
       <div class="m-row" style="margin-bottom:12px" id="ref-link-row">
         <div class="icn">🔗</div>
-        <div class="meta"><b id="ref-link">t.me/FutmundiBot?start=X4K9</b><span>Toca para copiar</span></div>
+        <div class="meta"><b id="ref-link">t.me/FutmundiBot/futmundi?startapp=TU-CODIGO</b><span>Toca para copiar</span></div>
       </div>
       <div class="m-section">Compartir en</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1752,8 +1752,9 @@ async function backendJSON(path, payload){
 async function syncUserState(address = STATE.tonWallet){
   if(!address || !STATE.adminApiBase) return null;
   try{
-    const data = await backendJSON('/api/user/sync', { address });
+    const data = await backendJSON('/api/user/sync', { address, refCode: STATE.incomingRefCode });
     STATE.serverUser = data.user;
+    if(data.user?.ref_code) STATE.refCode = data.user.ref_code;
     STATE.serverNfts = data.nfts || [];
     STATE.balanceGems = Number(data.balance?.gems || 0);
     STATE.lockedGems = Number(data.balance?.locked_gems || 0);
@@ -1967,6 +1968,21 @@ function openModal(name){
   requestAnimationFrame(() => closeBtn.focus());
 }
 
+function getIncomingRefCode(){
+  try{
+    const tgParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    const url = new URL(window.location.href);
+    return (tgParam || url.searchParams.get('startapp') || url.searchParams.get('start') || url.searchParams.get('ref') || '').trim().toUpperCase();
+  }catch(e){ return ''; }
+}
+function buildReferralLink(){
+  const bot = String(STATE.botUser || '').replace(/^@/, '');
+  const code = encodeURIComponent(STATE.refCode || '');
+  const shortName = String(STATE.miniAppShortName || '').replace(/^\//, '');
+  // Link directo de Telegram Mini App. El shortName debe coincidir con BotFather.
+  return shortName ? `https://t.me/${bot}/${shortName}?startapp=${code}` : `https://t.me/${bot}?startapp=${code}`;
+}
+
 // ===== App State (mini-app) =====
 function safeJSON(key, fallback){
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
@@ -1976,6 +1992,8 @@ function safeJSON(key, fallback){
 const STATE = {
   refCode: 'X4K9',
   botUser: 'FutmundiBot',
+  miniAppShortName: 'futmundi', // cambiar si el short name en BotFather es distinto
+  incomingRefCode: getIncomingRefCode(),
   contract: 'EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs',
   // Seguridad: la validación admin debe hacerse en backend mediante firma de wallet.
   ADMIN_WALLET: null,
@@ -2142,16 +2160,24 @@ function toast(msg, ok){
 
 function wireModal(name){
   if(name === 'referido'){
-    const link = `https://t.me/${STATE.botUser}?start=${STATE.refCode}`;
-    const txt = `🔥 Únete a FUTMUNDI — el juego de fútbol NFT más épico. Usa mi enlace: ${link}`;
-    inner.querySelector('#ref-link').textContent = link;
+    const ensureLink = () => {
+      const link = buildReferralLink();
+      const txt = `🔥 Únete a FUTMUNDI y juega fútbol NFT en Telegram. Usa mi enlace: ${link}`;
+      const linkEl = inner.querySelector('#ref-link');
+      if(linkEl) linkEl.textContent = link;
+      return { link, txt };
+    };
+    if(STATE.tonWallet) syncUserState().then(ensureLink); else ensureLink();
     inner.querySelector('#ref-link-row').addEventListener('click', ()=>{
-      copyText(link).then(()=>toast('Enlace copiado', true));
+      const { link } = ensureLink();
+      copyText(link).then(()=>toast('Enlace Mini App copiado', true));
     });
     inner.querySelector('#ref-tg').addEventListener('click', ()=>{
+      const { link, txt } = ensureLink();
       window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(txt)}`,'_blank','noopener,noreferrer');
     });
     inner.querySelector('#ref-wa').addEventListener('click', ()=>{
+      const { txt } = ensureLink();
       window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank','noopener,noreferrer');
     });
   }

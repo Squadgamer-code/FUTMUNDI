@@ -1046,7 +1046,7 @@ const TEMPLATES = {
       <div class="m-section">Captcha</div>
       <div class="m-row" style="margin-bottom:12px;align-items:center"><div class="icn" id="r-captcha-q" style="font-family:'Oswald';font-size:14px">3 + 4</div><div class="meta" style="flex:1"><input id="r-captcha" type="number" placeholder="Respuesta" style="width:100%;background:transparent;border:none;color:var(--fm-text);font-family:'Oswald';font-size:14px;outline:none"/><span>Confirma que no eres un bot</span></div></div>
       <div id="r-msg" class="m-warn" style="display:none"></div>
-      <button class="m-cta" id="r-submit">Confirmar retiro</button>`
+      <button class="m-cta" id="r-submit">Solicitar retiro</button>`
   },
   deposito: {
     title: "Depósito",
@@ -1314,7 +1314,7 @@ const TEMPLATES = {
         <div class="m-row tr-nft" data-nft="Mbappe" data-value="2080" style="cursor:pointer"><div class="icn">🇫🇷</div><div class="meta"><b>Mbappé</b><span>Toca para entrenar</span></div><div class="right">Entrenar</div></div>
       </div>
       <div id="tr-pay" style="display:none">
-        <div class="m-hero"><h3>Pago en USDT (TON)</h3><div class="m-bignum" id="tr-usdt">— USDT</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="tr-nft-name">—</div></div>
+        <div class="m-hero"><h3>Pago en USDT (TON)</h3><div class="m-bignum" id="tr-usdt">PAGO TON</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="tr-nft-name">—</div></div>
         <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente USDT en la red <b>TON</b></div>
         <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato de depósito</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div></div>
         <button class="m-cta ghost" id="tr-back">Volver</button>
@@ -1388,6 +1388,8 @@ const ITEM_PRICES = {
   'DT Portugal': 300, 'DT Brasil': 300, 'DT Alemania': 800, 'DT España': 800, 'DT Argentina': 2000
 };
 const FREE_NFT_NAME = 'Neymar';
+const FREE_NFT_LIFETIME_MS = 15 * 24 * 60 * 60 * 1000;
+const FREE_NFT_USD_CAP = 5;
 const EQUIP_SLOT = { uniforms:'uniform', shoes:'shoes', dt:'dt' };
 
 function itemCategory(name){
@@ -1398,6 +1400,8 @@ function itemCategory(name){
   return 'misc';
 }
 function uid(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+function nftValueUSDT(name){ return (Number(ITEM_PRICES[name]) || 0) / (window.STATE?.gemsPerUSDT || 32); }
+function trainingCostUSDT(name){ return +(nftValueUSDT(name) * (window.STATE?.trainingPctOfNFT || 0.30)).toFixed(2); }
 function makeInventoryItem(name){
   const category = itemCategory(name);
   const item = { id: uid(category), name, category, img: MARKET_IMAGE_MAP[name], createdAt: Date.now() };
@@ -1408,6 +1412,12 @@ function makeInventoryItem(name){
     item.level = 1;
     item.exp = 0;
     item.equipped = { uniform:null, shoes:null, dt:null };
+    if(name === FREE_NFT_NAME){
+      item.freeTrial = true;
+      item.expiresAt = item.createdAt + FREE_NFT_LIFETIME_MS;
+      item.earnedUsd = 0;
+      item.earnedUsdCap = FREE_NFT_USD_CAP;
+    }
   }
   return item;
 }
@@ -1431,6 +1441,33 @@ function saveInventory(){
   syncOwnedFromInventory();
 }
 function saveOwned(){ syncOwnedFromInventory(); }
+
+function setupFreeNft(item){
+  if(!item || item.name !== FREE_NFT_NAME) return;
+  item.freeTrial = true;
+  item.createdAt = Number(item.createdAt || Date.now());
+  item.expiresAt = Number(item.expiresAt || (item.createdAt + FREE_NFT_LIFETIME_MS));
+  item.earnedUsd = Number(item.earnedUsd || 0);
+  item.earnedUsdCap = Number(item.earnedUsdCap || FREE_NFT_USD_CAP);
+}
+function freeNftStatus(player){
+  if(!player || player.name !== FREE_NFT_NAME) return null;
+  setupFreeNft(player);
+  const remainingMs = Math.max(0, player.expiresAt - Date.now());
+  const days = Math.ceil(remainingMs / 86400000);
+  const earned = Number(player.earnedUsd || 0);
+  const cap = Number(player.earnedUsdCap || FREE_NFT_USD_CAP);
+  return { days, earned, cap, expired: remainingMs <= 0, capped: earned >= cap, destroyed: remainingMs <= 0 || earned >= cap };
+}
+function playerStatusText(player){
+  if(player?.name === FREE_NFT_NAME){
+    const st = freeNftStatus(player);
+    const cls = (st.days <= 3 || st.earned >= st.cap) ? 'dur-low' : 'dur-ok';
+    return { cls, text: `Gratis · ${Math.max(0, st.days)} días · $${st.earned.toFixed(2)}/$${st.cap}` };
+  }
+  return { cls: player.durability <= 20 ? 'dur-low' : 'dur-ok', text: `Dur. ${player.durability.toFixed(1)}% · ⚽ ${player.stamina}/${player.maxStamina}` };
+}
+
 function normalizeOwnedInventory(){
   if(!STATE) return;
   ensureInventoryShape();
@@ -1451,6 +1488,10 @@ function normalizeOwnedInventory(){
         item.level = Number(item.level || 1);
         item.exp = Number(item.exp || 0);
         item.equipped = item.equipped || { uniform:null, shoes:null, dt:null };
+        if(item.name === FREE_NFT_NAME){
+          setupFreeNft(item);
+          if(freeNftStatus(item).destroyed) return false;
+        }
       }
       return true;
     });
@@ -1538,11 +1579,11 @@ function getEquippedItems(player){
 }
 function renderPlayerCard(player, opts={}){
   const selected = player.id === STATE.selectedPlayerId;
-  const durClass = player.durability <= 20 ? 'dur-low' : 'dur-ok';
+  const st = playerStatusText(player);
   return `<div class="player-card ${selected?'selected':''}" data-player-id="${player.id}">
     <img src="${player.img}" alt="${escapeHTML(player.name)}" loading="lazy" decoding="async">
     <b>${escapeHTML(player.name)}</b>
-    <small><span class="${durClass}">Dur. ${player.durability.toFixed(1)}%</span> · ⚽ ${player.stamina}/${player.maxStamina}</small>
+    <small><span class="${st.cls}">${escapeHTML(st.text)}</span></small>
     <div class="nft-actions"><button class="mini-cta ${selected?'ghost':''}" type="button" data-select-player="${player.id}">${selected?'Activo':'Seleccionar'}</button></div>
   </div>`;
 }
@@ -1570,7 +1611,7 @@ function renderFutbolistaInventory(){
         <div class="selected-player-box">
           <img src="${selected.img}" alt="${escapeHTML(selected.name)}">
           <b>${escapeHTML(selected.name)}</b>
-          <span>Durabilidad ${selected.durability.toFixed(1)}% · Estamina ${selected.stamina}/${selected.maxStamina}</span>
+          <span>${escapeHTML(playerStatusText(selected).text)}</span>
         </div>
         <div class="m-section">Complementos aplicados</div>
         <div class="equipped-row">
@@ -1601,8 +1642,8 @@ function selectedPlayerSummaryHTML(){
   if(!p) return `<div class="m-warn">Selecciona o reclama un futbolista NFT en <b>Futbolista</b> antes de jugar.</div>`;
   const eq = getEquippedItems(p);
   const comp = [eq.uniform?.name, eq.shoes?.name, eq.dt?.name].filter(Boolean).join(' · ') || 'Sin complementos';
-  const durClass = p.durability <= 20 ? 'dur-low' : 'dur-ok';
-  return `<div class="m-row nft-summary"><img src="${p.img}" alt="${escapeHTML(p.name)}"><div class="meta"><b>${escapeHTML(p.name)}</b><span><span class="${durClass}">Dur. ${p.durability.toFixed(1)}%</span> · Estamina ${p.stamina}/${p.maxStamina}<br>${escapeHTML(comp)}</span></div><div class="right">ACTIVO</div></div>`;
+  const st = playerStatusText(p);
+  return `<div class="m-row nft-summary"><img src="${p.img}" alt="${escapeHTML(p.name)}"><div class="meta"><b>${escapeHTML(p.name)}</b><span><span class="${st.cls}">${escapeHTML(st.text)}</span><br>${escapeHTML(comp)}</span></div><div class="right">ACTIVO</div></div>`;
 }
 function injectSelectedPlayerSummary(){
   const ref = inner.querySelector('.m-broadcast-bar') || inner.querySelector('.m-section') || inner.firstElementChild;
@@ -1613,6 +1654,20 @@ function injectSelectedPlayerSummary(){
 function useSelectedPlayer(mode){
   const p = getSelectedPlayer();
   if(!p){ toast('Primero selecciona un jugador NFT en Futbolista', false); return false; }
+  if(p.name === FREE_NFT_NAME){
+    const st = freeNftStatus(p);
+    if(st.destroyed){
+      STATE.inventory.players = STATE.inventory.players.filter(x => x.id !== p.id);
+      STATE.selectedPlayerId = STATE.inventory.players[0]?.id || '';
+      saveInventory();
+      toast('Neymar Free se destruyó por tiempo/cupo alcanzado', false);
+      return false;
+    }
+    p.exp = (p.exp || 0) + 1;
+    saveInventory();
+    toast(`${p.name} usado en ${mode}. Trial: ${Math.max(0, st.days)} días restantes`, true);
+    return true;
+  }
   if(p.stamina <= 0){ toast(`${p.name} no tiene estamina. Entrénalo para recuperar balones.`, false); return false; }
   if(p.durability <= 0){ toast(`${p.name} tiene durabilidad agotada. Entrénalo.`, false); return false; }
   p.stamina = Math.max(0, p.stamina - 1);
@@ -1622,22 +1677,37 @@ function useSelectedPlayer(mode){
   toast(`${p.name} usado en ${mode}. Durabilidad -0.8%, estamina -1`, true);
   return true;
 }
+function requestDepositPayment(usdt, gems){
+  // Seguridad: USDT en TON es Jetton; no se debe enviar TON nativo por error.
+  // Este botón deja la solicitud lista y copia el contrato hasta conectar el payload Jetton real con backend.
+  const msg = `Depósito seleccionado: ${usdt} USDT → ${Number(gems).toLocaleString()} gemas. Contrato: ${STATE.contract}`;
+  copyText(STATE.contract).then(() => toast('Contrato copiado. Pago USDT TON pendiente de conexión Jetton.', false));
+  console.info(msg);
+  if(window.tonConnectUI && !window.tonConnectUI.connected){
+    try { window.tonConnectUI.openModal(); } catch(e) {}
+  }
+  return false;
+}
+
 function renderTrainingModal(){
   ensureInventoryShape();
   const list = inner.querySelector('#tr-list');
   if(!list) return;
-  if(!STATE.inventory.players.length){
-    list.innerHTML = `<div class="empty-inventory">No tienes jugadores NFT para entrenar.</div>`;
+  const trainable = STATE.inventory.players.filter(p => p.name !== FREE_NFT_NAME && !p.freeTrial);
+  if(!trainable.length){
+    list.innerHTML = `<div class="empty-inventory">No tienes jugadores NFT entrenables. Neymar Free no entra al área de entrenamiento porque es gratis y tiene durabilidad de 15 días / máximo $5.</div>`;
     return;
   }
-  list.innerHTML = STATE.inventory.players.map(p => `<div class="m-row tr-nft" data-player-id="${p.id}" data-value="${ITEM_PRICES[p.name] || 500}" style="cursor:pointer"><div class="icn" style="background:transparent;border:0"><img src="${p.img}" alt="${escapeHTML(p.name)}" style="width:44px;height:44px;object-fit:contain"></div><div class="meta"><b>${escapeHTML(p.name)}</b><span>Dur. ${p.durability.toFixed(1)}% · Estamina ${p.stamina}/${p.maxStamina}</span></div><div class="right">Entrenar</div></div>`).join('');
+  list.innerHTML = trainable.map(p => {
+    const st = playerStatusText(p);
+    return `<div class="m-row tr-nft" data-player-id="${p.id}" data-cost="${trainingCostUSDT(p.name)}" style="cursor:pointer"><div class="icn" style="background:transparent;border:0"><img src="${p.img}" alt="${escapeHTML(p.name)}" style="width:44px;height:44px;object-fit:contain"></div><div class="meta"><b>${escapeHTML(p.name)}</b><span><span class="${st.cls}">${escapeHTML(st.text)}</span></span></div><div class="right">Entrenar</div></div>`;
+  }).join('');
   const pay = inner.querySelector('#tr-pay');
   list.querySelectorAll('.tr-nft').forEach(r => r.addEventListener('click', () => {
     const p = getItemById(r.dataset.playerId); if(!p) return;
-    const val = parseFloat(r.dataset.value || 500);
-    const usdt = (val * STATE.trainingPctOfNFT).toFixed(2);
-    inner.querySelector('#tr-usdt').textContent = usdt + ' USDT';
-    inner.querySelector('#tr-nft-name').textContent = `${p.name} · Dur. ${p.durability.toFixed(1)}% · ⚽ ${p.stamina}/${p.maxStamina}`;
+    const usdt = Number(r.dataset.cost || trainingCostUSDT(p.name)).toFixed(2);
+    inner.querySelector('#tr-usdt').textContent = 'PAGO TON';
+    inner.querySelector('#tr-nft-name').textContent = `${p.name} · ${playerStatusText(p).text}`;
     list.style.display = 'none'; pay.style.display = 'block';
     if(!inner.querySelector('#tr-pay-action')){
       const pending = document.createElement('div');
@@ -1656,13 +1726,14 @@ function renderTrainingModal(){
       const pending = inner.querySelector('#tr-pending-msg');
       if(pending){
         pending.style.display = 'block';
-        pending.innerHTML = `Pago requerido: <b>${usdt} USDT</b> por red TON. El NFT se recuperará solo cuando el backend confirme el pago.`;
+        pending.innerHTML = `Pago requerido por red TON al contrato <b>${STATE.contract.slice(0,8)}…</b>. Al confirmarse, se activa un entrenamiento de 24h: genera 50% de gemas de juego, recupera 100% de durabilidad y suma +5% de nivel.`;
       }
       toast('Entrenamiento requiere pago confirmado', false);
     };
   }));
   inner.querySelector('#tr-back')?.addEventListener('click', () => { pay.style.display='none'; list.style.display='flex'; });
 }
+
 
 const backdrop = document.getElementById('fm-modal');
 const inner = document.getElementById('fm-modal-inner');
@@ -1756,7 +1827,7 @@ const STATE = {
   inventory: safeJSON('fm_inventory', {players:[], uniforms:[], shoes:[], dt:[]}),
   selectedPlayerId: localStorage.getItem('fm_selected_player_id') || '',
   tournamentUsers: 42, // <100 → disabled
-  trainingPctOfNFT: 0.30, // INTERNAL — not shown to public
+  trainingPctOfNFT: 0.30, // cálculo usado para entrenamiento
   gemsPerUSDT: 32, // 320 gems = 10 USDT
 };
 window.STATE = STATE;
@@ -1928,6 +1999,17 @@ function wireModal(name){
       inner.querySelector('#dep-usdt').textContent = u + ' USDT';
       inner.querySelector('#dep-gems').textContent = parseInt(g).toLocaleString() + ' 💎';
       packs.style.display='none'; detail.style.display='block';
+      let payBtn = inner.querySelector('#dep-pay');
+      if(!payBtn){
+        payBtn = document.createElement('button');
+        payBtn.className = 'm-cta';
+        payBtn.id = 'dep-pay';
+        payBtn.type = 'button';
+        payBtn.style.marginTop = '10px';
+        payBtn.textContent = 'Pagar con wallet';
+        detail.appendChild(payBtn);
+      }
+      payBtn.onclick = () => requestDepositPayment(u, g);
     }));
     inner.querySelector('#dep-back').addEventListener('click', ()=>{ detail.style.display='none'; packs.style.display='block'; });
     inner.querySelector('#dep-copy').addEventListener('click', ()=>{
@@ -1939,7 +2021,6 @@ function wireModal(name){
     const net = inner.querySelector('#r-net');
     const msg = inner.querySelector('#r-msg');
     const walletInput = inner.querySelector('#r-wallet');
-    if(STATE.tonWallet && walletInput && !walletInput.value) walletInput.value = STATE.tonWallet;
     const a = Math.floor(Math.random()*9)+1, b = Math.floor(Math.random()*9)+1;
     inner.querySelector('#r-captcha-q').textContent = `${a} + ${b}`;
     inner.querySelector('#r-balance').innerHTML = STATE.balanceGems + '<small>💎</small>';
@@ -2147,7 +2228,6 @@ if(heroImg){
         var addr = wallet.account.address;
         if(chip){ chip.style.display='none'; chip.textContent = '🪙 ' + toUserFriendly(addr); }
         window.STATE && (window.STATE.tonWallet = addr);
-        if(winp && !winp.value) winp.value = addr;
         if(typeof verifyTonProof === 'function') verifyTonProof(wallet);
       } else {
         if(chip){ chip.style.display='none'; chip.textContent=''; }

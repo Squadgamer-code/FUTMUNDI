@@ -732,8 +732,9 @@ button:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.25)}
 <body>
 <header class="header">
   <div class="statusbar">
-    <span>PTS: <b>104</b></span>
-    <span class="lvl">Nivel: <b>1</b></span>
+    <span>PTS: <b id="fm-header-points">0</b></span>
+    <span>💎 <b id="fm-header-gems">0</b></span>
+    <span class="lvl">Nivel: <b id="fm-header-level">1</b></span>
     <span>🏆 4.0</span>
     <span>OVR: 0</span>
   </div>
@@ -1756,6 +1757,8 @@ async function syncUserState(address = STATE.tonWallet){
     STATE.serverNfts = data.nfts || [];
     STATE.balanceGems = Number(data.balance?.gems || 0);
     STATE.lockedGems = Number(data.balance?.locked_gems || 0);
+    STATE.points = Number(data.ranking?.points || STATE.points || 0);
+    updateHeaderStats({ points: STATE.points });
     return data;
   }catch(e){
     console.warn('No se pudo sincronizar usuario:', e.message);
@@ -1766,6 +1769,69 @@ async function syncUserState(address = STATE.tonWallet){
 function updateWithdrawalBalanceUI(){
   const bal = inner.querySelector('#r-balance');
   if(bal) bal.innerHTML = `${STATE.balanceGems}<small>💎</small>`;
+}
+
+function updateHeaderStats(extra={}){
+  const gems = document.getElementById('fm-header-gems');
+  const points = document.getElementById('fm-header-points');
+  const lvl = document.getElementById('fm-header-level');
+  if(gems) gems.textContent = Number(STATE.balanceGems || 0).toLocaleString();
+  if(points && extra.points != null) points.textContent = Number(extra.points || 0).toLocaleString();
+  if(lvl && extra.level != null) lvl.textContent = extra.level;
+}
+
+async function claimDailyReward(btn){
+  if(!STATE.tonWallet){ toast('Conecta wallet para reclamar', false); return; }
+  try{
+    if(btn) btn.disabled = true;
+    const data = await backendJSON('/api/rewards/daily-claim', { address: STATE.tonWallet });
+    STATE.balanceGems = Number(data.balance?.gems || STATE.balanceGems || 0);
+    updateHeaderStats();
+    toast(data.reward.type === 'gems' ? `Reclamo diario: +${data.reward.amount} 💎` : `Reclamo diario: +${data.reward.amount} PTS`, true);
+  }catch(e){ toast(e.message, false); }
+  finally{ if(btn) btn.disabled = false; }
+}
+async function claimAchievements(btn){
+  if(!STATE.tonWallet){ toast('Conecta wallet para reclamar logros', false); return; }
+  try{
+    if(btn) btn.disabled = true;
+    const data = await backendJSON('/api/rewards/achievements/claim', { address: STATE.tonWallet });
+    STATE.balanceGems = Number(data.balance?.gems || STATE.balanceGems || 0);
+    updateHeaderStats();
+    toast(data.claimedGems > 0 ? `Logros reclamados: +${data.claimedGems} 💎` : 'No hay logros listos para reclamar', data.claimedGems > 0);
+  }catch(e){ toast(e.message, false); }
+  finally{ if(btn) btn.disabled = false; }
+}
+async function claimGoals(btn){
+  if(!STATE.tonWallet){ toast('Conecta wallet para reclamar goles', false); return; }
+  try{
+    if(btn) btn.disabled = true;
+    const data = await backendJSON('/api/rewards/goals/claim', { address: STATE.tonWallet });
+    STATE.balanceGems = Number(data.balance?.gems || STATE.balanceGems || 0);
+    updateHeaderStats();
+    toast(data.claimedGems > 0 ? `Goles reclamados: +${data.claimedGems} 💎` : 'No hay recompensas de goles listas', data.claimedGems > 0);
+  }catch(e){ toast(e.message, false); }
+  finally{ if(btn) btn.disabled = false; }
+}
+async function loadRankingPanel(){
+  try{
+    const data = await backendJSON('/api/ranking/global', {});
+    const list = inner.querySelector('.m-list');
+    if(list){
+      list.innerHTML = (data.ranking || []).map((r, idx) => `<div class="m-row"><div class="icn">${idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'⚽'}</div><div class="meta"><b>${escapeHTML(r.app_users?.ref_code || adminShort(r.app_users?.wallet_address || 'Wallet'))}</b><span>${adminShort(r.app_users?.wallet_address || '')}</span></div><div class="right">${r.points} PTS</div></div>`).join('') || '<div class="empty-inventory">Aún no hay ranking.</div>';
+    }
+  }catch(e){ toast(e.message, false); }
+}
+async function playMatchBackend(mode){
+  if(!STATE.tonWallet){ toast('Conecta wallet para generar gemas', false); return null; }
+  try{
+    const data = await backendJSON('/api/matches/play', { address: STATE.tonWallet, mode });
+    STATE.balanceGems = Number(data.balance?.gems || STATE.balanceGems || 0);
+    STATE.points = Math.max(0, Number(STATE.points || 0) + Number(data.pointsDelta || 0));
+    updateHeaderStats({ points: STATE.points });
+    toast(`Partido ${data.result}: +${data.gemsDelta} 💎 · ${data.pointsDelta} PTS`, true);
+    return data;
+  }catch(e){ toast(e.message, false); return null; }
 }
 
 function requestDepositPayment(usdt, gems){
@@ -1918,6 +1984,7 @@ const STATE = {
   adminToken: localStorage.getItem('fm_admin_token') || '',
   isAdminVerified: false,
   balanceGems: 0,
+  points: 0,
   maxPerNFT: 20,
   owned: safeJSON('fm_owned', {}),
   inventory: safeJSON('fm_inventory', {players:[], uniforms:[], shoes:[], dt:[]}),
@@ -1928,6 +1995,7 @@ const STATE = {
 };
 window.STATE = STATE;
 initInventory();
+updateHeaderStats();
 
 // --- TON / Admin helpers ---
 function isAdminWallet(addr){
@@ -2212,8 +2280,10 @@ function wireModal(name){
       if(!getSelectedPlayer()) btn.disabled = true;
       btn.addEventListener('click', () => {
         if(useSelectedPlayer(name)){
-          const summary = inner.querySelector('.nft-summary')?.parentElement;
-          if(summary){ summary.innerHTML = `<div class="m-section">NFT que usarás</div>${selectedPlayerSummaryHTML()}`; }
+          playMatchBackend(name).then(() => {
+            const summary = inner.querySelector('.nft-summary')?.parentElement;
+            if(summary){ summary.innerHTML = `<div class="m-section">NFT que usarás</div>${selectedPlayerSummaryHTML()}`; }
+          });
         }
       });
     }
@@ -2257,6 +2327,24 @@ function wireModal(name){
       });
       card.appendChild(btn);
     });
+  }
+  if(name === 'reclamos'){
+    const btn = inner.querySelector('.m-cta');
+    if(btn){ btn.dataset.action = 'daily-claim'; btn.addEventListener('click', () => claimDailyReward(btn)); }
+  }
+  if(name === 'logros'){
+    const btn = inner.querySelector('.m-cta');
+    if(btn){ btn.dataset.action = 'claim-achievements'; btn.addEventListener('click', () => claimAchievements(btn)); }
+  }
+  if(name === 'goles'){
+    const btn = inner.querySelector('.m-cta');
+    if(btn){ btn.dataset.action = 'claim-goals'; btn.addEventListener('click', () => claimGoals(btn)); }
+  }
+  if(name === 'ranking-tab'){
+    loadRankingPanel();
+  }
+  if(name === 'nivel'){
+    updateHeaderStats({ level: getSelectedPlayer()?.level || 1 });
   }
   // Evita botones sin respuesta: toda CTA sin lógica propia informa estado backend.
   inner.querySelectorAll('.m-cta:not([id]):not([data-action])').forEach(btn => {

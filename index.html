@@ -833,6 +833,26 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 .stage .rail .icon-btn[data-modal="referido"] .real-ico{filter:drop-shadow(0 0 10px rgba(57,255,136,.48)) drop-shadow(0 0 16px rgba(63,191,255,.25))}
 .stage .rail .icon-btn:hover .real-ico{transform:scale(1.13) translateY(-1px)!important}
 
+
+/* ===== FIX duplicate side icons: disable old pseudo emoji layer ===== */
+.stage .rail .icon-btn .glyph::before,
+.stage .rail .icon-btn[data-modal="logros"] .glyph::before,
+.stage .rail .icon-btn[data-modal="goles"] .glyph::before,
+.stage .rail .icon-btn[data-modal="reclamos"] .glyph::before,
+.stage .rail .icon-btn[data-modal="nivel"] .glyph::before,
+.stage .rail .icon-btn[data-modal="deposito"] .glyph::before,
+.stage .rail .icon-btn[data-modal="torneo"] .glyph::before,
+.stage .rail .icon-btn[data-modal="retiro"] .glyph::before,
+.stage .rail .icon-btn[data-modal="referido"] .glyph::before{
+  content:""!important;
+  display:none!important;
+  visibility:hidden!important;
+  width:0!important;
+  height:0!important;
+  opacity:0!important;
+}
+.stage .rail .icon-btn .glyph .real-ico{display:block!important}
+
 </style>
 
 </head>

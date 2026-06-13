@@ -664,9 +664,25 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 /* Oculta el chip duplicado de wallet: TonConnect ya muestra la wallet. */
 #ton-chip{display:none!important}
 
-/* Imágenes reales de NFT/Product cards en Market */
-.shop-card .av{width:72px;height:72px;overflow:hidden;padding:0;background:linear-gradient(135deg,rgba(57,255,136,.20),rgba(244,197,66,.18));}
-.shop-card .av img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;}
+/* Imágenes reales de NFT/Product cards en Market: completas, sin círculo ni marco interno */
+.shop-card .av{
+  width:100%;height:138px;margin:0 auto 8px;padding:0;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;overflow:visible;display:flex;align-items:center;justify-content:center;
+}
+.shop-card .av img{width:100%;height:100%;object-fit:contain;display:block;border-radius:0!important;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55));}
+.shop-card.free .av,.shop-card.elite .av{box-shadow:none!important;border:0!important}
+.shop-card .free-tag.claimed{color:var(--fm-gold)}
+.inventory-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-height:390px;overflow:auto;padding-right:4px;margin-bottom:12px}
+.inventory-grid::-webkit-scrollbar{width:6px}.inventory-grid::-webkit-scrollbar-thumb{background:rgba(57,255,136,.25);border-radius:4px}
+.inventory-card{position:relative;text-align:center;background:transparent!important;border:0!important;box-shadow:none!important;padding:0 2px 8px;min-height:180px}
+.inventory-card img{width:100%;height:142px;object-fit:contain;display:block;border-radius:0!important;filter:drop-shadow(0 8px 14px rgba(0,0,0,.58));}
+.inventory-card b{display:block;font-family:"Oswald";font-size:12px;color:var(--fm-text);letter-spacing:.05em;line-height:1.1;margin-top:4px}
+.inventory-card span{display:inline-flex;margin-top:4px;font-family:"Oswald";font-size:11px;color:#1a1003;background:linear-gradient(180deg,var(--fm-gold-soft),var(--fm-gold));border-radius:999px;padding:2px 8px}
+.empty-inventory{padding:18px 10px;text-align:center;color:var(--fm-text-dim);font-size:12px;letter-spacing:.08em;border:1px dashed rgba(57,255,136,.22);border-radius:18px;margin-bottom:12px}
+.main-slot.filled{border:0!important;background:transparent!important;max-width:190px;height:auto;aspect-ratio:auto;color:var(--fm-text);padding:0;gap:0}
+.main-slot.filled img{width:100%;height:170px;object-fit:contain;display:block;filter:drop-shadow(0 10px 16px rgba(0,0,0,.65));}
+.main-slot.filled b{font-family:"Oswald";font-size:13px;color:var(--fm-gold);margin-top:4px}.main-slot.filled small{font-size:10px;color:var(--fm-cyan);letter-spacing:.12em}
 
 /* ===== Fixes producción / accesibilidad ===== */
 .hidden{display:none!important}
@@ -1344,6 +1360,74 @@ function applyMarketImages(scope){
   });
 }
 
+
+const ITEM_CATEGORIES = {
+  players: ['Neymar','James Rodríguez','Alexis Sánchez','Harry Kane','Pedri','Vinicius Jr','Rodri','Mbappé','Haaland','Lamine Yamal','Bellingham','Lionel Messi','Cristiano R.'],
+  uniforms: ['Uniforme Bronce','Uniforme Oro','Uniforme Platinium','Uniforme Diamante'],
+  shoes: ['Modelo 1980','Modelo 2000','Modelo 2010','Modelo 2020'],
+  dt: ['DT Portugal','DT Brasil','DT Alemania','DT España','DT Argentina']
+};
+const FREE_NFT_NAME = 'Neymar';
+
+function normalizeOwnedInventory(){
+  if(!STATE || !STATE.owned) return;
+  // El NFT gratis se puede reclamar una sola vez.
+  if((STATE.owned[FREE_NFT_NAME] || 0) > 1) STATE.owned[FREE_NFT_NAME] = 1;
+  Object.keys(STATE.owned).forEach(k => {
+    const n = Math.max(0, Math.floor(Number(STATE.owned[k]) || 0));
+    STATE.owned[k] = k === FREE_NFT_NAME ? Math.min(1, n) : Math.min(STATE.maxPerNFT || 20, n);
+    if(STATE.owned[k] <= 0) delete STATE.owned[k];
+  });
+}
+
+function getOwnedItems(category){
+  normalizeOwnedInventory();
+  return (ITEM_CATEGORIES[category] || [])
+    .map(name => ({ name, qty: STATE.owned[name] || 0, img: MARKET_IMAGE_MAP[name] }))
+    .filter(item => item.qty > 0);
+}
+
+function renderInventoryGrid(category){
+  const items = getOwnedItems(category);
+  if(!items.length){
+    return `<div class="empty-inventory">Aún no tienes ítems en esta sección. Compra o reclama en Market.</div>`;
+  }
+  return `<div class="inventory-grid">${items.map(item => `
+    <div class="inventory-card" title="${escapeHTML(item.name)} x${item.qty}">
+      <img src="${item.img}" alt="${escapeHTML(item.name)}" loading="lazy" decoding="async" onerror="this.style.display='none'">
+      <b>${escapeHTML(item.name)}</b>
+      <span>x${item.qty}</span>
+    </div>`).join('')}</div>`;
+}
+
+function renderFutbolistaInventory(){
+  const playerItems = getOwnedItems('players');
+  const selected = playerItems[0];
+  const main = inner.querySelector('.main-slot');
+  if(main && selected){
+    main.classList.add('filled');
+    main.innerHTML = `<img src="${selected.img}" alt="${escapeHTML(selected.name)}" loading="lazy" decoding="async"><b>${escapeHTML(selected.name)}</b><small>x${selected.qty} en inventario</small>`;
+  }
+  const statOvr = inner.querySelector('.nft-info div:nth-child(1) b');
+  if(statOvr) statOvr.textContent = selected ? 'NFT' : '0';
+
+  const panels = [
+    ['#f-pl','players','Jugadores adquiridos'],
+    ['#f-un','uniforms','Uniformes adquiridos'],
+    ['#f-za','shoes','Zapatillas adquiridas'],
+    ['#f-dt','dt','Entrenadores adquiridos']
+  ];
+  panels.forEach(([selector, category, title]) => {
+    const panel = inner.querySelector(selector);
+    if(!panel) return;
+    const total = getOwnedItems(category).reduce((sum, item) => sum + item.qty, 0);
+    panel.innerHTML = `
+      <div class="lbl" style="font-family:'Oswald';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-cyan);margin-bottom:8px;text-align:center">${title} · ${total}</div>
+      ${renderInventoryGrid(category)}
+    `;
+  });
+}
+
 const backdrop = document.getElementById('fm-modal');
 const inner = document.getElementById('fm-modal-inner');
 let activeTournamentTimer = null;
@@ -1438,6 +1522,8 @@ const STATE = {
   gemsPerUSDT: 32, // 320 gems = 10 USDT
 };
 window.STATE = STATE;
+normalizeOwnedInventory();
+saveOwned();
 
 // --- TON / Admin helpers ---
 function isAdminWallet(addr){
@@ -1678,6 +1764,9 @@ function wireModal(name){
       msg.textContent='Envía 10 USDT (TON) al contrato indicado para confirmar tu registro.';
     });
   }
+  if(name === 'futbolista'){
+    renderFutbolistaInventory();
+  }
   if(name === 'entrena'){
     const pay = inner.querySelector('#tr-pay');
     inner.querySelectorAll('.tr-nft').forEach(r => r.addEventListener('click', ()=>{
@@ -1694,25 +1783,43 @@ function wireModal(name){
   }
   if(name === 'market'){
     applyMarketImages(inner);
-    // Add Buy buttons + max 20 per NFT validation
+    // Market: Neymar FREE se reclama 1 sola vez. Los demás ítems hasta 20 unidades por cada uno.
     inner.querySelectorAll('.shop-card').forEach(card => {
       const nm = card.querySelector('.nm')?.textContent?.trim() || 'item';
-      const owned = STATE.owned[nm] || 0;
+      const isFree = nm === FREE_NFT_NAME || card.classList.contains('free');
+      const max = isFree ? 1 : STATE.maxPerNFT;
       const btn = document.createElement('button');
       btn.className = 'm-cta';
-      btn.dataset.action = 'buy';
-      btn.style.cssText = 'margin-top:6px;padding:6px 8px;font-size:10px;letter-spacing:.1em;border-radius:10px';
-      btn.textContent = `Comprar (${owned}/${STATE.maxPerNFT})`;
+      btn.dataset.action = isFree ? 'claim-free' : 'buy';
+      btn.style.cssText = 'margin-top:6px;padding:7px 8px;font-size:10px;letter-spacing:.1em;border-radius:10px';
+
+      function syncButton(){
+        const have = STATE.owned[nm] || 0;
+        if(isFree){
+          btn.textContent = have >= 1 ? 'Reclamado (1/1)' : 'Reclamar GRATIS';
+          btn.disabled = have >= 1;
+          const tag = card.querySelector('.free-tag');
+          if(tag){ tag.textContent = have >= 1 ? 'RECLAMADO' : 'GRATIS'; tag.classList.toggle('claimed', have >= 1); }
+        } else {
+          btn.textContent = `Comprar (${have}/${max})`;
+          btn.disabled = have >= max;
+        }
+      }
+
+      syncButton();
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const have = STATE.owned[nm] || 0;
-        if(have >= STATE.maxPerNFT){
-          toast(`Límite alcanzado: máx ${STATE.maxPerNFT} de "${nm}" por usuario`, false);
+        if(have >= max){
+          toast(isFree ? 'Este NFT gratis ya fue reclamado' : `Límite alcanzado: máx ${max} de "${nm}" por usuario`, false);
+          syncButton();
           return;
         }
-        STATE.owned[nm] = have + 1; saveOwned();
-        btn.textContent = `Comprar (${STATE.owned[nm]}/${STATE.maxPerNFT})`;
-        toast(`Compra realizada: ${nm}`, true);
+        STATE.owned[nm] = isFree ? 1 : have + 1;
+        normalizeOwnedInventory();
+        saveOwned();
+        syncButton();
+        toast(isFree ? `${nm} reclamado y enviado a Futbolista` : `Compra realizada: ${nm} · aparece en Futbolista`, true);
       });
       card.appendChild(btn);
     });

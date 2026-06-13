@@ -354,6 +354,100 @@ function calcWithdrawal(gemsRequested){
   return { gemsRequested:gems, feePercentGems, feeFixedGems, gemsNet, amountUsdtNet };
 }
 
+function requireAdmin(req){
+  const token = getBearer(req);
+  const body = verifyToken(token);
+  if(!body || body.role !== 'admin' || !adminWallets.has(body.address)){
+    const err = new Error('Admin no autorizado');
+    err.status = 401;
+    throw err;
+  }
+  return body;
+}
+
+async function resolveUserTarget({ userId, wallet }){
+  requireSupabase();
+  if(userId){
+    const { data, error } = await supabase.from('app_users').select('*').eq('id', userId).single();
+    if(error) throw new Error(error.message);
+    return data;
+  }
+  if(wallet){
+    const { user } = await getOrCreateUser(wallet);
+    return user;
+  }
+  throw new Error('Debes enviar wallet o userId');
+}
+
+async function addGemsToUser(userId, gems, field='gems'){
+  const amount = Number(gems || 0);
+  if(!Number.isInteger(amount) || amount <= 0) throw new Error('Cantidad de gemas inválida');
+  const { data:balance, error } = await supabase.from('balances').select('*').eq('user_id', userId).single();
+  if(error) throw new Error(error.message);
+  const patch = {};
+  patch[field] = Number(balance[field] || 0) + amount;
+  const upd = await supabase.from('balances').update(patch).eq('user_id', userId).select('*').single();
+  if(upd.error) throw new Error(upd.error.message);
+  return upd.data;
+}
+
+async function creditDeposit(depositId, txHash=null){
+  requireSupabase();
+  const { data:deposit, error } = await supabase.from('deposits').select('*').eq('id', depositId).single();
+  if(error) throw new Error(error.message);
+  if(deposit.status === 'confirmed') return { deposit, alreadyConfirmed:true };
+  if(deposit.status !== 'pending') throw new Error('Depósito no está pendiente');
+
+  const { data:balance, error:balErr } = await supabase.from('balances').select('*').eq('user_id', deposit.user_id).single();
+  if(balErr) throw new Error(balErr.message);
+  const updBal = await supabase.from('balances').update({
+    gems: Number(balance.gems || 0) + Number(deposit.gems || 0),
+    total_deposited_usdt: Number(balance.total_deposited_usdt || 0) + Number(deposit.amount_usdt || 0)
+  }).eq('user_id', deposit.user_id).select('*').single();
+  if(updBal.error) throw new Error(updBal.error.message);
+
+  const depUpd = await supabase.from('deposits').update({
+    status:'confirmed',
+    tx_hash: txHash || deposit.tx_hash,
+    confirmed_at: new Date().toISOString()
+  }).eq('id', deposit.id).select('*').single();
+  if(depUpd.error) throw new Error(depUpd.error.message);
+
+  if(deposit.payment_order_id){
+    await supabase.from('payment_orders').update({
+      status:'confirmed',
+      tx_hash: txHash || deposit.tx_hash,
+      paid_at: new Date().toISOString()
+    }).eq('id', deposit.payment_order_id);
+  }
+  return { deposit: depUpd.data, balance: updBal.data, alreadyConfirmed:false };
+}
+
+async function createNftForUser(userId, catalogCode, source='admin_gift'){
+  const { data:cat, error:catErr } = await supabase.from('nft_catalog').select('*').eq('code', catalogCode).single();
+  if(catErr) throw new Error(catErr.message);
+  const row = {
+    user_id: userId,
+    catalog_code: cat.code,
+    item_type: cat.item_type,
+    name: cat.display_name,
+    source,
+    durability: 100,
+    stamina: cat.item_type === 'player' ? 4 : 0,
+    max_stamina: cat.item_type === 'player' ? 4 : 0,
+    level: 1,
+    exp: 0,
+    metadata: { image_path: cat.image_path, gifted: source === 'admin_gift' }
+  };
+  if(cat.is_free && cat.display_name === 'Neymar' && source === 'free'){
+    row.earned_usd_cap = 5;
+    row.expires_at = new Date(Date.now() + 15*24*60*60*1000).toISOString();
+  }
+  const ins = await supabase.from('nfts').insert(row).select('*').single();
+  if(ins.error) throw new Error(ins.error.message);
+  return ins.data;
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'futmundi-admin-backend', supabase: !!supabase });
 });
@@ -439,6 +533,23 @@ app.post('/api/payments/usdt-order', async (req, res) => {
 });
 
 
+app.post('/api/payments/mark-sent', async (req, res) => {
+  try{
+    const { orderId, boc, txHash } = req.body || {};
+    if(!orderId) return res.status(400).json({ ok:false, error:'orderId requerido' });
+    requireSupabase();
+    const upd = await supabase.from('payment_orders').update({
+      status:'sent',
+      tx_hash: txHash || null,
+      metadata: { sent_boc: boc || null, sent_at: new Date().toISOString() }
+    }).eq('id', orderId).select('*').single();
+    if(upd.error) throw new Error(upd.error.message);
+    return res.json({ ok:true, order: upd.data });
+  }catch(e){
+    return res.status(400).json({ ok:false, error:e.message });
+  }
+});
+
 app.post('/api/user/sync', async (req, res) => {
   try{
     const { address } = req.body || {};
@@ -484,6 +595,138 @@ app.post('/api/withdrawals/request', async (req, res) => {
   }catch(e){
     return res.status(400).json({ ok:false, error:e.message });
   }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const q = String(req.query.q || '').trim();
+    let query = supabase.from('v_user_summary').select('*').order('created_at', { ascending:false }).limit(100);
+    if(q){ query = query.or(`wallet_address.ilike.%${q}%,ref_code.ilike.%${q}%`); }
+    const { data, error } = await query;
+    if(error) throw new Error(error.message);
+    return res.json({ ok:true, users:data || [] });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.get('/api/admin/catalog', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const { data, error } = await supabase.from('nft_catalog').select('*').eq('active', true).order('item_type').order('price_gems');
+    if(error) throw new Error(error.message);
+    return res.json({ ok:true, catalog:data || [] });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.get('/api/admin/deposits', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const status = req.query.status || 'pending';
+    const { data, error } = await supabase.from('deposits').select('*, app_users(wallet_address, ref_code)').eq('status', status).order('created_at', { ascending:false }).limit(100);
+    if(error) throw new Error(error.message);
+    return res.json({ ok:true, deposits:data || [] });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/admin/deposits/confirm', async (req, res) => {
+  try{
+    requireAdmin(req);
+    const { depositId, orderId, txHash } = req.body || {};
+    let id = depositId;
+    if(!id && orderId){
+      const { data, error } = await supabase.from('deposits').select('id').eq('payment_order_id', orderId).single();
+      if(error) throw new Error(error.message);
+      id = data.id;
+    }
+    if(!id) throw new Error('depositId u orderId requerido');
+    const result = await creditDeposit(id, txHash || null);
+    return res.json({ ok:true, ...result });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.get('/api/admin/withdrawals', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const status = req.query.status || 'pending';
+    const { data, error } = await supabase.from('withdrawals').select('*, app_users(wallet_address, ref_code)').eq('status', status).order('created_at', { ascending:false }).limit(100);
+    if(error) throw new Error(error.message);
+    return res.json({ ok:true, withdrawals:data || [] });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/admin/withdrawals/action', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const { withdrawalId, action, txHash, note } = req.body || {};
+    if(!withdrawalId || !action) throw new Error('withdrawalId y action requeridos');
+    const { data:w, error } = await supabase.from('withdrawals').select('*').eq('id', withdrawalId).single();
+    if(error) throw new Error(error.message);
+    if(action === 'approve'){
+      if(w.status !== 'pending') throw new Error('Retiro no está pendiente');
+      const upd = await supabase.from('withdrawals').update({ status:'approved', approved_at:new Date().toISOString(), admin_note:note || null }).eq('id', w.id).select('*').single();
+      if(upd.error) throw new Error(upd.error.message);
+      return res.json({ ok:true, withdrawal:upd.data });
+    }
+    if(action === 'paid'){
+      if(!['pending','approved'].includes(w.status)) throw new Error('Retiro no se puede marcar pagado');
+      const { data:bal, error:balErr } = await supabase.from('balances').select('*').eq('user_id', w.user_id).single();
+      if(balErr) throw new Error(balErr.message);
+      const updBal = await supabase.from('balances').update({
+        locked_gems: Math.max(0, Number(bal.locked_gems || 0) - Number(w.gems_requested || 0)),
+        total_withdrawn_usdt: Number(bal.total_withdrawn_usdt || 0) + Number(w.amount_usdt_net || 0)
+      }).eq('user_id', w.user_id).select('*').single();
+      if(updBal.error) throw new Error(updBal.error.message);
+      const upd = await supabase.from('withdrawals').update({ status:'paid', tx_hash:txHash || w.tx_hash, paid_at:new Date().toISOString(), admin_note:note || w.admin_note }).eq('id', w.id).select('*').single();
+      if(upd.error) throw new Error(upd.error.message);
+      return res.json({ ok:true, withdrawal:upd.data, balance:updBal.data });
+    }
+    if(action === 'reject'){
+      if(!['pending','approved'].includes(w.status)) throw new Error('Retiro no se puede rechazar');
+      const { data:bal, error:balErr } = await supabase.from('balances').select('*').eq('user_id', w.user_id).single();
+      if(balErr) throw new Error(balErr.message);
+      const updBal = await supabase.from('balances').update({
+        gems: Number(bal.gems || 0) + Number(w.gems_requested || 0),
+        locked_gems: Math.max(0, Number(bal.locked_gems || 0) - Number(w.gems_requested || 0))
+      }).eq('user_id', w.user_id).select('*').single();
+      if(updBal.error) throw new Error(updBal.error.message);
+      const upd = await supabase.from('withdrawals').update({ status:'rejected', admin_note:note || null }).eq('id', w.id).select('*').single();
+      if(upd.error) throw new Error(upd.error.message);
+      return res.json({ ok:true, withdrawal:upd.data, balance:updBal.data });
+    }
+    throw new Error('Acción inválida');
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/admin/gifts/gems', async (req, res) => {
+  try{
+    const admin = requireAdmin(req);
+    requireSupabase();
+    const { wallet, userId, gems, note } = req.body || {};
+    const user = await resolveUserTarget({ userId, wallet });
+    const balance = await addGemsToUser(user.id, Number(gems || 0), 'gems');
+    const gift = await supabase.from('admin_gifts').insert({ admin_user_id:null, to_user_id:user.id, to_wallet:user.wallet_address, gift_type:'gems', gems:Number(gems), status:'delivered', note:note || null, delivered_at:new Date().toISOString() }).select('*').single();
+    if(gift.error) throw new Error(gift.error.message);
+    return res.json({ ok:true, user, balance, gift:gift.data });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/admin/gifts/nft', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const { wallet, userId, catalogCode, note } = req.body || {};
+    if(!catalogCode) throw new Error('catalogCode requerido');
+    const user = await resolveUserTarget({ userId, wallet });
+    const nft = await createNftForUser(user.id, catalogCode, 'admin_gift');
+    const gift = await supabase.from('admin_gifts').insert({ admin_user_id:null, to_user_id:user.id, to_wallet:user.wallet_address, gift_type:'nft', catalog_code:catalogCode, status:'delivered', note:note || null, delivered_at:new Date().toISOString() }).select('*').single();
+    if(gift.error) throw new Error(gift.error.message);
+    return res.json({ ok:true, user, nft, gift:gift.data });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
 });
 
 app.listen(PORT, () => {

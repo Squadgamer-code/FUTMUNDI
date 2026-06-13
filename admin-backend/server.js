@@ -3,13 +3,19 @@ import express from 'express';
 import cors from 'cors';
 import crypto from 'node:crypto';
 import nacl from 'tweetnacl';
-import { Address } from '@ton/core';
+import { Address, beginCell, toNano } from '@ton/core';
+import { TonClient } from '@ton/ton';
 import { sha256 } from '@ton/crypto';
 
 const PORT = Number(process.env.PORT || 8787);
 const PROOF_TTL_SECONDS = Number(process.env.TON_PROOF_TTL_SECONDS || 300);
 const SESSION_TTL_SECONDS = Number(process.env.ADMIN_SESSION_TTL_SECONDS || 86400);
 const TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
+const USDT_MASTER_ADDRESS = process.env.USDT_MASTER_ADDRESS || 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs';
+const INVOICE_WALLET_ADDRESS = process.env.INVOICE_WALLET_ADDRESS || 'EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs';
+const TONCENTER_ENDPOINT = process.env.TONCENTER_ENDPOINT || 'https://toncenter.com/api/v2/jsonRPC';
+const TONCENTER_API_KEY = process.env.TONCENTER_API_KEY || '';
+const USDT_DECIMALS = 6;
 
 const corsOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -43,6 +49,11 @@ if(!process.env.ADMIN_TOKEN_SECRET){
 if(allowedProofDomains.length === 0){
   console.warn('ADVERTENCIA: TON_PROOF_ALLOWED_DOMAINS está vacío. Configúralo en producción.');
 }
+
+const tonClient = new TonClient({
+  endpoint: TONCENTER_ENDPOINT,
+  apiKey: TONCENTER_API_KEY || undefined
+});
 
 const payloads = new Map();
 
@@ -166,6 +177,75 @@ app.use(cors({
   credentials: false
 }));
 
+
+function toUsdtUnits(amountUsdt){
+  const n = Number(amountUsdt);
+  if(!Number.isFinite(n) || n <= 0) throw new Error('Monto USDT inválido');
+  return BigInt(Math.round(n * 10 ** USDT_DECIMALS));
+}
+
+function validatePaymentAmount(kind, amountUsdt, gems){
+  const usdt = Number(amountUsdt);
+  const g = Number(gems || 0);
+  if(kind === 'deposit'){
+    const allowed = new Map([[10,320],[50,1600],[125,4000],[500,16000]]);
+    if(!allowed.has(usdt) || allowed.get(usdt) !== g) throw new Error('Paquete de depósito inválido');
+  } else if(kind === 'tournament'){
+    if(usdt !== 10) throw new Error('El torneo requiere 10 USDT');
+  } else if(kind === 'training'){
+    if(usdt <= 0 || usdt > 5000) throw new Error('Monto de entrenamiento inválido');
+  } else {
+    throw new Error('Tipo de pago inválido');
+  }
+  return { usdt, gems:g };
+}
+
+async function getJettonWalletAddress(ownerAddress){
+  const owner = Address.parse(ownerAddress);
+  const master = Address.parse(USDT_MASTER_ADDRESS);
+  const stack = await tonClient.runMethod(master, 'get_wallet_address', [
+    { type: 'slice', cell: beginCell().storeAddress(owner).endCell() }
+  ]);
+  return stack.stack.readAddress();
+}
+
+async function buildUsdtTransaction({ ownerAddress, amountUsdt, kind, gems }){
+  const owner = Address.parse(ownerAddress);
+  const destination = Address.parse(INVOICE_WALLET_ADDRESS);
+  const senderJettonWallet = await getJettonWalletAddress(ownerAddress);
+  const queryId = BigInt(Date.now());
+  const comment = `FUTMUNDI:${kind}:${amountUsdt}:${gems || 0}:${queryId}`;
+  const forwardPayload = beginCell().storeUint(0, 32).storeStringTail(comment).endCell();
+  const body = beginCell()
+    .storeUint(0xf8a7ea5, 32)        // jetton transfer op
+    .storeUint(queryId, 64)
+    .storeCoins(toUsdtUnits(amountUsdt)) // USDT has 6 decimals
+    .storeAddress(destination)
+    .storeAddress(owner)             // excess / response destination
+    .storeUint(0, 1)                 // no custom payload
+    .storeCoins(toNano('0.02'))      // forward TON for notification/comment
+    .storeBit(1)                     // forward_payload as ref
+    .storeRef(forwardPayload)
+    .endCell();
+  return {
+    validUntil: Math.floor(Date.now() / 1000) + 600,
+    messages: [{
+      address: senderJettonWallet.toString({ bounceable: true, urlSafe: true }),
+      amount: toNano('0.08').toString(),
+      payload: body.toBoc().toString('base64')
+    }],
+    meta: {
+      kind,
+      amountUsdt,
+      gems,
+      invoiceWallet: destination.toString({ bounceable: true, urlSafe: true }),
+      senderJettonWallet: senderJettonWallet.toString({ bounceable: true, urlSafe: true }),
+      usdtMaster: Address.parse(USDT_MASTER_ADDRESS).toString({ bounceable: true, urlSafe: true }),
+      comment
+    }
+  };
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'futmundi-admin-backend' });
 });
@@ -201,6 +281,32 @@ app.get('/api/admin/status', (req, res) => {
     return res.json({ ok: true, admin: true, address: body.address, exp: body.exp });
   }catch(e){
     return res.status(401).json({ ok: false, admin: false, error: 'Sesión admin inválida' });
+  }
+});
+
+
+app.get('/api/payments/health', (_req, res) => {
+  res.json({ ok:true, service:'payments', usdtMaster: USDT_MASTER_ADDRESS, invoiceWallet: INVOICE_WALLET_ADDRESS });
+});
+
+app.post('/api/payments/usdt-order', async (req, res) => {
+  try{
+    const { address, amountUsdt, gems, kind } = req.body || {};
+    if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
+    const payment = validatePaymentAmount(kind, amountUsdt, gems);
+    const built = await buildUsdtTransaction({
+      ownerAddress: address,
+      amountUsdt: payment.usdt,
+      gems: payment.gems,
+      kind
+    });
+    return res.json({
+      ok:true,
+      transaction: { validUntil: built.validUntil, messages: built.messages },
+      meta: built.meta
+    });
+  }catch(e){
+    return res.status(400).json({ ok:false, error:e.message });
   }
 });
 

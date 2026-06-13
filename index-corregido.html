@@ -726,6 +726,46 @@ button:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.25)}
 .modal:focus{outline:2px solid rgba(57,255,136,.55);outline-offset:4px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
+
+/* ===== FUTMUNDI compact mobile game UI - verde militar noche ===== */
+body{
+  align-items:center;
+  background:
+    radial-gradient(ellipse 80% 36% at 50% 8%, rgba(57,255,136,.13), transparent 68%),
+    radial-gradient(ellipse 70% 34% at 50% 78%, rgba(244,197,66,.07), transparent 72%),
+    linear-gradient(180deg,#07120b 0%,#030805 58%,#010302 100%)!important;
+}
+body::before{
+  opacity:.72;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(57,255,136,.08), transparent 26%),
+    radial-gradient(circle at 82% 34%, rgba(57,255,136,.07), transparent 28%),
+    repeating-linear-gradient(90deg, rgba(57,255,136,.018) 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(0deg, rgba(57,255,136,.012) 0 1px, transparent 1px 42px)!important;
+}
+.header,.chips,main,.tabbar{width:100%;max-width:390px;margin-left:auto;margin-right:auto}
+.header{
+  padding:7px 8px 4px!important;
+  align-items:center;
+  background:linear-gradient(180deg,rgba(6,18,11,.92),rgba(3,8,5,.55));
+}
+.statusbar{
+  gap:5px!important;
+  font-size:8.5px!important;
+  letter-spacing:.08em!important;
+  background:rgba(0,0,0,.32);
+  border:1px solid rgba(57,255,136,.20);
+  border-radius:999px;
+  padding:4px 7px;
+  box-shadow:0 0 18px rgba(57,255,136,.08) inset;
+}
+.statusbar span{white-space:nowrap}.statusbar b{font-size:9px}.close{font-size:18px!important;line-height:1;color:rgba(232,245,226,.78)!important}
+.chips{padding:3px 8px 5px!important;gap:6px!important;align-items:center}.chip{font-size:8.5px!important;letter-spacing:.08em!important;padding:4px 8px!important;border-radius:9px!important;background:linear-gradient(180deg,rgba(22,52,31,.72),rgba(4,16,9,.88))!important}
+#ton-connect{transform:scale(.82);transform-origin:left center;max-width:138px;overflow:hidden}
+main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-height:0}.title{font-size:clamp(34px,12vw,48px)!important;letter-spacing:.24em!important;margin:2px 0 1px!important;text-shadow:0 0 16px rgba(57,255,136,.34)}.sub{font-size:8px!important;letter-spacing:.18em!important;margin-bottom:7px!important;color:rgba(232,245,226,.52)!important}
+.stage{max-width:378px!important;grid-template-columns:44px minmax(0,1fr) 44px!important;gap:5px!important;margin:0 auto 8px!important;align-items:center!important}.rail{gap:8px!important;padding:0!important;align-self:center}.icon-btn{width:42px!important;gap:0!important;min-height:40px}.icon-btn:hover{transform:translateY(-1px) scale(1.03)!important}.icon-btn .glyph{width:38px!important;height:38px!important;border-radius:10px;background:linear-gradient(180deg,rgba(18,48,27,.88),rgba(4,13,8,.96))!important;border:1px solid rgba(57,255,136,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 14px rgba(57,255,136,.12);filter:drop-shadow(0 6px 8px rgba(0,0,0,.72))!important}.icon-btn.gold .glyph{border-color:rgba(244,197,66,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 16px rgba(244,197,66,.16)}.icon-btn .glyph svg{width:24px!important;height:24px!important;stroke-width:1.9!important}.icon-btn .lbl{display:none!important}.icon-btn .badge{top:-6px!important;right:-5px!important;min-width:16px!important;height:16px!important;font-size:9px!important;border-width:1px!important}.hero-wrap{max-width:252px!important;margin:0 auto!important}.hero-wrap::before{width:86%!important;height:86%!important;left:7%!important;top:7%!important;filter:blur(30px)!important}.hero-img{filter:drop-shadow(0 18px 22px rgba(0,0,0,.78)) drop-shadow(0 0 20px rgba(244,197,66,.16))!important}.actions{max-width:265px!important;gap:8px!important;margin:2px auto 5px!important;padding:0!important;display:grid!important}.btn-play{aspect-ratio:2.6/1!important;border-radius:13px;overflow:hidden;background:linear-gradient(180deg,rgba(18,48,27,.78),rgba(4,13,8,.92))!important;border:1px solid rgba(57,255,136,.22)!important;filter:drop-shadow(0 8px 12px rgba(0,0,0,.62))!important}.btn-play::before{display:none!important}.btn-play::after{content:attr(aria-label);position:absolute;inset:auto 4px 4px;z-index:2;font-family:"Oswald";font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:var(--fm-gold);text-shadow:0 1px 4px #000}.btn-play .ill{border-radius:0!important}.btn-play .ill img{object-fit:cover;opacity:.78}.tabbar{position:sticky;bottom:0;z-index:20;grid-template-columns:repeat(4,1fr)!important;gap:5px;background:linear-gradient(180deg,rgba(5,17,10,.70),rgba(1,5,3,.96))!important;border:1px solid rgba(57,255,136,.20)!important;border-bottom:0!important;border-radius:16px 16px 0 0;padding:6px 6px 7px!important;box-shadow:0 -10px 28px rgba(0,0,0,.45),0 0 18px rgba(57,255,136,.08) inset}.tab{padding:5px 3px!important;border-radius:11px;background:linear-gradient(180deg,rgba(20,43,27,.62),rgba(4,13,8,.82))!important;border:1px solid rgba(57,255,136,.16);font-size:7.5px!important;letter-spacing:.08em!important;gap:3px!important}.tab svg{width:18px!important;height:18px!important}.tab.active{border-color:rgba(244,197,66,.55);background:linear-gradient(180deg,rgba(57,255,136,.16),rgba(4,13,8,.88))!important;color:var(--fm-gold)!important}
+@media (max-width:420px){.header,.chips,main,.tabbar{max-width:100%}.stage{grid-template-columns:42px minmax(0,1fr) 42px!important}.hero-wrap{max-width:min(250px,66vw)!important}.icon-btn{width:40px!important}.icon-btn .glyph{width:36px!important;height:36px!important}.actions{max-width:250px!important}.title{font-size:clamp(31px,11vw,44px)!important}}
+
 </style>
 
 </head>

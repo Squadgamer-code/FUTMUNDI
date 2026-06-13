@@ -697,6 +697,14 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .equipped-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.equipped-slot{text-align:center;color:var(--fm-text-dim);font-size:10px;letter-spacing:.08em}.equipped-slot img{width:100%;height:92px;object-fit:contain;display:block;filter:drop-shadow(0 8px 12px rgba(0,0,0,.55))}.equipped-slot b{display:block;font-family:"Oswald";font-size:10px;color:var(--fm-text);line-height:1.1}
 .nft-summary{align-items:center}.nft-summary img{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}.dur-low{color:#ff8a72!important}.dur-ok{color:var(--fm-cyan)!important}
 
+
+/* Inputs corregidos retiro/deposito */
+.m-input{width:100%;min-height:34px;background:rgba(0,0,0,.28)!important;border:1px solid rgba(57,255,136,.24)!important;border-radius:10px!important;color:var(--fm-text)!important;font-family:"Oswald"!important;font-size:14px!important;letter-spacing:.04em;outline:none!important;padding:8px 10px!important;pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important;caret-color:var(--fm-gold)!important}
+.m-input:focus{border-color:var(--fm-gold)!important;box-shadow:0 0 0 2px rgba(244,197,66,.14)}
+.m-row input,.m-row textarea{pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important}
+.deposit-pay-box{margin-top:12px;padding:12px;border-radius:18px;background:rgba(0,0,0,.25);border:1px solid rgba(244,197,66,.22);text-align:center}
+.deposit-pay-box b{color:var(--fm-gold)}
+
 /* ===== Fixes producción / accesibilidad ===== */
 .hidden{display:none!important}
 .m-cta:disabled,
@@ -1040,11 +1048,11 @@ const TEMPLATES = {
       <div class="m-hero"><h3>Saldo disponible</h3><div class="m-bignum" id="r-balance">3200<small>💎</small></div></div>
       <div class="m-warn">Mínimo 160 💎 · Máximo 3200 💎 · Comisión 5% + 32 💎</div>
       <div class="m-section">Wallet TON</div>
-      <div class="m-row" style="margin-bottom:10px"><div class="icn">💰</div><div class="meta" style="flex:1"><input id="r-wallet" placeholder="UQ... wallet TON" style="width:100%;background:transparent;border:none;color:var(--fm-text);font-family:'Oswald';letter-spacing:.04em;outline:none;font-size:13px"/><span>Pega tu dirección TON</span></div></div>
+      <div class="m-row" style="margin-bottom:10px"><div class="icn">💰</div><div class="meta" style="flex:1"><input id="r-wallet" class="m-input" type="text" autocomplete="off" placeholder="Pega tu wallet TON UQ..." /><span>Pega tu dirección TON</span></div></div>
       <div class="m-section">Monto a retirar</div>
-      <div class="m-row" style="margin-bottom:10px"><div class="icn">💎</div><div class="meta" style="flex:1"><input id="r-amount" type="number" min="160" max="3200" placeholder="160 - 3200" style="width:100%;background:transparent;border:none;color:var(--fm-text);font-family:'Oswald';font-size:14px;outline:none"/><span id="r-net">Recibirás: — 💎</span></div></div>
+      <div class="m-row" style="margin-bottom:10px"><div class="icn">💎</div><div class="meta" style="flex:1"><input id="r-amount" class="m-input" type="text" inputmode="numeric" autocomplete="off" placeholder="160 - 3200" /><span id="r-net">Recibirás: — 💎</span></div></div>
       <div class="m-section">Captcha</div>
-      <div class="m-row" style="margin-bottom:12px;align-items:center"><div class="icn" id="r-captcha-q" style="font-family:'Oswald';font-size:14px">3 + 4</div><div class="meta" style="flex:1"><input id="r-captcha" type="number" placeholder="Respuesta" style="width:100%;background:transparent;border:none;color:var(--fm-text);font-family:'Oswald';font-size:14px;outline:none"/><span>Confirma que no eres un bot</span></div></div>
+      <div class="m-row" style="margin-bottom:12px;align-items:center"><div class="icn" id="r-captcha-q" style="font-family:'Oswald';font-size:14px">3 + 4</div><div class="meta" style="flex:1"><input id="r-captcha" class="m-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Respuesta" /><span>Confirma que no eres un bot</span></div></div>
       <div id="r-msg" class="m-warn" style="display:none"></div>
       <button class="m-cta" id="r-submit">Solicitar retiro</button>`
   },
@@ -1065,7 +1073,13 @@ const TEMPLATES = {
         <div class="m-hero"><h3>Monto</h3><div class="m-bignum" id="dep-usdt">— USDT</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="dep-gems">— 💎</div></div>
         <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente USDT en la red <b>TON</b></div>
         <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato de depósito</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div><button class="right" id="dep-copy" style="background:none;border:none;color:var(--fm-gold);cursor:pointer;font-family:'Oswald'">Copiar</button></div>
-        <button class="m-cta ghost" id="dep-back">Volver a paquetes</button>
+        <div class="deposit-pay-box">
+          <div style="font-size:11px;color:var(--fm-text-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">Orden de pago</div>
+          <div id="dep-pay-text" style="font-family:'Oswald';font-size:14px;color:var(--fm-text);margin-bottom:10px">Selecciona un paquete</div>
+          <button class="m-cta" id="dep-pay" type="button">Pagar con wallet</button>
+          <div id="dep-pay-msg" class="m-warn" style="display:none;margin-top:10px"></div>
+        </div>
+        <button class="m-cta ghost" id="dep-back" style="margin-top:10px">Volver a paquetes</button>
       </div>`
   },
   torneo: {
@@ -1678,14 +1692,28 @@ function useSelectedPlayer(mode){
   return true;
 }
 function requestDepositPayment(usdt, gems){
-  // Seguridad: USDT en TON es Jetton; no se debe enviar TON nativo por error.
-  // Este botón deja la solicitud lista y copia el contrato hasta conectar el payload Jetton real con backend.
-  const msg = `Depósito seleccionado: ${usdt} USDT → ${Number(gems).toLocaleString()} gemas. Contrato: ${STATE.contract}`;
-  copyText(STATE.contract).then(() => toast('Contrato copiado. Pago USDT TON pendiente de conexión Jetton.', false));
-  console.info(msg);
-  if(window.tonConnectUI && !window.tonConnectUI.connected){
-    try { window.tonConnectUI.openModal(); } catch(e) {}
+  const msg = inner.querySelector('#dep-pay-msg');
+  if(msg){
+    msg.style.display = 'block';
+    msg.style.background = 'rgba(57,255,136,.08)';
+    msg.style.borderColor = 'rgba(57,255,136,.25)';
+    msg.style.color = 'var(--fm-cyan)';
+    msg.innerHTML = `Orden lista: <b>${usdt} USDT</b> por <b>${Number(gems).toLocaleString()} 💎</b><br>Contrato: <span style="word-break:break-all">${STATE.contract}</span>`;
   }
+  if(!window.tonConnectUI){
+    toast('TON Connect no está disponible', false);
+    return false;
+  }
+  if(!window.tonConnectUI.connected){
+    toast('Conecta tu wallet para pagar', false);
+    try { window.tonConnectUI.openModal(); } catch(e) {}
+    return false;
+  }
+  // Pago automático USDT/TON requiere payload Jetton desde backend. No enviamos TON nativo por seguridad.
+  if(msg){
+    msg.innerHTML += `<br><br><b>Wallet conectada.</b> El pago automático de USDT se activará con la orden Jetton del backend. Por ahora no se envía TON nativo para evitar pagos incorrectos.`;
+  }
+  toast('Wallet conectada. Falta activar payload USDT Jetton.', false);
   return false;
 }
 
@@ -1998,18 +2026,13 @@ function wireModal(name){
       const g = p.dataset.gems, u = p.dataset.usdt;
       inner.querySelector('#dep-usdt').textContent = u + ' USDT';
       inner.querySelector('#dep-gems').textContent = parseInt(g).toLocaleString() + ' 💎';
+      const payText = inner.querySelector('#dep-pay-text');
+      if(payText) payText.innerHTML = `<b>${u} USDT</b> → <b>${parseInt(g).toLocaleString()} 💎</b><br><small>Red TON · USDT</small>`;
+      const payMsg = inner.querySelector('#dep-pay-msg');
+      if(payMsg){ payMsg.style.display = 'none'; payMsg.textContent = ''; }
       packs.style.display='none'; detail.style.display='block';
-      let payBtn = inner.querySelector('#dep-pay');
-      if(!payBtn){
-        payBtn = document.createElement('button');
-        payBtn.className = 'm-cta';
-        payBtn.id = 'dep-pay';
-        payBtn.type = 'button';
-        payBtn.style.marginTop = '10px';
-        payBtn.textContent = 'Pagar con wallet';
-        detail.appendChild(payBtn);
-      }
-      payBtn.onclick = () => requestDepositPayment(u, g);
+      const payBtn = inner.querySelector('#dep-pay');
+      if(payBtn) payBtn.onclick = () => requestDepositPayment(u, g);
     }));
     inner.querySelector('#dep-back').addEventListener('click', ()=>{ detail.style.display='none'; packs.style.display='block'; });
     inner.querySelector('#dep-copy').addEventListener('click', ()=>{
@@ -2021,18 +2044,25 @@ function wireModal(name){
     const net = inner.querySelector('#r-net');
     const msg = inner.querySelector('#r-msg');
     const walletInput = inner.querySelector('#r-wallet');
+    const capInput = inner.querySelector('#r-captcha');
+    [walletInput, amt, capInput].forEach(inp => {
+      if(!inp) return;
+      inp.disabled = false; inp.readOnly = false; inp.style.pointerEvents = 'auto';
+      inp.closest('.m-row')?.addEventListener('click', () => inp.focus());
+    });
+    setTimeout(() => walletInput?.focus(), 180);
     const a = Math.floor(Math.random()*9)+1, b = Math.floor(Math.random()*9)+1;
     inner.querySelector('#r-captcha-q').textContent = `${a} + ${b}`;
     inner.querySelector('#r-balance').innerHTML = STATE.balanceGems + '<small>💎</small>';
     amt.addEventListener('input', ()=>{
-      const v = parseInt(amt.value)||0;
+      const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;
       const recv = v>0 ? Math.max(0, Math.floor(v*0.95 - 32)) : 0;
       net.textContent = `Recibirás: ${recv} 💎 (5% + 32 💎)`;
     });
     inner.querySelector('#r-submit').addEventListener('click', ()=>{
-      const v = parseInt(amt.value)||0;
+      const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;
       const w = inner.querySelector('#r-wallet').value.trim();
-      const cap = parseInt(inner.querySelector('#r-captcha').value)||0;
+      const cap = parseInt(String(inner.querySelector('#r-captcha').value).replace(/[^0-9]/g,''))||0;
       msg.style.display='block';
       if(!isValidTonAddress(w)){ msg.textContent='Wallet TON inválida'; return; }
       if(v < 160 || v > 3200){ msg.textContent='Monto fuera de rango (160–3200 💎)'; return; }

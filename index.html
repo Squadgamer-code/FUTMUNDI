@@ -766,6 +766,73 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 .stage{max-width:378px!important;grid-template-columns:44px minmax(0,1fr) 44px!important;gap:5px!important;margin:0 auto 8px!important;align-items:center!important}.rail{gap:8px!important;padding:0!important;align-self:center}.icon-btn{width:42px!important;gap:0!important;min-height:40px}.icon-btn:hover{transform:translateY(-1px) scale(1.03)!important}.icon-btn .glyph{width:38px!important;height:38px!important;border-radius:10px;background:linear-gradient(180deg,rgba(18,48,27,.88),rgba(4,13,8,.96))!important;border:1px solid rgba(57,255,136,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 14px rgba(57,255,136,.12);filter:drop-shadow(0 6px 8px rgba(0,0,0,.72))!important}.icon-btn.gold .glyph{border-color:rgba(244,197,66,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 16px rgba(244,197,66,.16)}.icon-btn .glyph svg{width:24px!important;height:24px!important;stroke-width:1.9!important}.icon-btn .lbl{display:none!important}.icon-btn .badge{top:-6px!important;right:-5px!important;min-width:16px!important;height:16px!important;font-size:9px!important;border-width:1px!important}.hero-wrap{max-width:252px!important;margin:0 auto!important}.hero-wrap::before{width:86%!important;height:86%!important;left:7%!important;top:7%!important;filter:blur(30px)!important}.hero-img{filter:drop-shadow(0 18px 22px rgba(0,0,0,.78)) drop-shadow(0 0 20px rgba(244,197,66,.16))!important}.actions{max-width:265px!important;gap:8px!important;margin:2px auto 5px!important;padding:0!important;display:grid!important}.btn-play{aspect-ratio:2.6/1!important;border-radius:13px;overflow:hidden;background:linear-gradient(180deg,rgba(18,48,27,.78),rgba(4,13,8,.92))!important;border:1px solid rgba(57,255,136,.22)!important;filter:drop-shadow(0 8px 12px rgba(0,0,0,.62))!important}.btn-play::before{display:none!important}.btn-play::after{content:attr(aria-label);position:absolute;inset:auto 4px 4px;z-index:2;font-family:"Oswald";font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:var(--fm-gold);text-shadow:0 1px 4px #000}.btn-play .ill{border-radius:0!important}.btn-play .ill img{object-fit:cover;opacity:.78}.tabbar{position:sticky;bottom:0;z-index:20;grid-template-columns:repeat(4,1fr)!important;gap:5px;background:linear-gradient(180deg,rgba(5,17,10,.70),rgba(1,5,3,.96))!important;border:1px solid rgba(57,255,136,.20)!important;border-bottom:0!important;border-radius:16px 16px 0 0;padding:6px 6px 7px!important;box-shadow:0 -10px 28px rgba(0,0,0,.45),0 0 18px rgba(57,255,136,.08) inset}.tab{padding:5px 3px!important;border-radius:11px;background:linear-gradient(180deg,rgba(20,43,27,.62),rgba(4,13,8,.82))!important;border:1px solid rgba(57,255,136,.16);font-size:7.5px!important;letter-spacing:.08em!important;gap:3px!important}.tab svg{width:18px!important;height:18px!important}.tab.active{border-color:rgba(244,197,66,.55);background:linear-gradient(180deg,rgba(57,255,136,.16),rgba(4,13,8,.88))!important;color:var(--fm-gold)!important}
 @media (max-width:420px){.header,.chips,main,.tabbar{max-width:100%}.stage{grid-template-columns:42px minmax(0,1fr) 42px!important}.hero-wrap{max-width:min(250px,66vw)!important}.icon-btn{width:40px!important}.icon-btn .glyph{width:36px!important;height:36px!important}.actions{max-width:250px!important}.title{font-size:clamp(31px,11vw,44px)!important}}
 
+
+/* ===== FUTMUNDI top bar + professional floating side icons ===== */
+.header{justify-content:center!important;position:relative!important;padding-top:7px!important}
+.header .statusbar{margin:0 auto!important;text-align:center;justify-content:center!important}
+.header .close{position:absolute!important;right:8px!important;top:5px!important}
+.chips{position:relative!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;padding-top:2px!important}
+.chips #ton-connect{margin-left:auto!important;margin-right:2px!important;transform:scale(.78)!important;transform-origin:right center!important;max-width:150px!important;overflow:visible!important}
+.chips #admin-chip{margin-left:4px!important}
+
+/* Side buttons: no labels, no boxes, real-color floating icons */
+.rail .icon-btn{width:42px!important;min-height:42px!important;align-items:center!important;justify-content:center!important}
+.rail .icon-btn .lbl{display:none!important}
+.rail .icon-btn .glyph{
+  width:40px!important;height:40px!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.8)) drop-shadow(0 9px 10px rgba(0,0,0,.72))!important;
+}
+.rail .icon-btn .glyph svg{display:none!important}
+.rail .icon-btn .glyph::before{
+  display:block;
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-size:30px;line-height:1;
+  transform:translateZ(0);
+  transition:transform .18s ease, filter .18s ease;
+}
+.rail .icon-btn:hover .glyph::before{transform:scale(1.12) translateY(-1px)}
+.rail .icon-btn[data-modal="logros"] .glyph::before{content:"🏆";filter:drop-shadow(0 0 10px rgba(244,197,66,.55)) drop-shadow(0 0 18px rgba(255,226,122,.28))}
+.rail .icon-btn[data-modal="goles"] .glyph::before{content:"⚽";filter:drop-shadow(0 0 9px rgba(255,255,255,.38)) drop-shadow(0 0 14px rgba(57,255,136,.20))}
+.rail .icon-btn[data-modal="reclamos"] .glyph::before{content:"🎁";filter:drop-shadow(0 0 10px rgba(255,90,60,.38)) drop-shadow(0 0 16px rgba(244,197,66,.25))}
+.rail .icon-btn[data-modal="nivel"] .glyph::before{content:"⭐";filter:drop-shadow(0 0 10px rgba(244,197,66,.48)) drop-shadow(0 0 16px rgba(57,255,136,.16))}
+.rail .icon-btn[data-modal="deposito"] .glyph::before{content:"💎";filter:drop-shadow(0 0 10px rgba(63,191,255,.72)) drop-shadow(0 0 18px rgba(63,191,255,.36))}
+.rail .icon-btn[data-modal="torneo"] .glyph::before{content:"🏆";filter:drop-shadow(0 0 10px rgba(244,197,66,.55)) drop-shadow(0 0 18px rgba(57,255,136,.18))}
+.rail .icon-btn[data-modal="retiro"] .glyph::before{content:"💸";filter:drop-shadow(0 0 10px rgba(57,255,136,.48)) drop-shadow(0 0 16px rgba(255,255,255,.18))}
+.rail .icon-btn[data-modal="referido"] .glyph::before{content:"👥";filter:drop-shadow(0 0 10px rgba(57,255,136,.45)) drop-shadow(0 0 16px rgba(63,191,255,.22))}
+.rail .icon-btn .badge{font-size:8px!important;right:-3px!important;top:-4px!important;box-shadow:0 0 10px rgba(255,90,60,.55)!important}
+
+@media (max-width:420px){
+  .chips #ton-connect{transform:scale(.72)!important;max-width:135px!important}
+  .rail .icon-btn .glyph::before{font-size:28px}
+}
+
+
+/* ===== FORCE REAL SIDE ICONS - no SVG, no labels, no boxes ===== */
+.stage .rail .icon-btn{width:42px!important;min-height:42px!important;background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+.stage .rail .icon-btn .lbl{display:none!important}
+.stage .rail .icon-btn .glyph{
+  width:40px!important;height:40px!important;background:transparent!important;border:0!important;box-shadow:none!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;color:initial!important;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.85)) drop-shadow(0 8px 9px rgba(0,0,0,.74))!important;
+}
+.stage .rail .icon-btn .glyph svg{display:none!important;visibility:hidden!important;width:0!important;height:0!important}
+.stage .rail .icon-btn .glyph .real-ico{
+  display:block!important;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif!important;
+  font-size:31px!important;line-height:1!important;background:transparent!important;border:0!important;
+  transform:translateZ(0);text-shadow:none!important;
+}
+.stage .rail .icon-btn[data-modal="logros"] .real-ico,
+.stage .rail .icon-btn[data-modal="torneo"] .real-ico{filter:drop-shadow(0 0 9px rgba(244,197,66,.60)) drop-shadow(0 0 16px rgba(255,226,122,.28))}
+.stage .rail .icon-btn[data-modal="goles"] .real-ico{filter:drop-shadow(0 0 9px rgba(255,255,255,.42)) drop-shadow(0 0 16px rgba(57,255,136,.18))}
+.stage .rail .icon-btn[data-modal="reclamos"] .real-ico{filter:drop-shadow(0 0 9px rgba(255,90,60,.40)) drop-shadow(0 0 16px rgba(244,197,66,.24))}
+.stage .rail .icon-btn[data-modal="nivel"] .real-ico{filter:drop-shadow(0 0 9px rgba(244,197,66,.52)) drop-shadow(0 0 16px rgba(57,255,136,.16))}
+.stage .rail .icon-btn[data-modal="deposito"] .real-ico{filter:drop-shadow(0 0 10px rgba(63,191,255,.78)) drop-shadow(0 0 18px rgba(63,191,255,.38))}
+.stage .rail .icon-btn[data-modal="retiro"] .real-ico{filter:drop-shadow(0 0 10px rgba(57,255,136,.52)) drop-shadow(0 0 16px rgba(255,255,255,.20))}
+.stage .rail .icon-btn[data-modal="referido"] .real-ico{filter:drop-shadow(0 0 10px rgba(57,255,136,.48)) drop-shadow(0 0 16px rgba(63,191,255,.25))}
+.stage .rail .icon-btn:hover .real-ico{transform:scale(1.13) translateY(-1px)!important}
+
 </style>
 
 </head>
@@ -2646,5 +2713,32 @@ if(heroImg){
 })();
 </script>
 
+<script>
+(function(){
+  const SIDE_ICON_MAP = {
+    logros:'🏆',
+    goles:'⚽',
+    reclamos:'🎁',
+    nivel:'⭐',
+    deposito:'💎',
+    torneo:'🏆',
+    retiro:'💸',
+    referido:'👥'
+  };
+  function applyRealSideIcons(){
+    document.querySelectorAll('.stage .rail .icon-btn[data-modal]').forEach(btn => {
+      const name = btn.getAttribute('data-modal');
+      const icon = SIDE_ICON_MAP[name];
+      const glyph = btn.querySelector('.glyph');
+      if(!icon || !glyph) return;
+      glyph.innerHTML = '<span class="real-ico" aria-hidden="true">' + icon + '</span>';
+      btn.setAttribute('title', btn.getAttribute('aria-label') || name);
+    });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyRealSideIcons);
+  else applyRealSideIcons();
+})();
+
+</script>
 </body>
 </html>

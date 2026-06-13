@@ -27,3 +27,10 @@ services:
         value: ""
       - key: TON_PROOF_ALLOWED_DOMAINS
         value: ""
+
+      - key: USDT_MASTER_ADDRESS
+        value: EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs
+      - key: INVOICE_WALLET_ADDRESS
+        value: EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs
+      - key: TONCENTER_ENDPOINT
+        value: https://toncenter.com/api/v2/jsonRPC

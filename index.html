@@ -705,6 +705,19 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .deposit-pay-box{margin-top:12px;padding:12px;border-radius:18px;background:rgba(0,0,0,.25);border:1px solid rgba(244,197,66,.22);text-align:center}
 .deposit-pay-box b{color:var(--fm-gold)}
 
+
+/* Admin panel FUTMUNDI */
+#admin-chip{cursor:pointer}
+.admin-toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.admin-toolbar .m-input{flex:1}
+.admin-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding-right:4px}
+.admin-list::-webkit-scrollbar{width:6px}.admin-list::-webkit-scrollbar-thumb{background:rgba(57,255,136,.25);border-radius:4px}
+.admin-row{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,rgba(21,36,25,.68),rgba(7,13,9,.86));border:1px solid rgba(57,255,136,.16);border-radius:18px;padding:10px}
+.admin-row .meta{flex:1;min-width:0}.admin-row .meta b{display:block;font-family:"Oswald";font-size:12px;color:var(--fm-text);word-break:break-all}.admin-row .meta span{display:block;font-size:10px;color:var(--fm-text-dim);word-break:break-all}
+.admin-pill{font-family:"Oswald";font-size:10px;letter-spacing:.08em;border-radius:999px;padding:4px 8px;background:rgba(57,255,136,.12);border:1px solid rgba(57,255,136,.25);color:var(--fm-cyan);white-space:nowrap}
+.admin-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.admin-btn{font-family:"Oswald";font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-radius:10px;padding:7px 9px;background:linear-gradient(180deg,var(--fm-gold-soft),var(--fm-gold));color:#1a1003}.admin-btn.ghost{background:rgba(0,0,0,.35);color:var(--fm-cyan);border:1px solid rgba(57,255,136,.3)}.admin-btn.danger{background:linear-gradient(180deg,#ff8a72,#c1432a);color:#fff}
+.admin-form{display:grid;gap:10px;margin-bottom:12px}.admin-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.admin-select{width:100%;background:rgba(0,0,0,.28);border:1px solid rgba(57,255,136,.24);border-radius:10px;color:var(--fm-text);font-family:"Oswald";font-size:13px;padding:9px;outline:none}.admin-select option{background:#0e1a12;color:#e8f5e2}
+
 /* ===== Fixes producción / accesibilidad ===== */
 .hidden{display:none!important}
 .m-cta:disabled,
@@ -2252,6 +2265,137 @@ function wireModal(name){
     btn.addEventListener('click', () => toast('Función pendiente de conectar al backend', false));
   });
 
+
+
+}
+
+function adminMoney(v){ return Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+function adminShort(v){ v = String(v || ''); return v.length > 18 ? v.slice(0,8)+'…'+v.slice(-6) : v; }
+function adminSetContent(html){ const c = inner.querySelector('#admin-content'); if(c) c.innerHTML = html; }
+function adminLoading(label='Cargando...'){ adminSetContent(`<div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">${label}</div>`); }
+function adminError(e){ adminSetContent(`<div class="m-warn">${escapeHTML(e.message || e)}</div>`); }
+function adminTabsHTML(active='users'){
+  const tabs = [['users','Wallets'],['deposits','Depósitos'],['withdrawals','Retiros'],['gifts','Regalar']];
+  return `<div class="m-tabs" data-tabs="admin">${tabs.map(([id,label]) => `<button class="m-tab ${id===active?'active':''}" type="button" data-admin-view="${id}">${label}</button>`).join('')}</div><div id="admin-content"></div>`;
+}
+function wireAdminTabs(){
+  inner.querySelectorAll('[data-admin-view]').forEach(btn => btn.addEventListener('click', () => {
+    inner.querySelectorAll('[data-admin-view]').forEach(b => b.classList.toggle('active', b === btn));
+    const view = btn.dataset.adminView;
+    if(view === 'users') return adminLoadUsers();
+    if(view === 'deposits') return adminLoadDeposits();
+    if(view === 'withdrawals') return adminLoadWithdrawals();
+    if(view === 'gifts') return adminLoadGifts();
+  }));
+}
+function openAdminPanel(){
+  if(!isAdmin()){ toast('Admin no verificado. Conecta la wallet admin.', false); return; }
+  clearActiveTimers();
+  lastFocusedEl = document.activeElement;
+  inner.innerHTML = `
+    <div class="modal-head">
+      <div class="modal-title" id="fm-modal-title">Panel Admin</div>
+      <button class="modal-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div class="m-broadcast-bar"><span class="live">ADMIN</span><span class="sep"></span><span>FUTMUNDI backend</span></div>
+    ${adminTabsHTML('users')}`;
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  inner.querySelector('.modal-close').addEventListener('click', closeModal);
+  wireAdminTabs();
+  adminLoadUsers();
+  requestAnimationFrame(() => inner.querySelector('.modal-close')?.focus());
+}
+async function adminLoadUsers(q=''){
+  adminLoading('Cargando wallets...');
+  try{
+    const data = await adminFetch('/api/admin/users' + (q ? '?q=' + encodeURIComponent(q) : ''), { method:'GET' });
+    adminSetContent(`
+      <div class="admin-toolbar">
+        <input id="admin-user-q" class="m-input" placeholder="Buscar wallet o referido" value="${escapeHTML(q)}">
+        <button class="admin-btn" id="admin-user-search" type="button">Buscar</button>
+      </div>
+      <div class="admin-list">${(data.users || []).map(u => `
+        <div class="admin-row">
+          <div class="admin-pill">${Number(u.gems || 0).toLocaleString()} 💎</div>
+          <div class="meta"><b>${escapeHTML(u.wallet_address || '')}</b><span>Ref: ${escapeHTML(u.ref_code || '-')} · NFTs: ${u.nft_count || 0} · Locked: ${u.locked_gems || 0} 💎</span></div>
+          <div class="admin-actions"><button class="admin-btn ghost" data-fill-wallet="${escapeHTML(u.wallet_address || '')}" type="button">Usar</button></div>
+        </div>`).join('') || '<div class="empty-inventory">Sin usuarios todavía.</div>'}</div>`);
+    inner.querySelector('#admin-user-search')?.addEventListener('click', () => adminLoadUsers(inner.querySelector('#admin-user-q')?.value.trim() || ''));
+    inner.querySelector('#admin-user-q')?.addEventListener('keydown', e => { if(e.key === 'Enter') adminLoadUsers(e.target.value.trim()); });
+    inner.querySelectorAll('[data-fill-wallet]').forEach(b => b.addEventListener('click', () => { navigator.clipboard?.writeText(b.dataset.fillWallet); toast('Wallet copiada', true); }));
+  }catch(e){ adminError(e); }
+}
+async function adminLoadDeposits(){
+  adminLoading('Cargando depósitos pendientes...');
+  try{
+    const data = await adminFetch('/api/admin/deposits?status=pending', { method:'GET' });
+    adminSetContent(`<div class="admin-list">${(data.deposits || []).map(d => `
+      <div class="admin-row">
+        <div class="admin-pill">${adminMoney(d.amount_usdt)} USDT</div>
+        <div class="meta"><b>${escapeHTML(d.wallet_address)}</b><span>${d.gems} 💎 · ${new Date(d.created_at).toLocaleString()} · Order: ${adminShort(d.payment_order_id)}</span></div>
+        <div class="admin-actions"><button class="admin-btn" data-confirm-deposit="${d.id}" type="button">Confirmar</button></div>
+      </div>`).join('') || '<div class="empty-inventory">No hay depósitos pendientes.</div>'}</div>`);
+    inner.querySelectorAll('[data-confirm-deposit]').forEach(btn => btn.addEventListener('click', async () => {
+      const txHash = prompt('TX hash de confirmación (opcional):') || '';
+      try{ await adminFetch('/api/admin/deposits/confirm', { method:'POST', body: JSON.stringify({ depositId: btn.dataset.confirmDeposit, txHash }) }); toast('Depósito confirmado', true); adminLoadDeposits(); }
+      catch(e){ toast(e.message, false); }
+    }));
+  }catch(e){ adminError(e); }
+}
+async function adminLoadWithdrawals(){
+  adminLoading('Cargando retiros pendientes...');
+  try{
+    const data = await adminFetch('/api/admin/withdrawals?status=pending', { method:'GET' });
+    adminSetContent(`<div class="admin-list">${(data.withdrawals || []).map(w => `
+      <div class="admin-row">
+        <div class="admin-pill">${adminMoney(w.amount_usdt_net)} USDT</div>
+        <div class="meta"><b>${escapeHTML(w.wallet_to)}</b><span>${w.gems_requested} 💎 → neto ${w.gems_net} 💎 · fee ${w.fee_percent_gems}+${w.fee_fixed_gems} · ${new Date(w.created_at).toLocaleString()}</span></div>
+        <div class="admin-actions">
+          <button class="admin-btn ghost" data-wd-action="approve" data-wd-id="${w.id}" type="button">Aprobar</button>
+          <button class="admin-btn" data-wd-action="paid" data-wd-id="${w.id}" type="button">Pagado</button>
+          <button class="admin-btn danger" data-wd-action="reject" data-wd-id="${w.id}" type="button">Rechazar</button>
+        </div>
+      </div>`).join('') || '<div class="empty-inventory">No hay retiros pendientes.</div>'}</div>`);
+    inner.querySelectorAll('[data-wd-action]').forEach(btn => btn.addEventListener('click', async () => {
+      const action = btn.dataset.wdAction;
+      const txHash = action === 'paid' ? (prompt('TX hash del pago USDT:') || '') : '';
+      const note = action === 'reject' ? (prompt('Motivo de rechazo (opcional):') || '') : '';
+      try{ await adminFetch('/api/admin/withdrawals/action', { method:'POST', body: JSON.stringify({ withdrawalId: btn.dataset.wdId, action, txHash, note }) }); toast('Retiro actualizado', true); adminLoadWithdrawals(); }
+      catch(e){ toast(e.message, false); }
+    }));
+  }catch(e){ adminError(e); }
+}
+async function adminLoadGifts(){
+  adminLoading('Cargando catálogo...');
+  try{
+    const [usersData, catalogData] = await Promise.all([
+      adminFetch('/api/admin/users', { method:'GET' }),
+      adminFetch('/api/admin/catalog', { method:'GET' })
+    ]);
+    const options = (catalogData.catalog || []).map(c => `<option value="${c.code}">${escapeHTML(c.display_name)} · ${c.item_type} · ${c.price_gems}💎</option>`).join('');
+    adminSetContent(`
+      <div class="admin-form">
+        <input class="m-input" id="gift-wallet" placeholder="Wallet destino UQ...">
+        <div class="admin-two"><input class="m-input" id="gift-gems" inputmode="numeric" placeholder="Gemas a regalar"><button class="admin-btn" id="gift-gems-btn" type="button">Regalar gemas</button></div>
+        <div class="admin-two"><select class="admin-select" id="gift-nft">${options}</select><button class="admin-btn" id="gift-nft-btn" type="button">Regalar NFT</button></div>
+      </div>
+      <div class="m-section">Wallets recientes</div>
+      <div class="admin-list">${(usersData.users || []).slice(0,20).map(u => `<div class="admin-row"><div class="meta"><b>${escapeHTML(u.wallet_address)}</b><span>${u.gems || 0} 💎 · NFTs: ${u.nft_count || 0}</span></div><button class="admin-btn ghost" data-pick-gift-wallet="${escapeHTML(u.wallet_address)}" type="button">Elegir</button></div>`).join('')}</div>`);
+    inner.querySelectorAll('[data-pick-gift-wallet]').forEach(b => b.addEventListener('click', () => { inner.querySelector('#gift-wallet').value = b.dataset.pickGiftWallet; }));
+    inner.querySelector('#gift-gems-btn')?.addEventListener('click', async () => {
+      const wallet = inner.querySelector('#gift-wallet').value.trim();
+      const gems = parseInt(inner.querySelector('#gift-gems').value.replace(/[^0-9]/g,'')) || 0;
+      try{ await adminFetch('/api/admin/gifts/gems', { method:'POST', body: JSON.stringify({ wallet, gems }) }); toast('Gemas regaladas', true); adminLoadGifts(); }
+      catch(e){ toast(e.message, false); }
+    });
+    inner.querySelector('#gift-nft-btn')?.addEventListener('click', async () => {
+      const wallet = inner.querySelector('#gift-wallet').value.trim();
+      const catalogCode = inner.querySelector('#gift-nft').value;
+      try{ await adminFetch('/api/admin/gifts/nft', { method:'POST', body: JSON.stringify({ wallet, catalogCode }) }); toast('NFT regalado', true); adminLoadGifts(); }
+      catch(e){ toast(e.message, false); }
+    });
+  }catch(e){ adminError(e); }
 }
 
 function closeModal(){
@@ -2292,6 +2436,9 @@ if(appClose){
     else { toast('No hay una ventana para cerrar', false); }
   });
 }
+
+const adminChip = document.getElementById('admin-chip');
+if(adminChip){ adminChip.addEventListener('click', openAdminPanel); }
 
 const heroImg = document.querySelector('.hero-img');
 if(heroImg){

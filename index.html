@@ -1720,6 +1720,41 @@ async function payUsdtJetton(kind, usdt, gems=0){
   }
 }
 
+async function backendJSON(path, payload){
+  if(!STATE.adminApiBase) throw new Error('Backend Render no configurado');
+  const res = await fetch(STATE.adminApiBase + path, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload || {})
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); }
+  catch(e){ throw new Error('Backend Render no devolvió JSON en ' + path); }
+  if(!res.ok || !data.ok) throw new Error(data.error || 'Error backend');
+  return data;
+}
+
+async function syncUserState(address = STATE.tonWallet){
+  if(!address || !STATE.adminApiBase) return null;
+  try{
+    const data = await backendJSON('/api/user/sync', { address });
+    STATE.serverUser = data.user;
+    STATE.serverNfts = data.nfts || [];
+    STATE.balanceGems = Number(data.balance?.gems || 0);
+    STATE.lockedGems = Number(data.balance?.locked_gems || 0);
+    return data;
+  }catch(e){
+    console.warn('No se pudo sincronizar usuario:', e.message);
+    return null;
+  }
+}
+
+function updateWithdrawalBalanceUI(){
+  const bal = inner.querySelector('#r-balance');
+  if(bal) bal.innerHTML = `${STATE.balanceGems}<small>💎</small>`;
+}
+
 function requestDepositPayment(usdt, gems){
   const msg = inner.querySelector('#dep-pay-msg');
   if(msg){
@@ -1869,7 +1904,7 @@ const STATE = {
   adminApiBase: (window.FM_ADMIN_API_BASE || localStorage.getItem('fm_admin_api_base') || '').replace(/\/$/, ''),
   adminToken: localStorage.getItem('fm_admin_token') || '',
   isAdminVerified: false,
-  balanceGems: 3200,
+  balanceGems: 0,
   maxPerNFT: 20,
   owned: safeJSON('fm_owned', {}),
   inventory: safeJSON('fm_inventory', {players:[], uniforms:[], shoes:[], dt:[]}),
@@ -2073,24 +2108,38 @@ function wireModal(name){
     setTimeout(() => walletInput?.focus(), 180);
     const a = Math.floor(Math.random()*9)+1, b = Math.floor(Math.random()*9)+1;
     inner.querySelector('#r-captcha-q').textContent = `${a} + ${b}`;
-    inner.querySelector('#r-balance').innerHTML = STATE.balanceGems + '<small>💎</small>';
+    inner.querySelector('#r-balance').innerHTML = '...<small>💎</small>';
+    syncUserState().then(updateWithdrawalBalanceUI);
     amt.addEventListener('input', ()=>{
       const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;
       const recv = v>0 ? Math.max(0, Math.floor(v*0.95 - 32)) : 0;
       net.textContent = v>0 ? `Descuento: ${Math.floor(v*0.05)} 💎 + 32 💎 · Recibes: ${recv} 💎 = ${(recv/STATE.gemsPerUSDT).toFixed(2)} USDT` : 'Recibirás: —';
     });
-    inner.querySelector('#r-submit').addEventListener('click', ()=>{
+    inner.querySelector('#r-submit').addEventListener('click', async ()=>{
       const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;
       const w = inner.querySelector('#r-wallet').value.trim();
       const cap = parseInt(String(inner.querySelector('#r-captcha').value).replace(/[^0-9]/g,''))||0;
       msg.style.display='block';
+      if(!STATE.tonWallet){ msg.textContent='Conecta tu wallet antes de solicitar retiro'; return; }
+      await syncUserState();
+      updateWithdrawalBalanceUI();
       if(!isValidTonAddress(w)){ msg.textContent='Wallet TON inválida'; return; }
       if(v < 160 || v > 3200){ msg.textContent='Monto fuera de rango (160–3200 💎)'; return; }
-      if(v > STATE.balanceGems){ msg.textContent='Saldo insuficiente'; return; }
+      if(v > STATE.balanceGems){ msg.textContent=`Saldo insuficiente. Tienes ${STATE.balanceGems} 💎`; return; }
       if(cap !== a+b){ msg.textContent='Captcha incorrecto'; return; }
-      msg.style.background='rgba(57,255,136,.1)'; msg.style.borderColor='rgba(57,255,136,.3)'; msg.style.color='var(--fm-cyan)';
-      msg.textContent = `Solicitud enviada. Contrato: ${STATE.contract.slice(0,8)}…`;
-      toast('Retiro solicitado', true);
+      try{
+        const data = await backendJSON('/api/withdrawals/request', { address: STATE.tonWallet, walletTo: w, gemsRequested: v });
+        STATE.balanceGems = Number(data.balance?.gems || 0);
+        STATE.lockedGems = Number(data.balance?.locked_gems || 0);
+        updateWithdrawalBalanceUI();
+        msg.style.background='rgba(57,255,136,.1)'; msg.style.borderColor='rgba(57,255,136,.3)'; msg.style.color='var(--fm-cyan)';
+        msg.textContent = `Solicitud registrada: recibes ${data.calc.gemsNet} 💎 = ${Number(data.calc.amountUsdtNet).toFixed(2)} USDT. Estado: pendiente.`;
+        toast('Retiro solicitado', true);
+      }catch(e){
+        msg.style.background='rgba(193,67,42,.1)'; msg.style.borderColor='rgba(193,67,42,.3)'; msg.style.color='#ffb09b';
+        msg.textContent = e.message || 'No se pudo solicitar retiro';
+        toast(msg.textContent, false);
+      }
     });
   }
   if(name === 'torneo'){
@@ -2279,6 +2328,7 @@ if(heroImg){
         var addr = wallet.account.address;
         if(chip){ chip.style.display='none'; chip.textContent = '🪙 ' + toUserFriendly(addr); }
         window.STATE && (window.STATE.tonWallet = addr);
+        if(typeof syncUserState === 'function') syncUserState(addr);
         if(typeof verifyTonProof === 'function') verifyTonProof(wallet);
       } else {
         if(chip){ chip.style.display='none'; chip.textContent=''; }

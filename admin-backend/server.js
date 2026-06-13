@@ -334,13 +334,15 @@ async function getOrCreateUser(address){
 }
 async function getUserState(userId){
   requireSupabase();
-  const [{ data:balance, error:balanceError }, { data:nfts, error:nftsError }] = await Promise.all([
+  const [{ data:balance, error:balanceError }, { data:nfts, error:nftsError }, { data:ranking, error:rankingError }] = await Promise.all([
     supabase.from('balances').select('*').eq('user_id', userId).single(),
-    supabase.from('nfts').select('*').eq('user_id', userId).is('destroyed_at', null).order('created_at', { ascending:true })
+    supabase.from('nfts').select('*').eq('user_id', userId).is('destroyed_at', null).order('created_at', { ascending:true }),
+    supabase.from('ranking').select('*').eq('user_id', userId).eq('season','S1').maybeSingle()
   ]);
   if(balanceError) throw new Error(balanceError.message);
   if(nftsError) throw new Error(nftsError.message);
-  return { balance, nfts: nfts || [] };
+  if(rankingError) throw new Error(rankingError.message);
+  return { balance, nfts: nfts || [], ranking: ranking || null };
 }
 function calcWithdrawal(gemsRequested){
   const gems = Number(gemsRequested);
@@ -556,7 +558,7 @@ app.post('/api/user/sync', async (req, res) => {
     if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
     const { user, balance } = await getOrCreateUser(address);
     const state = await getUserState(user.id);
-    return res.json({ ok:true, user, balance: state.balance || balance, nfts: state.nfts });
+    return res.json({ ok:true, user, balance: state.balance || balance, nfts: state.nfts, ranking: state.ranking });
   }catch(e){
     return res.status(400).json({ ok:false, error:e.message });
   }
@@ -595,6 +597,140 @@ app.post('/api/withdrawals/request', async (req, res) => {
   }catch(e){
     return res.status(400).json({ ok:false, error:e.message });
   }
+});
+
+app.post('/api/rewards/daily-claim', async (req, res) => {
+  try{
+    const { address } = req.body || {};
+    if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
+    const { user } = await getOrCreateUser(address);
+    const today = new Date().toISOString().slice(0,10);
+    const existing = await supabase.from('daily_claims').select('*').eq('user_id', user.id).eq('claim_date', today).maybeSingle();
+    if(existing.error) throw new Error(existing.error.message);
+    if(existing.data) return res.status(400).json({ ok:false, error:'Ya reclamaste hoy' });
+    const countRes = await supabase.from('daily_claims').select('id', { count:'exact', head:true }).eq('user_id', user.id);
+    const dayNumber = ((countRes.count || 0) % 30) + 1;
+    const weekly = [
+      {type:'gems', amount:1}, {type:'points', amount:2}, {type:'gems', amount:2}, {type:'points', amount:3},
+      {type:'gems', amount:3}, {type:'points', amount:4}, {type:'gems', amount:4}
+    ];
+    const reward = weekly[(dayNumber - 1) % weekly.length];
+    const ins = await supabase.from('daily_claims').insert({ user_id:user.id, claim_date:today, day_number:dayNumber, reward_type:reward.type, reward_amount:reward.amount }).select('*').single();
+    if(ins.error) throw new Error(ins.error.message);
+    let balance = null;
+    if(reward.type === 'gems') balance = await addGemsToUser(user.id, reward.amount, 'gems');
+    else await supabase.from('ranking').upsert({ user_id:user.id, season:'S1', points:reward.amount }, { onConflict:'user_id,season', ignoreDuplicates:true });
+    if(reward.type === 'points'){
+      const cur = await supabase.from('ranking').select('*').eq('user_id', user.id).eq('season','S1').single();
+      if(!cur.error) await supabase.from('ranking').update({ points:Number(cur.data.points||0)+reward.amount }).eq('id', cur.data.id);
+    }
+    const state = await getUserState(user.id);
+    return res.json({ ok:true, claim:ins.data, reward, balance: state.balance });
+  }catch(e){ return res.status(400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/rewards/achievements/claim', async (req, res) => {
+  try{
+    const { address } = req.body || {};
+    if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
+    const { user } = await getOrCreateUser(address);
+    const { data:rows, error } = await supabase.from('achievements').select('*').eq('user_id', user.id);
+    if(error) throw new Error(error.message);
+    let totalGems = 0;
+    for(const a of rows || []){
+      const available = Math.floor(Number(a.progress||0) / Number(a.threshold||1000)) - Number(a.claimed_count||0);
+      if(available > 0){
+        totalGems += available * Number(a.reward_gems || 0);
+        await supabase.from('achievements').update({ claimed_count:Number(a.claimed_count||0)+available }).eq('id', a.id);
+      }
+    }
+    let balance = null;
+    if(totalGems > 0) balance = await addGemsToUser(user.id, totalGems, 'gems');
+    else balance = (await getUserState(user.id)).balance;
+    return res.json({ ok:true, claimedGems:totalGems, balance });
+  }catch(e){ return res.status(400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/rewards/goals/claim', async (req, res) => {
+  try{
+    const { address } = req.body || {};
+    if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
+    const { user } = await getOrCreateUser(address);
+    const { data:rows, error } = await supabase.from('goal_rewards').select('*').eq('user_id', user.id);
+    if(error) throw new Error(error.message);
+    let totalGems = 0;
+    for(const g of rows || []){
+      const available = Math.floor(Number(g.count||0) / Number(g.threshold||100)) - Number(g.claimed_count||0);
+      if(available > 0){
+        totalGems += available * Number(g.reward_gems || 0);
+        await supabase.from('goal_rewards').update({ claimed_count:Number(g.claimed_count||0)+available }).eq('id', g.id);
+      }
+    }
+    let balance = null;
+    if(totalGems > 0) balance = await addGemsToUser(user.id, totalGems, 'gems');
+    else balance = (await getUserState(user.id)).balance;
+    return res.json({ ok:true, claimedGems:totalGems, balance });
+  }catch(e){ return res.status(400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/ranking/global', async (req, res) => {
+  try{
+    requireSupabase();
+    const { data, error } = await supabase.from('ranking').select('*, app_users(wallet_address, ref_code)').eq('season','S1').order('points', { ascending:false }).limit(50);
+    if(error) throw new Error(error.message);
+    return res.json({ ok:true, ranking:data || [] });
+  }catch(e){ return res.status(400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/matches/play', async (req, res) => {
+  try{
+    const { address, mode, nftId } = req.body || {};
+    if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
+    const { user } = await getOrCreateUser(address);
+    const result = req.body?.result || (Math.random() < 0.58 ? 'win' : Math.random() < 0.78 ? 'draw' : 'loss');
+    const gemsMap = mode === 'estadio' ? { win:90, draw:30, loss:0 } : { win:45, draw:15, loss:0 };
+    const pointsMap = { win:15, draw:5, loss:-10 };
+    const gemsDelta = gemsMap[result] ?? 0;
+    const pointsDelta = pointsMap[result] ?? 0;
+    const balance = gemsDelta > 0 ? await addGemsToUser(user.id, gemsDelta, 'gems') : (await getUserState(user.id)).balance;
+
+    const rnk = await supabase.from('ranking').select('*').eq('user_id', user.id).eq('season','S1').single();
+    if(!rnk.error){
+      await supabase.from('ranking').update({
+        points: Math.max(0, Number(rnk.data.points||0) + pointsDelta),
+        wins: Number(rnk.data.wins||0) + (result==='win'?1:0),
+        draws: Number(rnk.data.draws||0) + (result==='draw'?1:0),
+        losses: Number(rnk.data.losses||0) + (result==='loss'?1:0)
+      }).eq('id', rnk.data.id);
+    }
+
+    let nftUuid = null;
+    if(nftId && /^[0-9a-f-]{36}$/i.test(String(nftId))){
+      const nf = await supabase.from('nfts').select('*').eq('id', nftId).eq('user_id', user.id).maybeSingle();
+      if(!nf.error && nf.data){
+        nftUuid = nf.data.id;
+        await supabase.from('nfts').update({
+          stamina: Math.max(0, Number(nf.data.stamina||0)-1),
+          durability: Math.max(0, Number(nf.data.durability||0)-0.8),
+          exp: Number(nf.data.exp||0) + (mode === 'torneo' ? 10 : 5),
+          earned_usd: Number(nf.data.earned_usd||0) + (gemsDelta/32)
+        }).eq('id', nf.data.id);
+      }
+    }
+
+    const match = await supabase.from('matches').insert({
+      user_id:user.id,
+      nft_id:nftUuid,
+      mode: ['estadio','cancha','torneo'].includes(mode) ? mode : 'cancha',
+      result,
+      gems_delta:gemsDelta,
+      points_delta:pointsDelta,
+      durability_delta:nftUuid ? -0.8 : 0,
+      stamina_delta:nftUuid ? -1 : 0
+    }).select('*').single();
+    if(match.error) throw new Error(match.error.message);
+    return res.json({ ok:true, result, gemsDelta, pointsDelta, balance, match:match.data });
+  }catch(e){ return res.status(400).json({ ok:false, error:e.message }); }
 });
 
 app.get('/api/admin/users', async (req, res) => {
@@ -726,6 +862,28 @@ app.post('/api/admin/gifts/nft', async (req, res) => {
     const gift = await supabase.from('admin_gifts').insert({ admin_user_id:null, to_user_id:user.id, to_wallet:user.wallet_address, gift_type:'nft', catalog_code:catalogCode, status:'delivered', note:note || null, delivered_at:new Date().toISOString() }).select('*').single();
     if(gift.error) throw new Error(gift.error.message);
     return res.json({ ok:true, user, nft, gift:gift.data });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
+app.post('/api/admin/tournament-prize', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const { wallet, userId, gems, tournamentId, note } = req.body || {};
+    const user = await resolveUserTarget({ userId, wallet });
+    const balance = await addGemsToUser(user.id, Number(gems || 0), 'gems');
+    const gift = await supabase.from('admin_gifts').insert({
+      admin_user_id:null,
+      to_user_id:user.id,
+      to_wallet:user.wallet_address,
+      gift_type:'gems',
+      gems:Number(gems),
+      status:'delivered',
+      note: note || `Premio torneo ${tournamentId || ''}`.trim(),
+      delivered_at:new Date().toISOString()
+    }).select('*').single();
+    if(gift.error) throw new Error(gift.error.message);
+    return res.json({ ok:true, user, balance, gift:gift.data });
   }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
 });
 

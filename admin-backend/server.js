@@ -6,6 +6,7 @@ import nacl from 'tweetnacl';
 import { Address, beginCell, toNano } from '@ton/core';
 import { TonClient } from '@ton/ton';
 import { sha256 } from '@ton/crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const PORT = Number(process.env.PORT || 8787);
 const PROOF_TTL_SECONDS = Number(process.env.TON_PROOF_TTL_SECONDS || 300);
@@ -16,6 +17,8 @@ const INVOICE_WALLET_ADDRESS = process.env.INVOICE_WALLET_ADDRESS || 'EQD3u6Sffm
 const TONCENTER_ENDPOINT = process.env.TONCENTER_ENDPOINT || 'https://toncenter.com/api/v2/jsonRPC';
 const TONCENTER_API_KEY = process.env.TONCENTER_API_KEY || '';
 const USDT_DECIMALS = 6;
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const corsOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -54,6 +57,11 @@ const tonClient = new TonClient({
   endpoint: TONCENTER_ENDPOINT,
   apiKey: TONCENTER_API_KEY || undefined
 });
+
+const supabase = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+  : null;
+if(!supabase){ console.warn('ADVERTENCIA: Supabase no configurado. Balance/retiros persistentes deshabilitados.'); }
 
 const payloads = new Map();
 
@@ -280,8 +288,74 @@ async function buildUsdtTransaction({ ownerAddress, amountUsdt, kind, gems }){
   };
 }
 
+
+function requireSupabase(){
+  if(!supabase) throw new Error('Supabase no está configurado en Render');
+}
+function friendlyTonAddress(value){
+  return Address.parse(value).toString({ bounceable:false, urlSafe:true });
+}
+async function getOrCreateUser(address){
+  requireSupabase();
+  const walletRaw = normalizeTonAddress(address);
+  const walletAddress = friendlyTonAddress(address);
+  const isAdmin = adminWallets.has(walletRaw);
+
+  let { data:user, error } = await supabase
+    .from('app_users')
+    .select('*')
+    .eq('wallet_raw', walletRaw)
+    .maybeSingle();
+  if(error) throw new Error(error.message);
+
+  if(!user){
+    const inserted = await supabase
+      .from('app_users')
+      .insert({ wallet_address: walletAddress, wallet_raw: walletRaw, is_admin: isAdmin, last_login_at: new Date().toISOString() })
+      .select('*')
+      .single();
+    if(inserted.error) throw new Error(inserted.error.message);
+    user = inserted.data;
+  } else {
+    const updated = await supabase
+      .from('app_users')
+      .update({ wallet_address: walletAddress, is_admin: isAdmin, last_login_at: new Date().toISOString() })
+      .eq('id', user.id)
+      .select('*')
+      .single();
+    if(updated.error) throw new Error(updated.error.message);
+    user = updated.data;
+  }
+
+  const bal = await supabase.from('balances').upsert({ user_id: user.id }, { onConflict:'user_id', ignoreDuplicates:false }).select('*').single();
+  if(bal.error) throw new Error(bal.error.message);
+  await supabase.from('ranking').upsert({ user_id: user.id, season:'S1' }, { onConflict:'user_id,season', ignoreDuplicates:true });
+  return { user, balance: bal.data };
+}
+async function getUserState(userId){
+  requireSupabase();
+  const [{ data:balance, error:balanceError }, { data:nfts, error:nftsError }] = await Promise.all([
+    supabase.from('balances').select('*').eq('user_id', userId).single(),
+    supabase.from('nfts').select('*').eq('user_id', userId).is('destroyed_at', null).order('created_at', { ascending:true })
+  ]);
+  if(balanceError) throw new Error(balanceError.message);
+  if(nftsError) throw new Error(nftsError.message);
+  return { balance, nfts: nfts || [] };
+}
+function calcWithdrawal(gemsRequested){
+  const gems = Number(gemsRequested);
+  if(!Number.isInteger(gems)) throw new Error('Monto de gemas inválido');
+  if(gems < 160 || gems > 3200) throw new Error('Monto fuera de rango (160–3200 gemas)');
+  const feePercentGems = Math.floor(gems * 0.05);
+  const feeFixedGems = 32;
+  const gemsNet = Math.max(0, gems - feePercentGems - feeFixedGems);
+  const amountUsdtNet = +(gemsNet / 32).toFixed(6);
+  if(gemsNet <= 0) throw new Error('Monto neto inválido después de comisiones');
+  return { gemsRequested:gems, feePercentGems, feeFixedGems, gemsNet, amountUsdtNet };
+}
+
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'futmundi-admin-backend' });
+  res.json({ ok: true, service: 'futmundi-admin-backend', supabase: !!supabase });
 });
 
 app.get('/api/admin/payload', (_req, res) => {
@@ -328,17 +402,85 @@ app.post('/api/payments/usdt-order', async (req, res) => {
     const { address, amountUsdt, gems, kind } = req.body || {};
     if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
     const payment = validatePaymentAmount(kind, amountUsdt, gems);
-    const built = await buildUsdtTransaction({
-      ownerAddress: address,
-      amountUsdt: payment.usdt,
-      gems: payment.gems,
-      kind
-    });
-    return res.json({
-      ok:true,
-      transaction: { validUntil: built.validUntil, messages: built.messages },
-      meta: built.meta
-    });
+    const built = await buildUsdtTransaction({ ownerAddress: address, amountUsdt: payment.usdt, gems: payment.gems, kind });
+    let order = null;
+    let user = null;
+    if(supabase){
+      const created = await getOrCreateUser(address);
+      user = created.user;
+      const inserted = await supabase.from('payment_orders').insert({
+        user_id: user.id,
+        wallet_address: friendlyTonAddress(address),
+        kind,
+        amount_usdt: payment.usdt,
+        gems: payment.gems,
+        status: 'wallet_opened',
+        ton_payload: { validUntil: built.validUntil, messages: built.messages },
+        metadata: built.meta,
+        expires_at: new Date(built.validUntil * 1000).toISOString()
+      }).select('*').single();
+      if(inserted.error) throw new Error(inserted.error.message);
+      order = inserted.data;
+      if(kind === 'deposit'){
+        await supabase.from('deposits').insert({
+          user_id: user.id,
+          payment_order_id: order.id,
+          wallet_address: friendlyTonAddress(address),
+          amount_usdt: payment.usdt,
+          gems: payment.gems,
+          status: 'pending'
+        });
+      }
+    }
+    return res.json({ ok:true, orderId: order?.id || null, transaction: { validUntil: built.validUntil, messages: built.messages }, meta: built.meta });
+  }catch(e){
+    return res.status(400).json({ ok:false, error:e.message });
+  }
+});
+
+
+app.post('/api/user/sync', async (req, res) => {
+  try{
+    const { address } = req.body || {};
+    if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
+    const { user, balance } = await getOrCreateUser(address);
+    const state = await getUserState(user.id);
+    return res.json({ ok:true, user, balance: state.balance || balance, nfts: state.nfts });
+  }catch(e){
+    return res.status(400).json({ ok:false, error:e.message });
+  }
+});
+
+app.post('/api/withdrawals/request', async (req, res) => {
+  try{
+    const { address, walletTo, gemsRequested } = req.body || {};
+    if(!address) return res.status(400).json({ ok:false, error:'Wallet conectada requerida' });
+    if(!walletTo) return res.status(400).json({ ok:false, error:'Wallet destino requerida' });
+    Address.parse(walletTo); // valida destino TON
+    const { user } = await getOrCreateUser(address);
+    const calc = calcWithdrawal(Number(gemsRequested));
+
+    const { data:balance, error:balErr } = await supabase.from('balances').select('*').eq('user_id', user.id).single();
+    if(balErr) throw new Error(balErr.message);
+    if((balance.gems || 0) < calc.gemsRequested) throw new Error('Saldo insuficiente');
+
+    const newGems = Number(balance.gems) - calc.gemsRequested;
+    const newLocked = Number(balance.locked_gems || 0) + calc.gemsRequested;
+    const upd = await supabase.from('balances').update({ gems:newGems, locked_gems:newLocked }).eq('user_id', user.id).select('*').single();
+    if(upd.error) throw new Error(upd.error.message);
+
+    const ins = await supabase.from('withdrawals').insert({
+      user_id: user.id,
+      wallet_to: walletTo,
+      gems_requested: calc.gemsRequested,
+      fee_percent_gems: calc.feePercentGems,
+      fee_fixed_gems: calc.feeFixedGems,
+      gems_net: calc.gemsNet,
+      amount_usdt_net: calc.amountUsdtNet,
+      status: 'pending'
+    }).select('*').single();
+    if(ins.error) throw new Error(ins.error.message);
+    return res.json({ ok:true, withdrawal: ins.data, balance: upd.data, calc });
   }catch(e){
     return res.status(400).json({ ok:false, error:e.message });
   }

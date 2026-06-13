@@ -1705,7 +1705,10 @@ async function payUsdtJetton(kind, usdt, gems=0){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ address: STATE.tonWallet, amountUsdt: Number(usdt), gems: Number(gems||0), kind })
     });
-    const data = await res.json();
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch(e){ throw new Error('Backend Render no devolvió JSON. Revisa que Render redeployó server.js y que la URL API apunta a Render.'); }
     if(!res.ok || !data.ok) throw new Error(data.error || 'No se pudo crear orden USDT');
     const result = await window.tonConnectUI.sendTransaction(data.transaction);
     toast('Pago USDT enviado. Esperando confirmación blockchain.', true);

@@ -1639,15 +1639,26 @@ function renderTrainingModal(){
     inner.querySelector('#tr-usdt').textContent = usdt + ' USDT';
     inner.querySelector('#tr-nft-name').textContent = `${p.name} · Dur. ${p.durability.toFixed(1)}% · ⚽ ${p.stamina}/${p.maxStamina}`;
     list.style.display = 'none'; pay.style.display = 'block';
-    if(!inner.querySelector('#tr-apply')){
-      const apply = document.createElement('button');
-      apply.className = 'm-cta'; apply.id = 'tr-apply'; apply.type = 'button'; apply.textContent = 'Aplicar entrenamiento';
-      pay.appendChild(apply);
+    if(!inner.querySelector('#tr-pay-action')){
+      const pending = document.createElement('div');
+      pending.id = 'tr-pending-msg';
+      pending.className = 'm-warn';
+      pending.style.cssText = 'display:none;margin-top:10px;background:rgba(244,197,66,.08);border-color:rgba(244,197,66,.3);color:var(--fm-gold)';
+      const action = document.createElement('button');
+      action.className = 'm-cta';
+      action.id = 'tr-pay-action';
+      action.type = 'button';
+      action.textContent = 'Pagar entrenamiento';
+      pay.appendChild(action);
+      pay.appendChild(pending);
     }
-    inner.querySelector('#tr-apply').onclick = () => {
-      p.durability = 100; p.stamina = p.maxStamina || 4; p.exp = (p.exp || 0) + 25;
-      saveInventory(); toast(`${p.name} recuperado al 100%`, true);
-      pay.style.display='none'; list.style.display='flex'; renderTrainingModal();
+    inner.querySelector('#tr-pay-action').onclick = () => {
+      const pending = inner.querySelector('#tr-pending-msg');
+      if(pending){
+        pending.style.display = 'block';
+        pending.innerHTML = `Pago requerido: <b>${usdt} USDT</b> por red TON. El NFT se recuperará solo cuando el backend confirme el pago.`;
+      }
+      toast('Entrenamiento requiere pago confirmado', false);
     };
   }));
   inner.querySelector('#tr-back')?.addEventListener('click', () => { pay.style.display='none'; list.style.display='flex'; });

@@ -295,7 +295,17 @@ function requireSupabase(){
 function friendlyTonAddress(value){
   return Address.parse(value).toString({ bounceable:false, urlSafe:true });
 }
-async function getOrCreateUser(address){
+async function getReferrerByCode(refCode, walletRaw){
+  if(!refCode) return null;
+  const code = String(refCode).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32);
+  if(!code) return null;
+  const { data, error } = await supabase.from('app_users').select('*').eq('ref_code', code).maybeSingle();
+  if(error) throw new Error(error.message);
+  if(!data || data.wallet_raw === walletRaw) return null;
+  return data;
+}
+
+async function getOrCreateUser(address, referredByCode=null){
   requireSupabase();
   const walletRaw = normalizeTonAddress(address);
   const walletAddress = friendlyTonAddress(address);
@@ -308,23 +318,36 @@ async function getOrCreateUser(address){
     .maybeSingle();
   if(error) throw new Error(error.message);
 
+  let referrer = null;
+  if(referredByCode) referrer = await getReferrerByCode(referredByCode, walletRaw);
+
   if(!user){
+    const insertRow = { wallet_address: walletAddress, wallet_raw: walletRaw, is_admin: isAdmin, last_login_at: new Date().toISOString() };
+    if(referrer) insertRow.referred_by = referrer.id;
     const inserted = await supabase
       .from('app_users')
-      .insert({ wallet_address: walletAddress, wallet_raw: walletRaw, is_admin: isAdmin, last_login_at: new Date().toISOString() })
+      .insert(insertRow)
       .select('*')
       .single();
     if(inserted.error) throw new Error(inserted.error.message);
     user = inserted.data;
+    if(referrer){
+      await supabase.from('referrals').insert({ referrer_user_id: referrer.id, referred_user_id: user.id, commission_percent: 10 });
+    }
   } else {
+    const patch = { wallet_address: walletAddress, is_admin: isAdmin, last_login_at: new Date().toISOString() };
+    if(!user.referred_by && referrer) patch.referred_by = referrer.id;
     const updated = await supabase
       .from('app_users')
-      .update({ wallet_address: walletAddress, is_admin: isAdmin, last_login_at: new Date().toISOString() })
+      .update(patch)
       .eq('id', user.id)
       .select('*')
       .single();
     if(updated.error) throw new Error(updated.error.message);
     user = updated.data;
+    if(referrer && user.referred_by === referrer.id){
+      await supabase.from('referrals').upsert({ referrer_user_id: referrer.id, referred_user_id: user.id, commission_percent: 10 }, { onConflict:'referred_user_id', ignoreDuplicates:true });
+    }
   }
 
   const bal = await supabase.from('balances').upsert({ user_id: user.id }, { onConflict:'user_id', ignoreDuplicates:false }).select('*').single();
@@ -554,9 +577,9 @@ app.post('/api/payments/mark-sent', async (req, res) => {
 
 app.post('/api/user/sync', async (req, res) => {
   try{
-    const { address } = req.body || {};
+    const { address, refCode, startParam } = req.body || {};
     if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
-    const { user, balance } = await getOrCreateUser(address);
+    const { user, balance } = await getOrCreateUser(address, refCode || startParam || null);
     const state = await getUserState(user.id);
     return res.json({ ok:true, user, balance: state.balance || balance, nfts: state.nfts, ranking: state.ranking });
   }catch(e){

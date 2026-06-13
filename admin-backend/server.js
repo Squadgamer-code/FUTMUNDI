@@ -209,10 +209,44 @@ async function getJettonWalletAddress(ownerAddress){
   return stack.stack.readAddress();
 }
 
+async function getJettonWalletData(jettonWalletAddress){
+  const stack = await tonClient.runMethod(jettonWalletAddress, 'get_wallet_data');
+  const balance = stack.stack.readBigNumber();
+  const owner = stack.stack.readAddress();
+  const master = stack.stack.readAddress();
+  return { balance, owner, master };
+}
+
+function sameAddress(a, b){
+  const aa = Address.parse(a.toString()).toRawString();
+  const bb = Address.parse(b.toString()).toRawString();
+  return aa === bb;
+}
+
+async function assertUsdtWalletReady(ownerAddress, senderJettonWallet, amountUsdt){
+  const required = toUsdtUnits(amountUsdt);
+  let data;
+  try{
+    data = await getJettonWalletData(senderJettonWallet);
+  }catch(e){
+    throw new Error('Tu wallet no tiene USDT Jetton activo en TON. Recibe/carga USDT en TON antes de pagar.');
+  }
+  const owner = Address.parse(ownerAddress);
+  const master = Address.parse(USDT_MASTER_ADDRESS);
+  if(!sameAddress(data.owner, owner)) throw new Error('La wallet USDT no pertenece al usuario conectado');
+  if(!sameAddress(data.master, master)) throw new Error('El Jetton detectado no corresponde al USDT oficial de TON');
+  if(data.balance < required){
+    const bal = Number(data.balance) / 10 ** USDT_DECIMALS;
+    throw new Error(`Saldo USDT insuficiente. Tienes ${bal.toFixed(2)} USDT en TON.`);
+  }
+  return data;
+}
+
 async function buildUsdtTransaction({ ownerAddress, amountUsdt, kind, gems }){
   const owner = Address.parse(ownerAddress);
   const destination = Address.parse(INVOICE_WALLET_ADDRESS);
   const senderJettonWallet = await getJettonWalletAddress(ownerAddress);
+  await assertUsdtWalletReady(ownerAddress, senderJettonWallet, amountUsdt);
   const queryId = BigInt(Date.now());
   const comment = `FUTMUNDI:${kind}:${amountUsdt}:${gems || 0}:${queryId}`;
   const forwardPayload = beginCell().storeUint(0, 32).storeStringTail(comment).endCell();

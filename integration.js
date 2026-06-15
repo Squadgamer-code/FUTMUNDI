@@ -130,6 +130,14 @@
       mode: mode,
       onMatchEnd: handleMatchEnd,
     });
+    setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+      if (mountEl) {
+        mountEl.style.display = "flex";
+        mountEl.style.justifyContent = "center";
+        mountEl.style.alignItems = "center";
+      }
+    }, 80);
   }
 
   function handleMatchEnd(detail) {

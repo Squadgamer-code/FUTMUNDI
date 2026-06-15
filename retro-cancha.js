@@ -734,9 +734,9 @@ var RetroCancha = (function () {
         (this.unsubscribers = []),
         (this.images = {}),
         (this.frames = new Map()),
-        (this.assetsReady = !1),
+        (this.assetsReady = !0),
         (this.assetError = ""),
-        (this.started = !1),
+        (this.started = !0),
         (this.ended = !1),
         (this.submitted = !1),
         (this.running = !1),
@@ -1171,9 +1171,16 @@ var RetroCancha = (function () {
           this.grassPattern = null;
         }
 
-        this.resetMatch(!1);
-        this.updateOverlayReady();
-      } catch(e) { console.warn("Asset load override error", e); }
+        this.assetsReady = true;
+        this.started = true;
+        this.ended = false;
+        this.resetMatch(false);
+        this.started = true;
+        if(this.hud && this.hud.overlay) this.hud.overlay.hidden = true;
+      } catch(e) { 
+        console.warn("Asset override error", e);
+        this.assetsReady = true; this.started = true;
+      }
     }
 
   async loadBestScore() {
@@ -1265,13 +1272,18 @@ var RetroCancha = (function () {
       const e = Math.min(0.05, (t - this.lastTime) / 1e3 || 0);
       this.lastTime = t;
       const s = e * this.config.gameSpeed;
-      (this.assetsReady && this.started && !this.ended
-        ? this.update(s, e)
-        : this.assetsReady && !this.started && this.updateAttract(e),
-        this.updateEffects(e),
-        this.render(),
-        this.updateHud(),
-        (this.raf = requestAnimationFrame((a) => this.tick(a))));
+      
+      this.assetsReady = true;
+      this.started = true;
+
+      if (!this.ended) {
+        this.update(s, e);
+      }
+      
+      this.updateEffects(e);
+      this.render();
+      this.updateHud();
+      this.raf = requestAnimationFrame((a) => this.tick(a));
     }
     createInitialState() {
       return {
@@ -1957,16 +1969,10 @@ var RetroCancha = (function () {
     render() {
       const t = this.ctx,
         { w: e, h: s } = this.size;
-      if (
-        (t.save(),
-        t.setTransform(this.dpr, 0, 0, this.dpr, 0, 0),
-        (t.fillStyle = "#101820"),
-        t.fillRect(0, 0, e, s),
-        !this.assetsReady)
-      ) {
-        ((t.fillStyle = "#101820"), t.fillRect(0, 0, e, s), t.restore());
-        return;
-      }
+      t.save();
+      t.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      t.fillStyle = "#101820";
+      t.fillRect(0, 0, e, s);
       const a = this.screenShake();
       (t.translate(a.x, a.y),
         this.drawBackdrop(t),

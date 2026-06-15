@@ -52,8 +52,8 @@
 }
 
 .fbet-modal-box {
-  background: #091017;
-  border: 1px solid #2a3f55;
+  background: #070d09;
+  border: 1px solid #39ff88;
   border-radius: 20px;
   width: 100%;
   max-width: 780px;
@@ -71,7 +71,7 @@
 
 /* Encabezado */
 .fbet-header {
-  background: #0f1a24;
+  background: #0e1a12;
   border-bottom: 1px solid #1e2d3d;
   padding: 14px 20px;
   display: flex;
@@ -124,7 +124,7 @@
 
 /* Pestañas de Navegación */
 .fbet-nav-tabs {
-  background: #0b131b;
+  background: #0a1410;
   display: flex;
   border-bottom: 1px solid #1a2735;
   padding: 0 20px;
@@ -184,7 +184,7 @@
   flex: 1;
   min-width: 200px;
   background: #060a0f;
-  border: 1px solid #2a3f55;
+  border: 1px solid #39ff88;
   border-radius: 8px;
   padding: 8px 12px;
   color: #fff;
@@ -234,8 +234,8 @@
 }
 
 .fbet-match-card {
-  background: #0d1722;
-  border: 1px solid #1c2b3b;
+  background: #152419;
+  border: 1px solid #2a8a4a;
   border-radius: 14px;
   padding: 16px;
   display: flex;
@@ -328,7 +328,7 @@
 }
 
 .fbet-odd-btn {
-  background: #121e2b;
+  background: #1d5a2a;
   border: 1px solid #23374b;
   border-radius: 8px;
   padding: 10px 12px;
@@ -463,7 +463,7 @@
 }
 
 .fbet-ticket-minimal-card {
-  background: #0d1722;
+  background: #152419;
   border: 1px solid #1e2d3d;
   border-radius: 12px;
   padding: 14px;

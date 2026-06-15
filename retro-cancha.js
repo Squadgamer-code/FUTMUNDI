@@ -927,10 +927,7 @@ var RetroCancha = (function () {
     `),
         (this.stage = this.root.querySelector(".soccer-stage")),
         (this.canvas = this.root.querySelector("canvas")),
-        (this.ctx = this.canvas.getContext("2d", {
-          alpha: !1,
-          desynchronized: !0,
-        })),
+        (this.ctx = this.canvas.getContext("2d")),
         (this.hud = {
           blue: this.root.querySelector("[data-blue]"),
           red: this.root.querySelector("[data-red]"),
@@ -1220,22 +1217,27 @@ var RetroCancha = (function () {
         (this.hud.overlayCopy.textContent = s));
     }
     resize() {
-      const t = this.stage.getBoundingClientRect(),
-        e = Math.max(1, t.width),
-        s = Math.max(1, t.height);
-      ((this.dpr = Math.min(2, window.devicePixelRatio || 1)),
-        (this.size = { w: e, h: s }),
-        (this.canvas.width = Math.round(e * this.dpr)),
-        (this.canvas.height = Math.round(s * this.dpr)),
-        (this.canvas.style.width = `${e}px`),
-        (this.canvas.style.height = `${s}px`),
-        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0),
-        (this.layout = this.computeLayout(e, s)),
-        this.images.grass &&
-          (this.grassPattern = this.ctx.createPattern(
-            this.images.grass,
-            "repeat",
-          )));
+      let e = Math.max(1, this.stage ? this.stage.clientWidth : 0);
+      let s = Math.max(1, this.stage ? this.stage.clientHeight : 0);
+      
+      if (e < 100 || s < 100) {
+        e = Math.max(320, window.innerWidth || document.documentElement.clientWidth || 800);
+        s = Math.max(240, window.innerHeight || document.documentElement.clientHeight || 400);
+      }
+
+      this.dpr = Math.min(2, window.devicePixelRatio || 1);
+      this.size = { w: e, h: s };
+      this.canvas.width = Math.round(e * this.dpr);
+      this.canvas.height = Math.round(s * this.dpr);
+      this.canvas.style.width = `${e}px`;
+      this.canvas.style.height = `${s}px`;
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      this.layout = this.computeLayout(e, s);
+      if (this.images && this.images.grass && this.images.grass.width > 0) {
+        this.grassPattern = this.ctx.createPattern(this.images.grass, "repeat");
+      } else {
+        this.grassPattern = null;
+      }
     }
     computeLayout(t, e) {
       const padX = Math.max(16, t * 0.08);
@@ -1275,6 +1277,10 @@ var RetroCancha = (function () {
       
       this.assetsReady = true;
       this.started = true;
+
+      if (this.canvas && this.canvas.width < 100) {
+        this.resize();
+      }
 
       if (!this.ended) {
         this.update(s, e);

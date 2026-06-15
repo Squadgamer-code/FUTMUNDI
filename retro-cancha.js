@@ -2142,46 +2142,40 @@ var RetroCancha = (function () {
       
       const hasBall = this.state.ball.owner === e;
 
-      // Possession Ring resplandeciente en el pasto
+      t.save();
+      t.globalAlpha = 0.45;
+      t.fillStyle = a ? "#ffffff" : "#07110b";
+      t.beginPath();
+      t.ellipse(s.x, s.y + 6, 6 * s.scale, 3 * s.scale, 0, 0, Math.PI * 2);
+      t.fill();
+
+      // Ring brillante de posession
       if (hasBall) {
         t.save();
         t.shadowBlur = 15; t.shadowColor = e.team === "blue" ? "#39ff88" : "#ffe871";
         t.strokeStyle = e.team === "blue" ? "#39ff88" : "#ffe871"; t.lineWidth = 3.5;
         t.beginPath();
-        t.ellipse(s.x, s.y + 12, 11 * s.scale, 5.5 * s.scale, 0, 0, Math.PI * 2);
+        t.ellipse(s.x, s.y + 3, 9 * s.scale, 4.5 * s.scale, 0, 0, Math.PI * 2);
         t.stroke();
         t.restore();
       } else if (a) {
-        t.save();
         t.globalAlpha = 0.95;
-        t.strokeStyle = "#ffe871"; t.lineWidth = 2.5;
+        t.strokeStyle = "#ffe871"; t.lineWidth = 2;
         t.beginPath();
-        t.ellipse(s.x, s.y + 12, 9 * s.scale, 4.5 * s.scale, 0, 0, Math.PI * 2);
+        t.ellipse(s.x, s.y + 4, 7 * s.scale, 3.5 * s.scale, 0, 0, Math.PI * 2);
         t.stroke();
-        t.restore();
       }
+      t.restore();
 
-      // Dibujamos el sprite real WebP si lo tenemos
-      const isKeeper = e.keeper || e.frame.includes("keeper");
-      let realImg = e.team === "blue" ? this.realSprites.blue : this.realSprites.red;
-      if(isKeeper) realImg = e.team === "blue" ? this.realSprites.kw : this.realSprites.kb;
-
-      if(realImg && realImg.width > 0) {
-        const pw = 28 * s.scale;
-        const ph = 34 * s.scale;
-        t.save(); t.translate(s.x, s.y);
-        // Volteamos si van hacia la izquierda
-        if(e.dir && e.dir.x < 0) { t.scale(-1, 1); }
-        t.drawImage(realImg, -pw/2, -ph/2, pw, ph);
-        t.restore();
-      } else {
-        // Fallback RAM
-        t.save(); t.translate(s.x, s.y);
-        t.fillStyle = e.team === "blue" ? "#1e63d6" : "#e04545";
-        if(isKeeper) t.fillStyle = "#f5a04a";
-        t.fillRect(-10*s.scale, -12*s.scale, 20*s.scale, 24*s.scale);
-        t.restore();
-      }
+      // El dibujo animado de consola por this.drawAtlas sin nada de fondos verdes de croma
+      this.drawAtlas(
+        t,
+        e.frame,
+        s.x,
+        s.y + Math.sin(performance.now() / 110 + e.x) * 0.7,
+        13.5 * s.scale,
+        Math.atan2(e.dir.y, e.dir.x) // True Landscape rotacion apaisada
+      );
     }
 
     drawBall(t) {
@@ -2197,7 +2191,6 @@ var RetroCancha = (function () {
 
       const e = this.worldToScreen(bx, by);
 
-      // Sombra
       t.save();
       t.fillStyle = "rgba(0,0,0,0.5)";
       t.beginPath();
@@ -2205,22 +2198,18 @@ var RetroCancha = (function () {
       t.fill();
       t.restore();
 
-      const bw = 16 * e.scale;
-      const bh = 16 * e.scale;
+      const isMoving = Math.hypot(bObj.vx || 0, bObj.vy || 0) > 5;
+      const angle = isMoving ? (bObj.x + bObj.y) * 0.4 : 0;
 
-      if (this.realSprites && this.realSprites.ball && this.realSprites.ball.width > 0) {
+      if (!owner) {
         t.save();
-        if(owner) {
-          t.shadowBlur = 18; t.shadowColor = owner.team === "blue" ? "#3fbfff" : "#ff4545";
-        } else {
-          t.shadowBlur = 12; t.shadowColor = "#ffffff";
-        }
-        t.drawImage(this.realSprites.ball, e.x - bw/2, e.y - bh/2, bw, bh);
+        t.shadowBlur = 12; t.shadowColor = "#ffffff";
+        this.drawAtlas(t, "soccer_ball", e.x, e.y - 1.8 * e.scale, 7.5 * e.scale, angle);
         t.restore();
       } else {
-        // Fallback
         t.save();
-        t.fillStyle = "#ffffff"; t.beginPath(); t.arc(e.x, e.y, bw/2, 0, Math.PI*2); t.fill();
+        t.shadowBlur = 18; t.shadowColor = owner.team === "blue" ? "#3fbfff" : "#ff4545";
+        this.drawAtlas(t, "soccer_ball", e.x, e.y - 1.5 * e.scale, 7.2 * e.scale, angle);
         t.restore();
       }
     }

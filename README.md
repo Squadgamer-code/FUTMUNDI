@@ -1,50 +1,52 @@
 # 🏟️ Retro Cancha 03 - Futmundi Web3 Ecosystem Pro (TON Network)
 
-Juego de fútbol estilo arcade top-down y plataforma descentralizada de apuestas deportivas en vivo optimizada con integración de **Contratos Inteligentes en TON (The Open Network)** para pagos en **`USDT`**, Auto-Fallback gráfico en RAM y conexión nativa con tu cuenta oficial de **`API-Sports (API-Football v3)`** (Zero Lag en Vercel).
+Juego de fútbol estilo arcade top-down apaisado (Landscape) y plataforma descentralizada de apuestas deportivas en vivo optimizada con integración de **Contratos Inteligentes en TON (The Open Network)** para pagos directos en **`USDT`**, agilidad de Gameplay profesional ("Snappy Controller") y conexión en tiempo real mediante tu Master Key oficial de **`API-Sports (API-Football v3)`** (Zero Lag en Vercel).
 
 ---
 
-## ✨ Mega Actualización y Blindaje de Producción (Engine Fix 2026)
+## ✨ Blindaje de Motor y Jugabilidad Horizontal (2026 Ultimate Build)
 
-1. **🛠️ Blindaje del Motor de Juego (`preloadAssets` Auto-Fallback en RAM)**:
-   - **Arranque Instantáneo Garantizado**: Se solucionó de forma definitiva el error `"No se pudo cargar la cancha. Reintenta actualizar."` que saltaba en Vercel al fallar la red o no encontrar recursos externos.
-   - Si el `fetch` de alguna imagen o del JSON de *frames* falla, el motor genera lienzos de `canvas` en la memoria RAM al milisegundo (estadio, pasto verde, arcos y sprites), ejecutando `this.resetMatch(!1)` para que el minijuego arranque siempre con una fluidez y estabilidad gloriosa.
+1. **🖥️ Formato Horizontal Apaisado de Alta Fidelidad (Landscape Mode)**:
+   - **Orientación Automática**: Se eliminó la distorsión vertical empaquetada. Al ingresar a jugar tus partidos, el lienzo de la cancha se empaqueta y bloquea de forma forzada en **formato horizontal apaisado ancha (16:9 Landscape)** (`screen.orientation.lock("landscape")`), emulando la inmersión y ergonomía de una consola de videojuegos profesional en cualquier teléfono móvil o PC.
 
-2. **🏆 Flujo Limpio de Torneos Mundiales (`TEMPLATES['torneo']`)**:
-   - Se eliminaron los botones duplicados de configuración o *"Entrar a disputar torneo"*.
-   - El recuadro del torneo presenta únicamente tu botón de **`[Inscribirme — 10 USDT]`** (`#t-register`). Al confirmar el pago exitoso en el contrato, te abre de forma inmersiva la cancha contra tus rivales.
+2. **⚽ Visibilidad Monumental en RAM (Balón de Neón y Redes Inmensas)**:
+   - Para erradicar para siempre los errores externos de Vercel, el motor auto-genera sus recursos en memoria RAM.
+   - En este proceso, se aumentó radicalmente la escala y contorno del balón (`shadowBlur: 12, fillStyle: '#ffffff'`) para que se visualice como un astro resplandeciente en el centro del pasto. Así mismo, la portería enemiga se dotó con una red interior blanca visible y gruesos marcos dorados de 8 píxeles.
 
-3. **📸 Interfaz Principal Cero Botones Duplicados (`.actions`)**:
-   - Se removieron por completo los botones secundarios de `"🔍 Configuración de Estadio"` y `"🔍 Configuración de Cancha"`.
-   - Toda la interactividad reside de forma ultra intuitiva y directa en las **dos grandiosas fotografías de tu pantalla central**:
-     - 📸 **Fotografía Izquierda (`"Cancha"` - PvE)**: Inicia de inmediato tu minijuego físico para practicar 1 Jugador vs Inteligencia Artificial (CPU).
-     - 📸 **Fotografía Derecha (`"Estadio"` - PvP)**: Inicia de inmediato tu minijuego físico para competir Jugador 1 vs Jugador 2.
+3. **⚡ Dinámica de Joystick "Ultra Snappy" (Cero Latencia Táctil)**:
+   - Siguiendo tu diagnóstico de agilidad, se eliminó la fricción o *deadzone* del joystick táctil (`updateStick`). 
+   - Tan pronto deslices el pulgar en cualquier coordenada hacia la izquierda (`-1`), derecha (`+1`), arriba o abajo, el vector asume su potencia absoluta de inmediato (`{x: l.x, y: l.y}`). Así mismo, se multiplicó la velocidad de aceleración (`speed × 1.7`) en la física de los futbolistas para que la respuesta de regate y persecución sea instantánea y furiosa.
 
-4. **🔒 Módulo Híbrido de Persistencia en Supabase DB (`BetDB`)**:
-   - **Almacenamiento Permanente en la Nube**: El Centro de Apuestas (`futmundi-bet.js`) no depende solo de la memoria del navegador (`localStorage`). Al generarse cada ticket, realizar un pago USDT o liquidar un premio, el sistema realiza peticiones asíncronas de guardado en Supabase a través de tu backend Render (`window.FM_ADMIN_API_BASE`).
-   - **Sincronización Automática Web3**: Cuando un usuario borra su caché, actualiza la página o entra desde otro celular, la app jala y unifica sus boletas en la nube en tiempo real.
+4. **🎽 Personalización en Vercel (Tu Nombre NFT estamapado en el HUD)**:
+   - En el recuadro superior `.hud-blue` (donde anteriormente aparecía *"BLUE"* de forma fija), el Auto-Parche del sistema atrapa el nombre exacto de tu futbolista NFT seleccionado en tu inventario (por ejemplo, `[NEYMAR]`, `[LIONEL MESSI]`, `[BELLINGHAM]` o `[JAMES RODRÍGUEZ]`) y lo estampa con orgullo como el dueño del equipo en la cancha.
 
-5. **🎲 Sportsbook Conectado en Vivo a tu Cuenta en API-Sports (`futmundi-bet.js`)**:
-   - **Master Key Unificada (`cae4...7bc6`)**: Permite consumir sin restricciones de autenticación y al milisegundo cualquier liga, copa o deporte (Fútbol, Baloncesto, NBA, Fórmula 1, MMA, Béisbol) de `api-sports.io` enviando los headers automáticos `"x-apisports-key"` y `"x-rapidapi-key"`.
-   - **Apuestas Directas en USDT ($10 en adelante)**: Al elegir Local (1), Empate (X) o Visitante (2), la consola te pide depositar el monto exacto en **USDT / dólares nativos** con un mínimo estricto de `$10.00 USDT` a la dirección de tu smart contract `EQD3u6...MIs`. Si intenta colocar un saldo menor a 10 USDT, el script bloquea la boleta en el acto.
-   - **Premios Retirables en Gemas**: Al culminar el encuentro a ganador, el jugador le da a **`[🎁 Reclamar Premio]`**, donde se convierten sus ganancias en USD a **Gemas retirables** directo a su balance final.
+5. **🏆 Flujo Limpio de Modos en el Diseño Principal (` TEMPLATES`)**:
+   - 📸 **Fotografía Izquierda (`"Cancha"` - PvE)**: Destinada de forma exclusiva para que practiques y juegues partidos rápidos usando tu NFT contra la Inteligencia Artificial de la CPU. Inicia `"pve"` físico de inmediato.
+   - 📸 **Fotografía Derecha (`"Estadio"` - PvP)**: Destinada para los grandes enfrentamientos competitivos **Jugador 1 vs Jugador 2**. Inicia `"pvp"` físico de inmediato.
+   - 🏆 **Copa del Riel Derecho (`"Torneo Mundial"`)**: Solo presenta tu botón de **`[Inscribirme — 10 USDT]`**. Tras verificar el pago en tu contrato, te abre de forma inmersiva el torneo de 15 rondas.
+
+6. **🔒 Módulo Híbrido de Persistencia Remota en Supabase DB (`BetDB`)**:
+   - **Almacenamiento Permanente en la Nube**: Al generarse cada ticket en tu Centro de Apuestas (`futmundi-bet.js`) o liquidar un premio, el sistema realiza peticiones asíncronas de guardado en Supabase a través de tu backend Render (`window.FM_ADMIN_API_BASE`). Tras reclamar las Gemas, se abonan directo a tu balance final de retiros.
+
+7. **🎲 Sportsbook Conectado en Vivo a tu Master Key de API-Sports**:
+   - Conectado directamente a tu clave secreta `cae4...7bc6`. Consume `/fixtures?live=all` sin restricciones en el protocolo `"x-apisports-key"`, traémdotelo al segundo los encuentros en vivo de todos los deportes soportados por `api-sports.io`. Apuestas en billetes de `$10.00+ USDT` depositables en tu smart contract de TON (`EQD3u6...MIs`).
 
 ---
 
-## 📁 Estructura Definitiva de Producción para GitHub y Vercel
+## 📁 Contenido de tu Paquete Definitivo en GitHub
 
-Sube y extrae el contenido de **`FUTMUNDI-ENGINE-FIX-PRODUCTION-BUILD.zip`** de forma directa en tu repositorio en GitHub para compilar la versión definitiva en Vercel:
+Extrae y arrastra los elementos de **`FUTMUNDI-HORIZONTAL-PRO-GAMEPLAY.zip`** directo sobre tu rama en GitHub para desplegar tu Telegram Mini App en Vercel:
 
 ```text
 mi-repositorio-futmundi/
 ├── index (25).html             # Portal original web3
-├── index-corregido.html        # Portal web3 Telegram Mini App (Diseño central limpio)
-├── retro-cancha.js             # Motor del minijuego (⚠️ CON AUTO-FALLBACK EN RAM)
-├── retro-cancha.css            # Estilos visuales generales
-├── futmundi-bet.js             # ⚠️ MÓDULO DE APUESTAS WEB3 (Persistencia Supabase DB)
-├── futmundi-bet.css            # ⚠️ ESTILOS DEL SPORTSBOOK PRO
-├── integration.js              # Capa de comunicación y "Auto-Patcher Universal"
-├── assets.json                 # Mapeo de imágenes
+├── index-corregido.html        # Portal web3 Telegram Mini App (Sincronizado con juego real)
+├── retro-cancha.js             # Motor del minijuego (⚠️ HORIZONTAL 16/9, RAM BALÓN MEGA)
+├── retro-cancha.css            # Estilos visuales de la arena y Sportsbook
+├── futmundi-bet.js             # Módulo de Apuestas Web3 (Conexión API-Sports real)
+├── futmundi-bet.css            # Estilos del Sportsbook de Apuestas
+├── integration.js              # Capa de comunicación y DOM Parche Universal Apaisado
+├── assets.json                 # Manifiesto de imágenes
 ├── README.md                   # Este manual técnico
 └── generated-assets/           # ⚠️ ARRASTRAR LA CARPETA COMPLETA AL REPOSITORIO
     ├── stadium_backdrop.png    # Fondo del estadio (1920x1080)
@@ -54,4 +56,4 @@ mi-repositorio-futmundi/
     └── player_atlas-frames.json# Metadata con coordenadas de sprites
 ```
 
-**¡Tienes la plataforma deportiva, de apuestas Web3 y de videojuegos más monstruosa de The Open Network!** 🏆⚽⚡
+**¡El titán indiscutible del gaming Web3 apaisado y apuestas descentralizadas en TON es Futmundi!** 🏆⚽⚡

@@ -1290,67 +1290,55 @@ const TEMPLATES = {
       </div>`
   },
   estadio: {
-    title: "Selección de Estadio",
+    title: "Gran Estadio Mundial (PvP)",
     body: `
-      <div class="m-broadcast-bar"><span class="live">LIVE</span><span class="sep"></span><span>FM · CH 01</span></div>
-      <div class="stadium3d">
+      <div class="m-broadcast-bar"><span class="live">COMPETICIÓN 1v1</span><span class="sep"></span><span>Enfrentamiento Físico en Vivo</span></div>
+      <div class="stadium3d" style="margin-bottom:16px;">
         <div class="stands"></div>
         <div class="lights"></div>
         <div class="field"></div>
-        <div class="badge">Estadio Mundial · 80k</div>
+        <div class="badge">Estadio Mundial Pro · 80k Espectadores</div>
       </div>
-      <div class="m-reward-strip">
-        <span class="lbl">Premio total</span>
-        <span class="val">5.000 💎</span>
+      <div style="background:#121e2b; border:1px solid #1e2d3d; padding:14px; border-radius:16px; margin-bottom:18px; color:#a0b4c8; font-size:0.9rem; text-align:left; line-height:1.4;">
+        ⚽ Enfrenta a tu contrincante en la misma cancha. Sincroniza a tu futbolista NFT y demuestra quién tiene el mejor regate, tiro y táctica en el césped.
       </div>
-      <div class="m-count" style="margin-bottom:12px">
-        <div><b>4d</b><span>Días</span></div>
-        <div><b>10h</b><span>Hrs</span></div>
-        <div><b>59m</b><span>Min</span></div>
-        <div><b>54s</b><span>Seg</span></div>
-      </div>
-      <div class="m-section">Distribución de premios</div>
-      <div class="m-prizes">
-        <div class="m-prize gold"><span class="pos">1°</span><div class="val">2.600</div><div class="lbl">Gemas</div></div>
-        <div class="m-prize"><span class="pos">2°</span><div class="val">1.500</div><div class="lbl">Gemas</div></div>
-        <div class="m-prize"><span class="pos">3°</span><div class="val">500</div><div class="lbl">Gemas</div></div>
-      </div>
-      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pvp')" type="button">🎮 INSCRIBIRME Y JUGAR EN ESTADIO (PvP)</button>`
+      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pvp')" type="button" style="font-size:15px; box-shadow:0 6px 25px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">
+        ⚽ ENTRAR A JUGAR EN EL ESTADIO (PvP FÍSICO)
+      </button>`
   },
   cancha: {
-    title: "Futcancha",
+    title: "FutCancha de Práctica (PvE)",
     body: `
-      <div class="m-broadcast-bar"><span class="live">PRÁCTICA</span><span class="sep"></span><span>elige tu cancha</span></div>
-      <div class="m-section">Ganancias por partido</div>
-      <div class="m-results">
-        <div class="m-result win"><b>+45</b><span>Victoria</span></div>
-        <div class="m-result draw"><b>+15</b><span>Empate</span></div>
-        <div class="m-result lose"><b>-10</b><span>Derrota</span></div>
+      <div class="m-broadcast-bar"><span class="live">MODO 1 JUGADOR vs IA</span><span class="sep"></span><span>elige tu nivel</span></div>
+      <div style="background:#121e2b; border:1px solid #1e2d3d; padding:12px; border-radius:14px; margin-bottom:14px; color:#a0b4c8; font-size:0.85rem; text-align:left; line-height:1.4;">
+        ⚽ Practica con tu Futbolista NFT en modo local contra la Inteligencia Artificial (CPU). Ganar partidos te sumará puntos y gemas a tu balance.
       </div>
-      <div class="m-section">Elige tu cancha</div>
-      <div class="stadium-grid">
-        <div class="stadium-card gold">
+      <div class="m-section">Elige tu Dificultad y Cancha de Disputa</div>
+      <div class="stadium-grid" style="margin-bottom:16px;">
+        <div class="stadium-card gold" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch"><div class="turf"></div></div>
           <div class="name">Cancha Mundial</div>
-          <div class="meta">Élite · +2 pts</div>
+          <div class="meta">Élite Про · +2 PTS</div>
         </div>
-        <div class="stadium-card">
+        <div class="stadium-card" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch arena"><div class="turf"></div></div>
           <div class="name">Arena Indoor</div>
-          <div class="meta">Fácil · +1 pt</div>
+          <div class="meta">Media · +1 PTS</div>
         </div>
-        <div class="stadium-card">
+        <div class="stadium-card" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch barrial"><div class="turf"></div></div>
-          <div class="name">Barrial</div>
-          <div class="meta">Fácil · +1 pt</div>
+          <div class="name">Barrial Futsal</div>
+          <div class="meta">Normal Pro Físico</div>
         </div>
-        <div class="stadium-card">
+        <div class="stadium-card" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch"><div class="turf"></div></div>
-          <div class="name">Liga Mundial</div>
-          <div class="meta">Casual</div>
+          <div class="name">Liga de Barrio</div>
+          <div class="meta">Casual Amistoso</div>
         </div>
       </div>
-      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')" type="button">🎮 JUGAR PARTIDO AMISTOSO vs CPU (PvE)</button>`
+      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')" type="button" style="font-size:15px; box-shadow:0 6px 25px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">
+        ⚽ JUGAR EN CANCHA SELECCIONADA vs CPU (PvE FÍSICO)
+      </button>`
   },
   market: {
     title: "Market",

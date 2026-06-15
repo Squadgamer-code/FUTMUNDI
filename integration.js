@@ -87,8 +87,18 @@
   }
 
   
+  
   window.__FM_UNIVERSAL_OPEN_GAME = function(mode) {
-    console.info("[UniversalOpenGame] Iniciando minijuego físico en modo:", mode);
+    if (!window.STATE || !window.STATE.tonWallet) {
+      alert("⚠️ ACCESO DENEGADO: Tu Billetera de TON no se encuentra conectada. Por favor, conecta tu Billetera en la parte superior antes de entrar a disputar partidos en la blockchain.");
+      return;
+    }
+    if (typeof getSelectedPlayer === "function" && !getSelectedPlayer()) {
+      alert("⚠️ ACCESO DENEGADO: No posees ningún Futbolista NFT activo. Sin un NFT no puedes acceder al juego. Ve a la pestaña 'Futbolista' o 'Market' y reclama tu NFT Inicial Gratis (Neymar) antes de entrar a la cancha.");
+      return;
+    }
+
+    console.info("[UniversalOpenGame] Acceso Web3 Asegurado. Iniciando minijuego físico en modo:", mode);
     setTimeout(() => {
       const modalEl = document.getElementById("fm-modal");
       if(modalEl) modalEl.classList.remove("open");

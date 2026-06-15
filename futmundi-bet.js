@@ -14,13 +14,15 @@
     rateGemsPerWinUSD: 10 
   };
 
-  // --- GESTOR DE TICKETS Y BALANCES LOCAL / SUPABASE ---
+    // --- GESTOR HÍBRIDO DE PERSISTENCIA REAL (SUPABASE DB / LOCALSTORAGE) ---
   const BetDB = {
-    getTicketsKey() { return "futmundi_bet_tickets_apisports_v4"; },
+    getTicketsKey() { return "futmundi_bet_tickets_supabase_v5"; },
     getBalanceKey() { return "futmundi_user_balance_gems"; },
+    getApiBase() { return (window.FM_ADMIN_API_BASE || localStorage.getItem("fm_admin_api_base") || "https://futmundi-admin-backend.onrender.com").replace(/\/$/, ""); },
 
     getUserGems() {
       try {
+        if(window.STATE && window.STATE.balanceGems != null) return window.STATE.balanceGems;
         const val = localStorage.getItem(this.getBalanceKey());
         return val !== null ? parseInt(val, 10) : 1500;
       } catch {
@@ -29,6 +31,7 @@
     },
     updateUserGems(newAmount) {
       try {
+        if(window.STATE) window.STATE.balanceGems = newAmount;
         localStorage.setItem(this.getBalanceKey(), newAmount);
         window.dispatchEvent(new CustomEvent("futmundi:balance_updated", { detail: { gems: newAmount } }));
       } catch {}
@@ -50,18 +53,67 @@
         localStorage.setItem(this.getTicketsKey(), JSON.stringify(ticketsList));
       } catch {}
     },
+
     createTicket(newTicket) {
-      const list = this.loadTickets();
-      list.unshift({
-        id: "TON-TICK-" + Math.floor(100000 + Math.random() * 900000),
+      const ticketId = "TON-TICK-" + Math.floor(100000 + Math.random() * 900000);
+      const ticketObj = {
+        id: ticketId,
         createdAt: Date.now(),
-        dateStr: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        dateStr: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: "2-digit", minute:"2-digit"}),
         status: "active", 
         ...newTicket
-      });
+      };
+
+      const list = this.loadTickets();
+      list.unshift(ticketObj);
       this.saveTickets(list);
+
+      // Peticion POST asincrona permanente al backend de Render para Supabase DB
+      try {
+        const payload = {
+          wallet: (window.STATE && window.STATE.tonWallet) || "JugadorLocal",
+          ticket: ticketObj
+        };
+        fetch(this.getApiBase() + "/api/bets/create-ticket", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+          console.info("[BetDB] Ticket sincronizado con éxito en Supabase DB:", data);
+        }).catch(e => {
+          console.info("[BetDB] Respaldo local guardado (Supabase DB remoto sin conexión).");
+        });
+      } catch {}
+
       return list;
     },
+
+    async syncMySupabaseTickets(walletAddr) {
+      if (!walletAddr) return this.loadTickets();
+      try {
+        const res = await fetch(this.getApiBase() + "/api/bets/my-tickets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet: walletAddr })
+        });
+        const data = await res.json();
+        if (data && data.tickets && Array.isArray(data.tickets)) {
+          const localList = this.loadTickets();
+          const remoteMap = new Map(data.tickets.map(t => [t.id, t]));
+          
+          localList.forEach(t => {
+            if (!remoteMap.has(t.id)) remoteMap.set(t.id, t);
+          });
+          const unified = Array.from(remoteMap.values()).sort((a,b) => b.createdAt - a.createdAt);
+          this.saveTickets(unified);
+          return unified;
+        }
+        return this.loadTickets();
+      } catch {
+        return this.loadTickets();
+      }
+    },
+
     updateTicketStatus(ticketId, newStatus, realResultStr) {
       const list = this.loadTickets();
       const tick = list.find(t => t.id === ticketId);
@@ -70,9 +122,18 @@
         if(realResultStr) tick.realResult = realResultStr;
         tick.resolvedAt = Date.now();
         this.saveTickets(list);
+
+        try {
+          fetch(this.getApiBase() + "/api/bets/update-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticketId: ticketId, status: newStatus, realResult: realResultStr })
+          });
+        } catch {}
       }
       return list;
     },
+
     claimTicketPrize(ticketId) {
       const list = this.loadTickets();
       const tick = list.find(t => t.id === ticketId);
@@ -80,6 +141,15 @@
         tick.status = "claimed";
         this.addGems(tick.prizeGems);
         this.saveTickets(list);
+
+        try {
+          fetch(this.getApiBase() + "/api/bets/claim-prize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticketId: ticketId, wallet: (window.STATE && window.STATE.tonWallet) || "JugadorLocal" })
+          });
+        } catch {}
+
         return tick.prizeGems;
       }
       return 0;
@@ -285,6 +355,7 @@
 
     openModal() {
       this.activeTab = "matches";
+      BetDB.syncMySupabaseTickets(window.STATE && window.STATE.tonWallet).then(() => this.render());
       this.render();
       this.overlayEl.hidden = false;
     }

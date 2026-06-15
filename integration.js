@@ -167,6 +167,111 @@
 
   closeBtn.addEventListener("click", closeGame);
 
+  
+  // --- UNIVERSAL DOM AUTO-PATCHER PARA FUTMUNDI MINI APP ---
+  function enforceFutmundiCorrections() {
+    if (typeof window.playerStatusText === "function" && !window.__fm_pst_patched) {
+      window.__fm_pst_patched = true;
+      const oldPst = window.playerStatusText;
+      window.playerStatusText = function(player) {
+        if (player && player.name === "Neymar") {
+          return { cls: "dur-ok", text: "Gratis · ⚽ " + player.stamina + "/" + player.maxStamina };
+        }
+        try { return oldPst(player); } catch {
+          return { cls: "dur-ok", text: "Dur. 100% · ⚽ 4/4" };
+        }
+      };
+    }
+
+    document.querySelectorAll(".player-card small span").forEach(el => {
+      if (el.textContent.includes("Gratis") && el.textContent.includes("días")) {
+        el.textContent = "Gratis · ⚽ 4/4 Estamina";
+        el.className = "dur-ok";
+      }
+    });
+
+    const btnEstadio = document.querySelector(".actions .btn-play[data-modal='estadio']");
+    if (btnEstadio) {
+      btnEstadio.removeAttribute("data-modal");
+      btnEstadio.setAttribute("data-play-local", "pvp");
+      btnEstadio.setAttribute("title", "Jugar en Estadio Físico (PvP)");
+    }
+
+    const btnCancha = document.querySelector(".actions .btn-play[data-modal='cancha']");
+    if (btnCancha) {
+      btnCancha.removeAttribute("data-modal");
+      btnCancha.setAttribute("data-play-local", "pve");
+      btnCancha.setAttribute("title", "Jugar en Cancha Física vs CPU (PvE)");
+    }
+
+    const modalInner = document.getElementById("fm-modal-inner");
+    if (modalInner && !window.__fm_modal_obs_patched) {
+      window.__fm_modal_obs_patched = true;
+      const observer = new MutationObserver(() => {
+        const titleEl = modalInner.querySelector(".modal-title");
+        if (!titleEl) return;
+        const titleTxt = titleEl.textContent || "";
+
+        if (titleTxt.includes("Torneo")) {
+          let btnReg = modalInner.querySelector("#t-register");
+          if (btnReg && !modalInner.querySelector("#fbet-direct-tourn-gameplay")) {
+            const gameBtn = document.createElement("button");
+            gameBtn.id = "fbet-direct-tourn-gameplay";
+            gameBtn.className = "m-cta ghost";
+            gameBtn.style.marginTop = "8px";
+            gameBtn.innerHTML = "🎮 Entrar Físicamente a Disputar Torneo";
+            gameBtn.onclick = (e) => {
+              e.stopPropagation();
+              const modal = document.getElementById("fm-modal");
+              if(modal) modal.classList.remove("open");
+              openGame("tournament");
+            };
+            btnReg.parentElement.insertBefore(gameBtn, btnReg.nextSibling);
+          }
+        } else if (titleTxt.includes("Estadio")) {
+          let cta = modalInner.querySelector(".m-cta");
+          if (cta && !modalInner.querySelector("#fbet-direct-estadio-gameplay")) {
+            cta.textContent = "🎮 Entrar Físicamente a Jugar en Estadio (PvP)";
+            cta.id = "fbet-direct-estadio-gameplay";
+            cta.onclick = (e) => {
+              e.stopPropagation();
+              const modal = document.getElementById("fm-modal");
+              if(modal) modal.classList.remove("open");
+              openGame("pvp");
+            };
+          }
+        } else if (titleTxt.includes("Cancha")) {
+          let cta = modalInner.querySelector(".m-cta");
+          if (cta && !modalInner.querySelector("#fbet-direct-cancha-gameplay")) {
+            cta.textContent = "🎮 Jugar Partido Físico vs CPU (PvE)";
+            cta.id = "fbet-direct-cancha-gameplay";
+            cta.onclick = (e) => {
+              e.stopPropagation();
+              const modal = document.getElementById("fm-modal");
+              if(modal) modal.classList.remove("open");
+              openGame("pve");
+            };
+          }
+        } else if (titleTxt.includes("Futbolista")) {
+          modalInner.querySelectorAll(".player-card small span").forEach(el => {
+            if (el.textContent.includes("Gratis") && el.textContent.includes("días")) {
+              el.textContent = "Gratis · ⚽ 4/4 Estamina";
+              el.className = "dur-ok";
+            }
+          });
+        }
+      });
+      observer.observe(modalInner, { childList: true, subtree: true });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", enforceFutmundiCorrections);
+  } else {
+    enforceFutmundiCorrections();
+  }
+  setInterval(enforceFutmundiCorrections, 1000);
+
   // ESC closes the game.
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !overlay.hidden) closeGame();

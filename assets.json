@@ -1,0 +1,7 @@
+{
+  "STADIUM_BACKDROP": "generated-assets/stadium_backdrop.png",
+  "GRASS_TEXTURE": "generated-assets/grass_texture.png",
+  "PLAYER_ATLAS": "generated-assets/player_atlas.png",
+  "PLAYER_ATLAS_FRAMES": "generated-assets/player_atlas-frames.json",
+  "GOAL_NET": "generated-assets/goal_net.png"
+}

@@ -1298,30 +1298,28 @@ var RetroCancha = (function () {
           )));
     }
     computeLayout(t, e) {
-      const s = m(e * 0.1, 66, 92),
-        a = e - m(e * 0.18, 132, 170),
-        i = Math.max(360, a - s),
-        n = Math.min(t * 0.96, 520),
-        r = Math.min(n, i * 0.72);
+      const padX = Math.max(16, t * 0.08);
+      const padY = Math.max(16, e * 0.12);
+      const fieldW = t - padX * 2;
+      const fieldH = e - padY * 2;
       return {
         cx: t / 2,
-        top: s,
-        bottom: s + i,
-        fieldH: i,
-        topW: r * 0.68,
-        bottomW: r,
-        meterY: i / d,
+        cy: e / 2,
+        left: padX,
+        top: padY,
+        fieldW: fieldW,
+        fieldH: fieldH,
+        meterX: fieldW / d,
+        meterY: fieldH / y
       };
     }
     worldToScreen(t, e) {
-      const s = m(e / d, 0, 1),
-        a = this.layout,
-        i = A(a.topW, a.bottomW, s);
+      const a = this.layout;
       return {
-        x: a.cx + (t / y - 0.5) * i,
-        y: a.top + s * a.fieldH,
-        scale: a.meterY * A(0.72, 1.08, s),
-        t: s,
+        x: a.left + (e / d) * a.fieldW,
+        y: a.top + (t / y) * a.fieldH,
+        scale: (a.meterX + a.meterY) * 0.52,
+        t: e / d
       };
     }
     screenShake() {
@@ -1976,28 +1974,24 @@ var RetroCancha = (function () {
         } catch {}
     }
     getP1MoveVector() {
-      let t = 0,
-        e = 0;
-      return (
-        this.stickVector.active &&
-          ((t += this.stickVector.x), (e += this.stickVector.y)),
-        (this.keys.has("arrowleft") || this.keys.has("a")) && (t -= 1),
-        (this.keys.has("arrowright") || this.keys.has("d")) && (t += 1),
-        (this.keys.has("arrowup") || this.keys.has("w")) && (e -= 1),
-        (this.keys.has("arrowdown") || this.keys.has("s")) && (e += 1),
-        f(t, e)
-      );
+      let t = 0, e = 0;
+      if (this.stickVector.active) {
+        t += this.stickVector.y; // Y tactil mueve en X de mundo (ancho de cancha)
+        e += this.stickVector.x; // X tactil mueve en Y de mundo (largo de cancha)
+      }
+      if (this.keys.has("arrowleft") || this.keys.has("a")) e -= 1;
+      if (this.keys.has("arrowright") || this.keys.has("d")) e += 1;
+      if (this.keys.has("arrowup") || this.keys.has("w")) t -= 1;
+      if (this.keys.has("arrowdown") || this.keys.has("s")) t += 1;
+      return f(t, e);
     }
     getP2MoveVector() {
-      let t = 0,
-        e = 0;
-      return (
-        this.p2Keys.has("p2-left") && (t -= 1),
-        this.p2Keys.has("p2-right") && (t += 1),
-        this.p2Keys.has("p2-up") && (e -= 1),
-        this.p2Keys.has("p2-down") && (e += 1),
-        f(t, e)
-      );
+      let t = 0, e = 0;
+      if (this.p2Keys.has("p2-left")) e -= 1;
+      if (this.p2Keys.has("p2-right")) e += 1;
+      if (this.p2Keys.has("p2-up")) t -= 1;
+      if (this.p2Keys.has("p2-down")) t += 1;
+      return f(t, e);
     }
     updateStick(t) {
       t.preventDefault();
@@ -2176,27 +2170,23 @@ var RetroCancha = (function () {
       t.stroke();
     }
     drawGoalSprite(t) {
-      const e = this.worldToScreen(34, 1.8),
-        s = this.worldToScreen(v - 2.5, 1.8),
-        a = this.worldToScreen(S + 2.5, 1.8),
-        i = Math.abs(a.x - s.x),
-        n = i * (this.images.goal.height / this.images.goal.width) * 0.72;
-      (t.save(),
-        (t.globalAlpha = 0.96),
-        t.drawImage(this.images.goal, e.x - i / 2, e.y - n * 0.72, i, n),
-        t.restore());
+      const topP = this.worldToScreen(v - 2.5, 1.8);
+      const botP = this.worldToScreen(S + 2.5, 1.8);
+      const goalH = Math.abs(botP.y - topP.y);
+      const goalW = goalH * 0.6;
+      t.save(); t.globalAlpha = 0.96;
+      t.drawImage(this.images.goal, topP.x - goalW, topP.y, goalW, goalH);
+      t.restore();
     }
     drawBottomGoal(t) {
-      const e = this.worldToScreen(v, d),
-        s = this.worldToScreen(S, d);
-      (t.save(),
-        (t.strokeStyle = "rgba(245,245,235,0.85)"),
-        (t.lineWidth = 4),
-        t.beginPath(),
-        t.moveTo(e.x, e.y),
-        t.lineTo(s.x, s.y),
-        t.stroke(),
-        t.restore());
+      const topP = this.worldToScreen(v - 2.5, d - 1.8);
+      const botP = this.worldToScreen(S + 2.5, d - 1.8);
+      const goalH = Math.abs(botP.y - topP.y);
+      const goalW = goalH * 0.6;
+      t.save(); t.globalAlpha = 0.96;
+      t.save(); t.translate(topP.x + goalW, topP.y + goalH); t.rotate(Math.PI);
+      t.drawImage(this.images.goal, 0, 0, goalW, goalH);
+      t.restore(); t.restore();
     }
     drawWorldObjects(t) {
       const e = [
@@ -2209,75 +2199,81 @@ var RetroCancha = (function () {
     }
     drawPlayer(t, e) {
       const s = this.worldToScreen(e.x, e.y);
-      let a = !1;
-      (this.mode === "pvp"
-        ? (a = !0)
-        : (a =
-            e.team === "blue" && this.state.blue[this.state.activeBlue] === e),
-        t.save(),
-        (t.globalAlpha = 0.42),
-        (t.fillStyle = a ? "#ffffff" : "#07110b"),
-        t.beginPath(),
-        t.ellipse(
-          s.x,
-          s.y + 3 * s.t,
-          4.6 * s.scale,
-          2.2 * s.scale,
-          0,
-          0,
-          Math.PI * 2,
-        ),
-        t.fill(),
-        a &&
-          ((t.globalAlpha = 0.95),
-          (t.strokeStyle = "rgba(255,255,255,0.95)"),
-          (t.lineWidth = 2),
-          t.beginPath(),
-          t.ellipse(
-            s.x,
-            s.y + 2,
-            5.5 * s.scale,
-            2.7 * s.scale,
-            0,
-            0,
-            Math.PI * 2,
-          ),
-          t.stroke()),
-        t.restore(),
-        this.drawAtlas(
-          t,
-          e.frame,
-          s.x,
-          s.y + Math.sin(performance.now() / 110 + e.x) * 0.7,
-          11.5 * s.scale,
-          Math.atan2(e.dir.x, -e.dir.y),
-        ));
-    }
-    drawBall(t) {
-      const e = this.worldToScreen(this.state.ball.x, this.state.ball.y);
-      (t.save(),
-        (t.fillStyle = "rgba(0,0,0,0.32)"),
-        t.beginPath(),
-        t.ellipse(
-          e.x + 1.5,
-          e.y + 2.5,
-          2.3 * e.scale,
-          1.25 * e.scale,
-          0,
-          0,
-          Math.PI * 2,
-        ),
-        t.fill(),
-        t.restore());
-      const s = performance.now() / 160;
+      let a = false;
+      this.mode === "pvp"
+        ? (a = true)
+        : (a = e.team === "blue" && this.state.blue[this.state.activeBlue] === e);
+      
+      const hasBall = this.state.ball.owner === e;
+
+      t.save();
+      t.globalAlpha = 0.45;
+      t.fillStyle = a ? "#ffffff" : "#07110b";
+      t.beginPath();
+      t.ellipse(s.x, s.y + 6, 6 * s.scale, 3 * s.scale, 0, 0, Math.PI * 2);
+      t.fill();
+
+      // Ring brillante de posession bajo el futbolista que posee la pelota
+      if (hasBall) {
+        t.save();
+        t.shadowBlur = 15; t.shadowColor = e.team === "blue" ? "#39ff88" : "#ffe871";
+        t.strokeStyle = e.team === "blue" ? "#39ff88" : "#ffe871"; t.lineWidth = 3.5;
+        t.beginPath();
+        t.ellipse(s.x, s.y + 3, 9 * s.scale, 4.5 * s.scale, 0, 0, Math.PI * 2);
+        t.stroke();
+        t.restore();
+      } else if (a) {
+        t.globalAlpha = 0.95;
+        t.strokeStyle = "#ffe871"; t.lineWidth = 2;
+        t.beginPath();
+        t.ellipse(s.x, s.y + 4, 7 * s.scale, 3.5 * s.scale, 0, 0, Math.PI * 2);
+        t.stroke();
+      }
+      t.restore();
+
       this.drawAtlas(
         t,
-        "soccer_ball",
-        e.x,
-        e.y - 1.5 * e.scale,
-        4.6 * e.scale,
-        s,
+        e.frame,
+        s.x,
+        s.y + Math.sin(performance.now() / 110 + e.x) * 0.7,
+        13.5 * s.scale,
+        Math.atan2(e.dir.y, e.dir.x) // Angulo True Landscape apaisado
       );
+    }
+    drawBall(t) {
+      const bObj = this.state.ball;
+      const owner = bObj.owner;
+
+      let bx = bObj.x;
+      let by = bObj.y;
+      if (owner) {
+        bx = owner.x + (owner.dir ? owner.dir.x * 1.5 : 0);
+        by = owner.y + (owner.dir ? owner.dir.y * 1.5 : 2);
+      }
+
+      const e = this.worldToScreen(bx, by);
+
+      t.save();
+      t.fillStyle = "rgba(0,0,0,0.4)";
+      t.beginPath();
+      t.ellipse(e.x + 2, e.y + 4, 3.5 * e.scale, 1.8 * e.scale, 0, 0, Math.PI * 2);
+      t.fill();
+      t.restore();
+
+      const isMoving = Math.hypot(bObj.vx || 0, bObj.vy || 0) > 5;
+      const angle = isMoving ? (bObj.x + bObj.y) * 0.4 : 0;
+
+      if (!owner) {
+        t.save();
+        t.shadowBlur = 12; t.shadowColor = "#ffffff";
+        this.drawAtlas(t, "soccer_ball", e.x, e.y - 1.8 * e.scale, 7.5 * e.scale, angle);
+        t.restore();
+      } else {
+        t.save();
+        t.shadowBlur = 18; t.shadowColor = owner.team === "blue" ? "#3fbfff" : "#ff4545";
+        this.drawAtlas(t, "soccer_ball", e.x, e.y - 1.5 * e.scale, 7.2 * e.scale, angle);
+        t.restore();
+      }
     }
     drawAtlas(t, e, s, a, i, n = 0) {
       const r = this.frames.get(e);

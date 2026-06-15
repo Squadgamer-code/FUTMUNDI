@@ -215,36 +215,31 @@
     },
 
     applyTimeDecayOdds(matchItem) {
-      if (!matchItem.live || matchItem.elapsed <= 60) {
-        matchItem.odds = { ...matchItem.baseOdds };
+      if (!matchItem.live || matchItem.elapsed <= 45) {
+        matchItem.odds = Object.assign({}, matchItem.baseOdds);
         return matchItem;
       }
 
-      // Algoritmo matemático Time-Decay para partidos pasados del minuto 60'
-      const elapsed = matchItem.elapsed; // ej. 78' o 84'
+      const elapsed = matchItem.elapsed; 
       const parts = matchItem.score.split("-").map(x => parseInt(x.trim(), 10));
-      const gHome = parts[0] ?? 0;
-      const gAway = parts[1] ?? 0;
+      const gHome = parts[0] !== undefined ? parts[0] : 0;
+      const gAway = parts[1] !== undefined ? parts[1] : 0;
 
       let o1 = matchItem.baseOdds["1"];
       let oX = matchItem.baseOdds["X"];
       let o2 = matchItem.baseOdds["2"];
 
-      // Cuanto más cerca del 90', la cuota del que va ganando se desploma hacia 1.01x
-      const factor = (elapsed - 60) / 30; // 0.0 en el 60', 1.0 en el 90'
+      const factor = (elapsed - 45) / 45; 
       
       if (gHome > gAway) {
-        // Local gana
-        o1 = Math.max(1.02, +(o1 - (o1 - 1.02) * factor * 1.2).toFixed(2));
+        o1 = Math.max(1.02, +(o1 - (o1 - 1.02) * factor * 1.3).toFixed(2));
         oX = +(oX + oX * factor * 3.5).toFixed(2);
         o2 = +(o2 + o2 * factor * 6.0).toFixed(2);
       } else if (gAway > gHome) {
-        // Visitante gana
-        o2 = Math.max(1.02, +(o2 - (o2 - 1.02) * factor * 1.2).toFixed(2));
+        o2 = Math.max(1.02, +(o2 - (o2 - 1.02) * factor * 1.3).toFixed(2));
         oX = +(oX + oX * factor * 3.5).toFixed(2);
         o1 = +(o1 + o1 * factor * 6.0).toFixed(2);
       } else {
-        // Empate
         oX = Math.max(1.05, +(oX - (oX - 1.05) * factor * 0.9).toFixed(2));
         o1 = +(o1 + o1 * factor * 2.2).toFixed(2);
         o2 = +(o2 + o2 * factor * 2.2).toFixed(2);

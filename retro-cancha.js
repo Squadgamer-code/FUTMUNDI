@@ -1161,12 +1161,76 @@ var RetroCancha = (function () {
           (this.grassPattern = this.ctx.createPattern(a, "repeat")),
           this.resetMatch(!1),
           this.updateOverlayReady());
-      } catch {
-        ((this.assetError =
-          "No se pudo cargar la cancha. Reintenta actualizar."),
-          (this.hud.overlayKicker.textContent = "Error de carga"),
-          (this.hud.overlayTitle.textContent = "Retro Cancha 03"),
-          (this.hud.overlayCopy.textContent = this.assetError));
+      } catch (err) {
+        console.warn("[RetroCancha] Error cargando imagenes externas, generando lienzos Auto-Fallback en RAM para arranque 100% garantizado:", err);
+        
+        // 1. Fondo Estadio
+        const canvS = document.createElement("canvas");
+        canvS.width = 1920; canvS.height = 1080;
+        const ctxS = canvS.getContext("2d");
+        const grad = ctxS.createRadialGradient(960, 540, 100, 960, 540, 1000);
+        grad.addColorStop(0, "#16281b"); grad.addColorStop(1, "#050b07");
+        ctxS.fillStyle = grad; ctxS.fillRect(0, 0, 1920, 1080);
+        
+        // 2. Pasto
+        const canvA = document.createElement("canvas");
+        canvA.width = 256; canvA.height = 256;
+        const ctxA = canvA.getContext("2d");
+        ctxA.fillStyle = "#1e732d"; ctxA.fillRect(0, 0, 256, 256);
+        ctxA.fillStyle = "#186025";
+        for(let j=0; j<60; j++) ctxA.fillRect(Math.random()*256, Math.random()*256, 4, 8);
+
+        // 3. Red Arco
+        const canvN = document.createElement("canvas");
+        canvN.width = 256; canvN.height = 128;
+        const ctxN = canvN.getContext("2d");
+        ctxN.strokeStyle = "#ffffff"; ctxN.lineWidth = 4;
+        ctxN.beginPath(); ctxN.moveTo(10, 120); ctxN.lineTo(10, 10); ctxN.lineTo(246, 10); ctxN.lineTo(246, 120); ctxN.stroke();
+
+        // 4. Atlas Sprites
+        const canvI = document.createElement("canvas");
+        canvI.width = 1024; canvI.height = 512;
+        const ctxI = canvI.getContext("2d");
+        ctxI.clearRect(0, 0, 1024, 512);
+        
+        function drawFallbackPlayer(ctx, x, y, col, isKeeper) {
+          ctx.save(); ctx.translate(x, y);
+          ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(16, 28, 10, 4, 0, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = col; ctx.fillRect(8, 12, 16, 14);
+          ctx.fillStyle = isKeeper ? "#000" : "#fff"; ctx.fillRect(4, 12, 4, 6); ctx.fillRect(24, 12, 4, 6);
+          ctx.fillStyle = "#f1c27d"; ctx.beginPath(); ctx.arc(16, 8, 6, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = isKeeper ? "#ff4545" : "#f1c27d"; ctx.beginPath(); ctx.arc(4, 18, 2.5, 0, Math.PI*2); ctx.arc(28, 18, 2.5, 0, Math.PI*2); ctx.fill();
+          ctx.restore();
+        }
+        drawFallbackPlayer(ctxI, 0, 0, "#1e63d6", false); // blue_attacker
+        drawFallbackPlayer(ctxI, 64, 0, "#2a75f3", false); // blue_teammate
+        drawFallbackPlayer(ctxI, 128, 0, "#e04545", false); // red_defender
+        drawFallbackPlayer(ctxI, 192, 0, "#f5a04a", true); // red_keeper
+        drawFallbackPlayer(ctxI, 256, 0, "#48c774", true); // blue_keeper
+        
+        // Ball
+        ctxI.save(); ctxI.translate(320, 0); ctxI.fillStyle = "#ffffff"; ctxI.beginPath(); ctxI.arc(16, 16, 8, 0, Math.PI*2); ctxI.fill(); ctxI.restore();
+        // Spark
+        ctxI.save(); ctxI.translate(384, 0); ctxI.fillStyle = "#ffe871"; ctxI.beginPath(); ctxI.arc(16, 16, 6, 0, Math.PI*2); ctxI.fill(); ctxI.restore();
+
+        const fakeFrames = [
+          { name: "blue_attacker", source: { x: 0, y: 0, w: 32, h: 32 }, anchor: { x: 16, y: 28 } },
+          { name: "blue_teammate", source: { x: 64, y: 0, w: 32, h: 32 }, anchor: { x: 16, y: 28 } },
+          { name: "red_defender", source: { x: 128, y: 0, w: 32, h: 32 }, anchor: { x: 16, y: 28 } },
+          { name: "red_keeper", source: { x: 192, y: 0, w: 32, h: 32 }, anchor: { x: 16, y: 28 } },
+          { name: "blue_keeper", source: { x: 256, y: 0, w: 32, h: 32 }, anchor: { x: 16, y: 28 } },
+          { name: "soccer_ball", source: { x: 320, y: 0, w: 32, h: 32 }, anchor: { x: 16, y: 16 } },
+          { name: "boot_spark", source: { x: 384, y: 0, w: 32, h: 32 }, anchor: { x: 16, y: 16 } }
+        ];
+
+        this.images = { backdrop: canvS, grass: canvA, atlas: canvI, goal: canvN };
+        this.frames = new Map(fakeFrames.map(h => [h.name, h]));
+        this.assetsReady = true;
+        this.grassPattern = this.ctx.createPattern(canvA, "repeat");
+        
+        // Desbloqueamos e iniciamos de forma garantizada
+        this.resetMatch(!1);
+        this.updateOverlayReady();
       }
     }
     async loadBestScore() {

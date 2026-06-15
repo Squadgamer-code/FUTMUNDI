@@ -211,6 +211,58 @@
   }, true);
 
   // --- UNIVERSAL DOM AUTO-PATCHER PARA FUTMUNDI MINI APP ---
+  
+  // --- REINICIO AUTOMÁTICO DE ESTAMINA EN TODOS LOS NFTS A LAS 00:00 UTC ---
+  function getUtcWeekIdentifier() {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    return d.getUTCFullYear() + "_w" + weekNo;
+  }
+  window.getUtcWeekIdentifier = getUtcWeekIdentifier;
+
+  function performGlobalUtcMidnightStaminaReset() {
+    const nowUTC = new Date();
+    const todayUtcStr = nowUTC.getUTCFullYear() + "-" + String(nowUTC.getUTCMonth()+1).padStart(2, "0") + "-" + String(nowUTC.getUTCDate()).padStart(2, "0");
+
+    const lastResetStr = localStorage.getItem("fm_global_last_stamina_reset_date");
+
+    if (lastResetStr !== todayUtcStr) {
+      localStorage.setItem("fm_global_last_stamina_reset_date", todayUtcStr);
+      
+      if (window.STATE && window.STATE.inventory && Array.isArray(window.STATE.inventory.players)) {
+        let count = 0;
+        window.STATE.inventory.players.forEach(p => {
+          if (p) {
+            p.stamina = p.maxStamina || 4;
+            // También le regalamos el recuperar su durabilidad completa o parcial como Tech Lead mimo
+            p.durability = 100;
+            count++;
+          }
+        });
+        
+        if (count > 0) {
+          try {
+            localStorage.setItem("fm_inventory", JSON.stringify(window.STATE.inventory));
+            console.info("[00:00 UTC Reset] La energía de " + count + " futbolistas NFTs se ha restaurado al máximo.");
+            if (typeof toast === "function") {
+              toast("⚡ ¡00:00 UTC ALCANZADO! Comienza un nuevo día en la blockchain. La estamina de todos tus futbolistas NFTs se ha recargado al 100%.", true);
+            }
+          } catch {}
+        }
+      }
+    }
+  }
+
+  // Ejecutamos al iniciar la app y validamos en el fondo cada 15 segundos
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", performGlobalUtcMidnightStaminaReset);
+  } else {
+    performGlobalUtcMidnightStaminaReset();
+  }
+  setInterval(performGlobalUtcMidnightStaminaReset, 15000);
+
   function enforceFutmundiCorrections() {
     // 1. Ocultar los días en Neymar gratis
     if (typeof window.playerStatusText === "function" && !window.__fm_pst_patched) {

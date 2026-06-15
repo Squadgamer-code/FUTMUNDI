@@ -316,6 +316,12 @@
     });
 
     // 3. Modales en vivo
+    // Eliminamos los botones de config estadio y config cancha si estuvieran por algun Vercel
+    document.querySelectorAll("button").forEach(b => {
+      if (b.textContent.includes("Config Estadio") || b.textContent.includes("Config Cancha")) {
+        b.remove();
+      }
+    });
     const modalInner = document.getElementById("fm-modal-inner");
     if (modalInner && !window.__fm_tourn_obs_patched) {
       window.__fm_tourn_obs_patched = true;

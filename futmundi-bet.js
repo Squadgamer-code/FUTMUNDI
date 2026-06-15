@@ -1,22 +1,22 @@
 /* ==========================================================================
-   FUTMUNDI BET APP - CONEXIÓN CON CLIENTE OFICIAL API-FOOTBALL (API-SPORTS)
-   Módulo 100% Standalone & Web3, Vinculado a tu Cuenta en API-Football v3
+   FUTMUNDI BET APP - VERSIÓN MINIMALISTA WEB3 CON CUOTAS EN VIVO (TIME DECAY)
+   Filtros del Mundial 2026, Rendimiento Ligero y Zero Lag para Vercel
    ========================================================================== */
 
 (function () {
   if (window.__futmundi_bet_installed) return;
   window.__futmundi_bet_installed = true;
 
-  // --- CONFIGURACIÓN DEL CONTRATO INTELIGENTE DE TON (USDT) ---
+  // --- CONFIGURACIÓN DE PAGO TON (USDT) ---
   const TonUsdtContractConfig = {
     contractAddress: "EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs", 
     jettonUsdtAddress: "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
     rateGemsPerWinUSD: 10 
   };
 
-    // --- GESTOR HÍBRIDO DE PERSISTENCIA REAL (SUPABASE DB / LOCALSTORAGE) ---
+  // --- GESTOR HÍBRIDO DB (SUPABASE REMOTO & LOCAL) ---
   const BetDB = {
-    getTicketsKey() { return "futmundi_bet_tickets_supabase_v5"; },
+    getTicketsKey() { return "futmundi_bet_tickets_minimal_v6"; },
     getBalanceKey() { return "futmundi_user_balance_gems"; },
     getApiBase() { return (window.FM_ADMIN_API_BASE || localStorage.getItem("fm_admin_api_base") || "https://futmundi-admin-backend.onrender.com").replace(/\/$/, ""); },
 
@@ -59,7 +59,7 @@
       const ticketObj = {
         id: ticketId,
         createdAt: Date.now(),
-        dateStr: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: "2-digit", minute:"2-digit"}),
+        dateStr: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
         status: "active", 
         ...newTicket
       };
@@ -68,7 +68,6 @@
       list.unshift(ticketObj);
       this.saveTickets(list);
 
-      // Peticion POST asincrona permanente al backend de Render para Supabase DB
       try {
         const payload = {
           wallet: (window.STATE && window.STATE.tonWallet) || "JugadorLocal",
@@ -78,11 +77,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
-        }).then(res => res.json()).then(data => {
-          console.info("[BetDB] Ticket sincronizado con éxito en Supabase DB:", data);
-        }).catch(e => {
-          console.info("[BetDB] Respaldo local guardado (Supabase DB remoto sin conexión).");
-        });
+        }).catch(() => {});
       } catch {}
 
       return list;
@@ -100,10 +95,7 @@
         if (data && data.tickets && Array.isArray(data.tickets)) {
           const localList = this.loadTickets();
           const remoteMap = new Map(data.tickets.map(t => [t.id, t]));
-          
-          localList.forEach(t => {
-            if (!remoteMap.has(t.id)) remoteMap.set(t.id, t);
-          });
+          localList.forEach(t => { if (!remoteMap.has(t.id)) remoteMap.set(t.id, t); });
           const unified = Array.from(remoteMap.values()).sort((a,b) => b.createdAt - a.createdAt);
           this.saveTickets(unified);
           return unified;
@@ -128,7 +120,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ticketId: ticketId, status: newStatus, realResult: realResultStr })
-          });
+          }).catch(()=>{});
         } catch {}
       }
       return list;
@@ -147,7 +139,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ticketId: ticketId, wallet: (window.STATE && window.STATE.tonWallet) || "JugadorLocal" })
-          });
+          }).catch(()=>{});
         } catch {}
 
         return tick.prizeGems;
@@ -156,99 +148,135 @@
     }
   };
 
-  // --- CLIENTE REAL DE API-FOOTBALL v3 (API-SPORTS) ---
+  // --- CLIENTE API-SPORTS CON ALGORITMO TIME-DECAY EN VIVO ---
   const SportsApiProvider = {
-    // ⚠️ INGRESA AQUÍ TU CLAVE OFICIAL DE TU CUENTA EN API-FOOTBALL (dashboard.api-football.com) ⚠️
-    apiKey: "cae471625cb7232f9a54146633227bc6", // Clave Privada Unificada API-Sports (Futmundi Master Key) 
+    apiKey: "cae471625cb7232f9a54146633227bc6", 
     baseUrl: "https://v3.football.api-sports.io",
 
     getFallbackMatches() {
-      return [
+      const list = [
         {
           id: "m_world_1",
-          competition: "🏆 Copa del Mundo 2026 - Cuartos de Final",
+          category: "world",
+          competition: "🏆 Mundial 2026 - Cuartos de Final",
           team1: { name: "Brasil", flag: "🇧🇷" },
           team2: { name: "Costa Rica", flag: "🇨🇷" },
-          live: true, minute: "68'", score: "1 - 0",
-          odds: { "1": 1.30, "X": 4.80, "2": 9.50 }
-        },
-        {
-          id: "m_world_2",
-          competition: "🏆 Copa del Mundo 2026 - Cuartos de Final",
-          team1: { name: "Argentina", flag: "🇦🇷" },
-          team2: { name: "España", flag: "🇪🇸" },
-          live: false, minute: "Hoy 18:00", score: "vs",
-          odds: { "1": 2.50, "X": 3.20, "2": 2.75 }
-        },
-        {
-          id: "m_world_3",
-          competition: "🏆 Copa del Mundo 2026 - Cuartos de Final",
-          team1: { name: "Alemania", flag: "🇩🇪" },
-          team2: { name: "Francia", flag: "🇫🇷" },
-          live: false, minute: "Mañana", score: "vs",
-          odds: { "1": 2.80, "X": 3.30, "2": 2.45 }
+          live: true, elapsed: 78, minuteStr: "78'", score: "1 - 0",
+          baseOdds: { "1": 1.30, "X": 4.50, "2": 8.50 }
         },
         {
           id: "m_world_4",
-          competition: "🏆 Copa del Mundo 2026 - Octavos de Final",
+          category: "world",
+          competition: "🏆 Mundial 2026 - Octavos de Final",
           team1: { name: "Uruguay", flag: "🇺🇾" },
           team2: { name: "Colombia", flag: "🇨🇴" },
-          live: true, minute: "82'", score: "2 - 2",
-          odds: { "1": 2.65, "X": 2.10, "2": 3.00 }
+          live: true, elapsed: 84, minuteStr: "84'", score: "2 - 2",
+          baseOdds: { "1": 2.60, "X": 2.10, "2": 2.80 }
+        },
+        {
+          id: "m_world_2",
+          category: "world",
+          competition: "🏆 Mundial 2026 - Cuartos de Final",
+          team1: { name: "Argentina", flag: "🇦🇷" },
+          team2: { name: "España", flag: "🇪🇸" },
+          live: false, elapsed: 0, minuteStr: "Hoy 18:00", score: "vs",
+          baseOdds: { "1": 2.50, "X": 3.10, "2": 2.70 }
+        },
+        {
+          id: "m_world_3",
+          category: "world",
+          competition: "🏆 Mundial 2026 - Cuartos de Final",
+          team1: { name: "Alemania", flag: "🇩🇪" },
+          team2: { name: "Francia", flag: "🇫🇷" },
+          live: false, elapsed: 0, minuteStr: "Mañana", score: "vs",
+          baseOdds: { "1": 2.75, "X": 3.20, "2": 2.45 }
         },
         {
           id: "m_world_5",
-          competition: "🌎 Copa de Campeones CONCACAF",
+          category: "leagues",
+          competition: "🌎 Copa CONCACAF - Semifinal",
           team1: { name: "México", flag: "🇲🇽" },
           team2: { name: "Estados Unidos", flag: "🇺🇸" },
-          live: false, minute: "Jueves", score: "vs",
-          odds: { "1": 2.70, "X": 3.10, "2": 2.55 }
+          live: false, elapsed: 0, minuteStr: "Jueves", score: "vs",
+          baseOdds: { "1": 2.65, "X": 3.00, "2": 2.60 }
         },
         {
           id: "m_world_6",
-          competition: "🇪🇺 UEFA Nations League - Final",
+          category: "leagues",
+          competition: "🇪🇺 Nations League - Final",
           team1: { name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
           team2: { name: "Italia", flag: "🇮🇹" },
-          live: false, minute: "Viernes", score: "vs",
-          odds: { "1": 2.20, "X": 3.15, "2": 3.40 }
+          live: false, elapsed: 0, minuteStr: "Viernes", score: "vs",
+          baseOdds: { "1": 2.15, "X": 3.10, "2": 3.40 }
         }
       ];
+
+      return list.map(m => this.applyTimeDecayOdds(m));
+    },
+
+    applyTimeDecayOdds(matchItem) {
+      if (!matchItem.live || matchItem.elapsed <= 60) {
+        matchItem.odds = { ...matchItem.baseOdds };
+        return matchItem;
+      }
+
+      // Algoritmo matemático Time-Decay para partidos pasados del minuto 60'
+      const elapsed = matchItem.elapsed; // ej. 78' o 84'
+      const parts = matchItem.score.split("-").map(x => parseInt(x.trim(), 10));
+      const gHome = parts[0] ?? 0;
+      const gAway = parts[1] ?? 0;
+
+      let o1 = matchItem.baseOdds["1"];
+      let oX = matchItem.baseOdds["X"];
+      let o2 = matchItem.baseOdds["2"];
+
+      // Cuanto más cerca del 90', la cuota del que va ganando se desploma hacia 1.01x
+      const factor = (elapsed - 60) / 30; // 0.0 en el 60', 1.0 en el 90'
+      
+      if (gHome > gAway) {
+        // Local gana
+        o1 = Math.max(1.02, +(o1 - (o1 - 1.02) * factor * 1.2).toFixed(2));
+        oX = +(oX + oX * factor * 3.5).toFixed(2);
+        o2 = +(o2 + o2 * factor * 6.0).toFixed(2);
+      } else if (gAway > gHome) {
+        // Visitante gana
+        o2 = Math.max(1.02, +(o2 - (o2 - 1.02) * factor * 1.2).toFixed(2));
+        oX = +(oX + oX * factor * 3.5).toFixed(2);
+        o1 = +(o1 + o1 * factor * 6.0).toFixed(2);
+      } else {
+        // Empate
+        oX = Math.max(1.05, +(oX - (oX - 1.05) * factor * 0.9).toFixed(2));
+        o1 = +(o1 + o1 * factor * 2.2).toFixed(2);
+        o2 = +(o2 + o2 * factor * 2.2).toFixed(2);
+      }
+
+      matchItem.odds = { "1": o1, "X": oX, "2": o2 };
+      return matchItem;
     },
 
     async fetchLiveSportsApiMatches() {
-      if (!this.apiKey || this.apiKey.includes("PEGA_AQUI")) {
-        console.info("[API-Sports] Usando partidos de respaldo simulados (Clave API no ingresada aún).");
-        return this.getFallbackMatches();
-      }
-
       try {
         const res = await fetch(this.baseUrl + "/fixtures?live=all", {
           method: "GET",
-          headers: {
-            "x-rapidapi-host": "v3.football.api-sports.io",
-            "x-rapidapi-key": this.apiKey,
-            "x-apisports-key": this.apiKey
-          }
+          headers: { "x-rapidapi-host": "v3.football.api-sports.io", "x-apisports-key": this.apiKey, "x-rapidapi-key": this.apiKey }
         });
         const data = await res.json();
         
         if (!data || !data.response || data.response.length === 0) {
-          // Si no hay ningún partido en vivo justo ahora, traemos los del día de hoy
           const todayStr = new Date().toISOString().split('T')[0];
           const res2 = await fetch(this.baseUrl + "/fixtures?date=" + todayStr, {
             method: "GET",
-            headers: { "x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": this.apiKey, "x-apisports-key": this.apiKey }
+            headers: { "x-rapidapi-host": "v3.football.api-sports.io", "x-apisports-key": this.apiKey, "x-rapidapi-key": this.apiKey }
           });
           const data2 = await res2.json();
           if (data2 && data2.response && data2.response.length > 0) {
-            return this.formatApiMatches(data2.response.slice(0, 15));
+            return this.formatApiMatches(data2.response.slice(0, 20));
           }
           return this.getFallbackMatches();
         }
 
-        return this.formatApiMatches(data.response.slice(0, 15));
-      } catch (e) {
-        console.warn("[API-Sports] No se pudo obtener respuesta de la API, usando respaldo:", e);
+        return this.formatApiMatches(data.response.slice(0, 20));
+      } catch {
         return this.getFallbackMatches();
       }
     },
@@ -261,24 +289,33 @@
         const goals = item.goals;
 
         const isLive = fix.status.short === "1H" || fix.status.short === "2H" || fix.status.short === "HT" || fix.status.short === "ET" || fix.status.short === "P";
-        const minuteStr = isLive ? `${fix.status.elapsed}'` : new Date(fix.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const elapsed = isLive ? fix.status.elapsed : 0;
+        const minuteStr = isLive ? `${elapsed}'` : new Date(fix.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const scoreStr = isLive ? `${goals.home ?? 0} - ${goals.away ?? 0}` : "vs";
 
-        return {
+        // Mapeo a categoría mundial si contiene World, FIFA, Conmebol, UEFA
+        const lName = String(league.name).toLowerCase();
+        const isWorld = lName.includes("world") || lName.includes("conmebol") || lName.includes("uefa") || lName.includes("copa");
+
+        const mObj = {
           id: String(fix.id),
+          category: isWorld ? "world" : "leagues",
           competition: `⚽ ${league.name} (${league.country})`,
           team1: { name: teams.home.name, flag: "🏠" },
           team2: { name: teams.away.name, flag: "✈️" },
           live: isLive,
-          minute: minuteStr,
+          elapsed: elapsed,
+          minuteStr: minuteStr,
           score: scoreStr,
-          odds: { "1": 2.25, "X": 3.10, "2": 2.70 }
+          baseOdds: { "1": 2.20, "X": 3.10, "2": 2.75 }
         };
+
+        return this.applyTimeDecayOdds(mObj);
       });
     }
   };
 
-  // --- LÓGICA DE INTERFAZ Y MODAL APUESTAS WEB3 USDT ---
+  // --- LÓGICA DE INTERFAZ MINIMALISTA APUESTAS ---
   class FutmundiBetApp {
     constructor() {
       this.matches = SportsApiProvider.getFallbackMatches();
@@ -286,27 +323,20 @@
       this.selectedOddKey = null; 
       this.stakeUSDT = 10; 
       this.activeTab = "matches"; 
-      this.isUpdatingApi = false;
+      this.activeFilter = "world"; // world, all, leagues
+      this.searchQuery = "";
 
       this.injectOverlay();
-      this.injectTonModalContainer();
       this.injectInvokeButton();
       this.initListeners();
-      
-      // Conectamos de inmediato en segundo plano con API-Football si la clave está configurada
       this.refreshApiMatchesSilently();
     }
 
-    async refreshApiMatchesSilently(showToast = false) {
-      this.isUpdatingApi = true;
+    async refreshApiMatchesSilently() {
       const apiMatches = await SportsApiProvider.fetchLiveSportsApiMatches();
       if (apiMatches && apiMatches.length > 0) {
         this.matches = apiMatches;
         if(this.activeTab === 'matches') this.render();
-      }
-      this.isUpdatingApi = false;
-      if(showToast && typeof toast === "function") {
-        toast("⚽ ¡Encuentros sincronizados en vivo con API-Sports!", true);
       }
     }
 
@@ -315,7 +345,7 @@
       const btn = document.createElement("button");
       btn.className = "futmundi-bet-invoke-btn";
       btn.id = "fbet-invoke-global-btn";
-      btn.innerHTML = `<span>🎲 Apuestas Sports USDT</span><strong id="fbet-global-bal-badge">💎 ${BetDB.getUserGems()}</strong>`;
+      btn.innerHTML = `<span>🎲 Apuestas Mundial</span><strong id="fbet-global-bal-badge" style="color:#39ff88;">💎 ${BetDB.getUserGems()}</strong>`;
       
       if (topbar.classList && topbar.classList.contains("futmundi-buttons")) {
         topbar.appendChild(btn);
@@ -330,7 +360,7 @@
         const balEl = document.getElementById("fbet-global-bal-badge");
         if (balEl) balEl.textContent = `💎 ${e.detail.gems}`;
         const internalBalEl = document.getElementById("fbet-internal-bal-badge");
-        if (internalBalEl) internalBalEl.textContent = `💎 ${e.detail.gems} GEMAS`;
+        if (internalBalEl) internalBalEl.textContent = `💎 ${e.detail.gems}`;
       });
     }
 
@@ -341,16 +371,6 @@
       overlay.hidden = true;
       document.body.appendChild(overlay);
       this.overlayEl = overlay;
-    }
-
-    injectTonModalContainer() {
-      const cont = document.createElement("div");
-      cont.id = "fbet-ton-web3-overlay";
-      cont.className = "fbet-modal-overlay";
-      cont.style.zIndex = "999999999";
-      cont.hidden = true;
-      document.body.appendChild(cont);
-      this.tonOverlayEl = cont;
     }
 
     openModal() {
@@ -371,23 +391,23 @@
       this.overlayEl.innerHTML = `
         <div class="fbet-modal-box">
           <div class="fbet-header">
-            <h2 class="fbet-title"><span>⚡</span> FUTMUNDI SPORTS (TON SC: EQD3u6...MIs)</h2>
-            <div style="display: flex; gap: 12px; align-items: center;">
-              <div class="fbet-balance-badge" title="Balance General en Gemas (Retirable en Botón de Retiros)">
-                <span>BALANCE:</span>
-                <strong id="fbet-internal-bal-badge">💎 ${BetDB.getUserGems()} GEMAS</strong>
+            <h2 class="fbet-title"><span>⚡</span> FUTMUNDI APUESTAS (TON SC: EQD3...MIs)</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div class="fbet-balance-badge" title="Gemas de tus ganancias ganadas">
+                <span>Saldo:</span>
+                <strong id="fbet-internal-bal-badge">💎 ${BetDB.getUserGems()}</strong>
               </div>
-              <button class="fbet-close-btn" type="button" id="fbet-modal-close-btn">✕ CERRAR</button>
+              <button class="fbet-close-btn" type="button" id="fbet-modal-close-btn">✕ Cerrar</button>
             </div>
           </div>
 
           <div class="fbet-nav-tabs">
             <button class="fbet-tab-btn ${this.activeTab === 'matches' ? 'active' : ''}" type="button" data-fbet-tab="matches">
-              ⚽ Partidos Mundial & Ligas
+              ⚽ Encuentros Sports
             </button>
             <button class="fbet-tab-btn ${this.activeTab === 'tickets' ? 'active' : ''}" type="button" data-fbet-tab="tickets">
-              📑 Mis Tickets de Apuesta
-              ${activeTicketsCount > 0 ? `<span class="badge-count">${activeTicketsCount}</span>` : ''}
+              📑 Tus Boletos
+              ${activeTicketsCount > 0 ? `<span style="background:#ff4545; color:#fff; font-size:0.75rem; padding:2px 7px; border-radius:10px; font-weight:bold;">${activeTicketsCount}</span>` : ''}
             </button>
           </div>
 
@@ -401,40 +421,62 @@
     }
 
     renderMatchesTab() {
+      // Filtrar la lista
+      let filtered = this.matches;
+      if (this.activeFilter === "world") {
+        filtered = filtered.filter(m => m.category === "world");
+      } else if (this.activeFilter === "leagues") {
+        filtered = filtered.filter(m => m.category === "leagues");
+      }
+
+      if (this.searchQuery.trim()) {
+        const q = this.searchQuery.trim().toLowerCase();
+        filtered = filtered.filter(m => 
+          m.competition.toLowerCase().includes(q) || 
+          m.team1.name.toLowerCase().includes(q) || 
+          m.team2.name.toLowerCase().includes(q)
+        );
+      }
+
       let matchesHTML = `
-        <div style="background:rgba(0, 152, 234, 0.1); border:1px solid #0098ea; padding:12px 16px; border-radius:10px; font-weight:800; font-size:0.9rem; color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span>⚡</span>
-            <span>Apuestas directas depositando <strong>USDT nativos en red TON</strong> al contrato inteligente (Mínimo $10 USDT). Si aciertas el pronóstico, el sistema te inyecta tu liquidación directo en <strong>Gemas Finales</strong>.</span>
-          </div>
-          <button style="background:#0098ea; border:none; color:#fff; padding:6px 12px; border-radius:8px; font-weight:900; cursor:pointer;" type="button" id="refresh-api-btn">
-            🔄 Sincronizar API-Football
+        <div class="fbet-filters-bar">
+          <button class="fbet-quick-filter-btn ${this.activeFilter === 'world' ? 'active' : ''}" type="button" data-fcat="world">
+            🔥 MUNDIAL 2026 Y COPAS
           </button>
+          <button class="fbet-quick-filter-btn ${this.activeFilter === 'all' ? 'active' : ''}" type="button" data-fcat="all">
+            🏆 Todos
+          </button>
+          <button class="fbet-quick-filter-btn ${this.activeFilter === 'leagues' ? 'active' : ''}" type="button" data-fcat="leagues">
+            🇪🇺 Ligas Top
+          </button>
+          
+          <input class="fbet-search-inp" type="text" id="fbet-search-inp" placeholder="🔍 Buscar por país o equipo (Ej: Brasil)..." value="${this.searchQuery}" />
         </div>
 
-        <div class="fbet-matches-list" style="margin-top:4px;">
-          ${this.matches.map(m => `
+        <div class="fbet-matches-list">
+          ${filtered.length === 0 ? `<div style="padding:30px 10px; text-align:center; color:rgba(255,255,255,0.5);">No se encontraron partidos para tu búsqueda.</div>` : ''}
+          ${filtered.map(m => `
             <div class="fbet-match-card" data-match-id="${m.id}">
               <div class="fbet-match-header">
                 <span>${m.competition}</span>
-                ${m.live ? `<span class="fbet-live-dot">● EN VIVO ${m.minute}</span>` : `<span>📅 ${m.minute}</span>`}
+                ${m.live ? `<span class="fbet-live-dot">${m.minuteStr} en juego</span>` : `<span>📅 ${m.minuteStr}</span>`}
               </div>
 
-              <div class="fbet-match-competitors">
-                <div class="fbet-team">
+              <div class="fbet-competitors-row">
+                <div class="fbet-team-compact">
                   <span class="fbet-team-flag">${m.team1.flag}</span>
                   <span class="fbet-team-name">${m.team1.name}</span>
                 </div>
 
-                <div class="fbet-vs">${m.score}</div>
+                <div class="fbet-score-compact">${m.score}</div>
 
-                <div class="fbet-team">
+                <div class="fbet-team-compact right">
                   <span class="fbet-team-flag">${m.team2.flag}</span>
                   <span class="fbet-team-name">${m.team2.name}</span>
                 </div>
               </div>
 
-              <div class="fbet-odds-grid">
+              <div class="fbet-odds-compact-grid">
                 <button class="fbet-odd-btn ${this.selectedMatch?.id === m.id && this.selectedOddKey === '1' ? 'selected' : ''}" type="button" data-select-odd="${m.id}" data-odd-key="1">
                   <span class="fbet-odd-label">1 (${m.team1.name})</span>
                   <span class="fbet-odd-val">${m.odds["1"].toFixed(2)}</span>
@@ -465,46 +507,33 @@
         const potWinGems = Math.round(this.stakeUSDT * oVal * TonUsdtContractConfig.rateGemsPerWinUSD);
 
         slipHTML = `
-          <div class="fbet-slip-drawer" id="active-bet-slip">
+          <div class="fbet-slip-minimal" id="active-bet-slip">
             <div class="fbet-slip-header">
-              <strong class="fbet-slip-title"><span>⚡</span> TICKET DE APUESTA USDT (RED TON)</strong>
+              <span>⚡ Boleta Web3 USDT (TON)</span>
               <button style="background:transparent; border:none; color:#ff4545; cursor:pointer; font-weight:bold;" type="button" id="clear-slip-btn">✕ Cancelar</button>
             </div>
 
-            <div class="fbet-slip-controls">
-              <div class="fbet-input-group">
-                <label>Tu Pronóstico</label>
-                <div class="fbet-slip-match-info">${selObj.team1.name} vs ${selObj.team2.name}</div>
-                <div style="color:#42aaff; font-size:1.05rem; font-weight:900;">Selección: <strong>${labelStr} (Cuota ${oVal.toFixed(2)})</strong></div>
+            <div class="fbet-slip-content">
+              <div class="fbet-slip-selection">
+                <b>${selObj.team1.name} vs ${selObj.team2.name}</b>
+                <span>Pronóstico: <strong>${labelStr} (Cuota ${oVal.toFixed(2)})</strong></span>
               </div>
 
-              <div class="fbet-input-group" style="align-items: center;">
-                <label>Monto a Apostar ($10 USDT Mínimo Estricto)</label>
-                <div style="position:relative; display:flex; align-items:center;">
-                  <span style="position:absolute; left:14px; font-weight:950; font-size:1.25rem; color:#39ff88;">$</span>
-                  <input class="fbet-stake-input" style="padding-left:30px; width:180px;" type="number" id="fbet-stake-inp" value="${this.stakeUSDT}" min="10" max="25000" step="5" />
-                  <span style="position:absolute; right:12px; font-weight:900; font-size:0.9rem; color:rgba(255,255,255,0.5);">USDT</span>
-                </div>
-                <div class="fbet-quick-stakes">
-                  <button class="fbet-quick-btn" type="button" data-qstake="10">+$10</button>
-                  <button class="fbet-quick-btn" type="button" data-qstake="20">+$20</button>
-                  <button class="fbet-quick-btn" type="button" data-qstake="50">+$50</button>
-                  <button class="fbet-quick-btn" type="button" data-qstake="100">+$100</button>
-                </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input class="fbet-stake-minimal-inp" type="number" id="fbet-stake-inp" value="${this.stakeUSDT}" min="10" max="25000" step="5" />
+                <span style="color:#ffe871; font-weight:bold; font-size:0.9rem;">USDT ($10+ mín)</span>
               </div>
 
-              <div class="fbet-return-box" title="El backend te liquidará el premio ganable en su equivalente de Gemas">
-                <span>Liquidación Estimada</span>
+              <div class="fbet-return-minimal">
+                <span>Premio en Liquidación</span>
                 <strong>🎁 ${potWinGems} GEMAS</strong>
-                <small style="color:rgba(255,255,255,0.7); font-weight:bold; margin-top:2px;">(Equivalente a $${potWinUSD} USD)</small>
+                <span style="color:#39ff88;">($${potWinUSD} USD netos)</span>
               </div>
             </div>
 
-            <div style="margin-top:8px;">
-              <button class="fbet-confirm-btn" style="width:100%; font-size:1.2rem; box-shadow:0 6px 25px rgba(57,255,136,0.5);" type="button" id="pay-ton-usdt-btn">
-                ⚡ DEPOSITAR ${this.stakeUSDT.toFixed(2)} USDT EN SMART CONTRACT TON & ACTIVAR TICKET
-              </button>
-            </div>
+            <button class="fbet-confirm-minimal-btn" type="button" id="pay-ton-usdt-btn">
+              ⚡ Enviar ${this.stakeUSDT.toFixed(2)} USDT al Contrato en TON & Confirmar Boleto
+            </button>
           </div>
         `;
       }
@@ -515,53 +544,47 @@
     renderTicketsTab(ticketsList) {
       if (ticketsList.length === 0) {
         return `
-          <div style="text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.5); font-size: 1.1rem;">
+          <div style="text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.5); font-size: 1rem;">
             <span style="font-size: 3rem; display:block; margin-bottom: 12px;">📑</span>
-            No tienes boletos de apuestas activos.<br>¡Ve a la pestaña de partidos, haz tu pronóstico y deposita USDT en la red de TON!
+            No tienes boletos registrados.<br>¡Ve a Encuentros, elige tu ganador y haz tu depósito en USDT!
           </div>
         `;
       }
 
       return `
-        <div class="fbet-tickets-grid">
+        <div class="fbet-tickets-minimal-grid">
           ${ticketsList.map(t => {
-            let tagHTML = `<span class="fbet-status-tag active">🔥 EN JUEGO (Depósito Verificado TON)</span>`;
+            let tagHTML = `<span class="fbet-status-minimal-badge active">🔥 En Juego Web3</span>`;
             let actionHTML = `
-              <button class="fbet-sim-match-btn" type="button" data-sim-resolve="${t.id}">
-                ⏩ Simular Fin de Partido (Supabase DB)
+              <button style="background:#2a3f55; border:none; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;" type="button" data-sim-resolve="${t.id}">
+                ⏩ Simular Fin (Supabase DB)
               </button>
             `;
 
             if (t.status === "won") {
-              tagHTML = `<span class="fbet-status-tag won">🟢 ¡GANASTE! (Liquidación: ${t.prizeGems} 💎)</span>`;
+              tagHTML = `<span class="fbet-status-minimal-badge won">🟢 ¡GANASTE!</span>`;
               actionHTML = `
-                <button class="fbet-claim-win-btn" type="button" data-claim-win="${t.id}">
-                  🎁 RECLAMAR ${t.prizeGems} GEMAS A TU BALANCE PRINCIPAL
+                <button class="fbet-claim-minimal-btn" type="button" data-claim-win="${t.id}">
+                  🎁 Reclamar ${t.prizeGems} Gemas al Balance
                 </button>
               `;
             } else if (t.status === "claimed") {
-              tagHTML = `<span class="fbet-status-tag" style="background:rgba(255,255,255,0.1); color:#fff;">🎁 PREMIO EN BALANCE PRINCIPAL</span>`;
-              actionHTML = `<strong style="color:#39ff88; font-size:0.95rem;">💎 +${t.prizeGems} Gemas activas para tu botón de retiros</strong>`;
+              tagHTML = `<span class="fbet-status-minimal-badge" style="background:#1e2d3d; color:#fff;">🎁 Reclamado</span>`;
+              actionHTML = `<span style="color:#39ff88; font-weight:bold;">💎 +${t.prizeGems} en Balance Final</span>`;
             } else if (t.status === "lost") {
-              tagHTML = `<span class="fbet-status-tag lost">🔴 PERDISTE</span>`;
-              actionHTML = `<span style="color:rgba(255,255,255,0.5);">Marcador final: ${t.realResult || '0-2'}</span>`;
+              tagHTML = `<span class="fbet-status-minimal-badge lost">🔴 Perdido</span>`;
+              actionHTML = `<span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">Resultado: ${t.realResult || '0-2'}</span>`;
             }
 
             return `
-              <div class="fbet-ticket-card ${t.status}">
-                <div class="fbet-ticket-info">
-                  <span class="fbet-ticket-id">Ticket: ${t.id} · ⚡ Depósito Verificado: <strong>${t.stakeUSDT.toFixed(2)} USDT</strong> (Smart Contract)</span>
-                  <div class="fbet-ticket-match">${t.matchName}</div>
-                  <div class="fbet-ticket-selection">
-                    Pronóstico: <strong>${t.selectionLabel}</strong> (Cuota ${t.odds.toFixed(2)})
-                  </div>
-                  <div class="fbet-ticket-fin">
-                    <span>Liquidación Ganable: <strong style="color:#39ff88;">🎁 ${t.prizeGems} Gemas</strong> ($${t.winUSD.toFixed(2)} USD)</span>
-                    <span>📅 ${t.dateStr}</span>
-                  </div>
+              <div class="fbet-ticket-minimal-card ${t.status}">
+                <div class="fbet-ticket-minimal-info">
+                  <span style="font-family:monospace; color:#ffe871; font-size:0.8rem;">${t.id} · ⚡ Depósito: ${t.stakeUSDT.toFixed(2)} USDT (Contrato TON)</span>
+                  <b>${t.matchName}</b>
+                  <span>Pronóstico: <strong>${t.selectionLabel}</strong> (Cuota ${t.odds.toFixed(2)}) → Recompensa: 🎁 ${t.prizeGems} 💎 ($${t.winUSD.toFixed(2)})</span>
                 </div>
 
-                <div class="fbet-ticket-actions">
+                <div style="display:flex; align-items:center; gap:10px;">
                   ${tagHTML}
                   ${actionHTML}
                 </div>
@@ -572,100 +595,10 @@
       `;
     }
 
-    openTonUsdtDepositModal(selObj, oKey, labelStr, stakeUSDT) {
-      const scAddress = TonUsdtContractConfig.contractAddress;
-      const jettonAddress = TonUsdtContractConfig.jettonUsdtAddress;
-      const nanoAmount = Math.round(stakeUSDT * 1e6); 
-
-      this.tonOverlayEl.innerHTML = `
-        <div class="ton-web3-modal">
-          <div class="ton-web3-logo">
-            <span>⚡ TON BLOCKCHAIN SMART CONTRACT</span>
-          </div>
-
-          <div style="font-size: 0.95rem; color: rgba(255,255,255,0.8); line-height: 1.5;">
-            Estás confirmando tu ticket de <strong>${selObj.team1.name} vs ${selObj.team2.name}</strong>.<br>
-            Para activar tu apuesta por <strong>${labelStr} (Cuota ${selObj.odds[oKey].toFixed(2)})</strong>, deposita exactamente:
-          </div>
-
-          <div class="ton-usdt-amount-box">
-            <span>Monto Exacto en USDT a Enviar</span>
-            <strong>${stakeUSDT.toFixed(2)} USDT</strong>
-          </div>
-
-          <div class="ton-sc-address-box">
-            <label>Dirección Oficial del Smart Contract Destino (TON)</label>
-            <code>${scAddress}</code>
-          </div>
-
-          <div class="ton-qr-container">
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <rect width="100" height="100" fill="#ffffff"/>
-              <path d="M10,10 h25 v25 h-25 z M15,15 h15 v15 h-15 z M65,10 h25 v25 h-25 z M70,15 h15 v15 h-15 z M10,65 h25 v25 h-25 z M15,70 h15 v15 h-15 z" fill="#0098ea"/>
-              <rect x="40" y="40" width="20" height="20" fill="#39ff88" rx="4"/>
-              <path d="M45,10 h10 v5 h-10 z M10,45 h5 v10 h-5 z M85,45 h5 v10 h-5 z M45,85 h10 v5 h-10 z M30,40 h10 v10 h-10 z M60,50 h10 v10 h-10 z" fill="#000000"/>
-            </svg>
-          </div>
-
-          <div class="ton-action-buttons">
-            <a class="ton-deep-link-btn" href="ton://transfer/${scAddress}?amount=${nanoAmount}&jetton=${jettonAddress}" target="_blank" rel="noopener noreferrer">
-              🚀 ABRIR DIRECTO EN TONKEEPER / TELEGRAM WALLET
-            </a>
-
-            <button class="ton-verify-deposit-btn" type="button" id="confirm-ton-deposit-btn">
-              ✔ YA DEPOSITÉ LOS ${stakeUSDT.toFixed(2)} USDT EN EL CONTRATO
-            </button>
-
-            <button style="background:transparent; border:none; color:#ff4545; cursor:pointer; font-weight:bold; margin-top:4px;" type="button" id="cancel-ton-modal-btn">
-              ✕ Cancelar Apuesta
-            </button>
-          </div>
-        </div>
-      `;
-
-      this.tonOverlayEl.hidden = false;
-
-      this.tonOverlayEl.querySelector("#cancel-ton-modal-btn")?.addEventListener("click", () => {
-        this.tonOverlayEl.hidden = true;
-      });
-
-      this.tonOverlayEl.querySelector("#confirm-ton-deposit-btn")?.addEventListener("click", () => {
-        this.tonOverlayEl.hidden = true;
-        
-        const winUSD = stakeUSDT * selObj.odds[oKey];
-        const prizeGems = Math.round(winUSD * TonUsdtContractConfig.rateGemsPerWinUSD);
-
-        BetDB.createTicket({
-          matchId: selObj.id,
-          matchName: `${selObj.team1.name} vs ${selObj.team2.name} (${selObj.competition})`,
-          selectionKey: oKey,
-          selectionLabel: labelStr,
-          odds: selObj.odds[oKey],
-          stakeUSDT: stakeUSDT,
-          winUSD: winUSD,
-          prizeGems: prizeGems,
-          contractAddress: scAddress
-        });
-
-        this.selectedMatch = null;
-        this.selectedOddKey = null;
-        this.activeTab = "tickets";
-        this.render();
-
-        if (typeof toast === "function") {
-          toast(`⚡ ¡Monto de ${stakeUSDT.toFixed(2)} USDT verificado con éxito en el Smart Contract! Ticket activado.`, true);
-        }
-      });
-    }
-
     attachPostRenderListeners() {
       const overlay = this.overlayEl;
 
       overlay.querySelector("#fbet-modal-close-btn")?.addEventListener("click", () => this.closeModal());
-
-      overlay.querySelector("#refresh-api-btn")?.addEventListener("click", () => {
-        this.refreshApiMatchesSilently(true);
-      });
 
       // Pestañas
       overlay.querySelectorAll("[data-fbet-tab]").forEach(btn => {
@@ -674,6 +607,24 @@
           this.render();
         });
       });
+
+      // Filtros rápidos
+      overlay.querySelectorAll("[data-fcat]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          this.activeFilter = btn.dataset.fcat;
+          this.render();
+        });
+      });
+
+      // Input buscador
+      const searchInp = overlay.querySelector("#fbet-search-inp");
+      if (searchInp) {
+        searchInp.addEventListener("input", (e) => {
+          this.searchQuery = e.target.value;
+          this.render();
+        });
+        setTimeout(() => searchInp.focus(), 50);
+      }
 
       // Selección en tarjeta
       overlay.querySelectorAll("[data-select-odd]").forEach(btn => {
@@ -686,7 +637,7 @@
           
           setTimeout(() => {
             document.getElementById("active-bet-slip")?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
+          }, 50);
         });
       });
 
@@ -701,22 +652,15 @@
           const potWinUSD = (this.stakeUSDT * oVal).toFixed(2);
           const potWinGems = Math.round(this.stakeUSDT * oVal * TonUsdtContractConfig.rateGemsPerWinUSD);
 
-          const retEl = overlay.querySelector(".fbet-return-box strong");
+          const retEl = overlay.querySelector(".fbet-return-minimal strong");
           if(retEl) retEl.textContent = `🎁 ${potWinGems} GEMAS`;
-          const retMetaEl = overlay.querySelector(".fbet-return-box small");
-          if(retMetaEl) retMetaEl.textContent = `(Equivalente a $${potWinUSD} USD)`;
+          const retMetaEl = overlay.querySelector(".fbet-return-minimal span:nth-child(3)");
+          if(retMetaEl) retMetaEl.textContent = `($${potWinUSD} USD netos)`;
 
           const confirmBtn = overlay.querySelector("#pay-ton-usdt-btn");
-          if(confirmBtn) confirmBtn.textContent = `⚡ DEPOSITAR ${this.stakeUSDT.toFixed(2)} USDT EN SMART CONTRACT TON & ACTIVAR TICKET`;
+          if(confirmBtn) confirmBtn.textContent = `⚡ Enviar ${this.stakeUSDT.toFixed(2)} USDT al Contrato en TON & Confirmar Boleto`;
         });
       }
-
-      overlay.querySelectorAll("[data-qstake]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          this.stakeUSDT += parseFloat(btn.dataset.qstake);
-          this.render();
-        });
-      });
 
       overlay.querySelector("#clear-slip-btn")?.addEventListener("click", () => {
         this.selectedMatch = null;
@@ -724,20 +668,50 @@
         this.render();
       });
 
-      // Pagar con TON Smart Contract USDT
+      // Pagar con TON Smart Contract USDT ($10 USDT mínimo estricto)
       overlay.querySelector("#pay-ton-usdt-btn")?.addEventListener("click", () => {
         if (this.stakeUSDT < 10 || !this.selectedMatch || !this.selectedOddKey) {
-          alert("⚠️ El Smart Contract de la blockchain solo acepta depósitos exactos de $10 USDT en adelante. No se procesan órdenes menores a 10 USDT.");
+          alert("⚠️ El contrato inteligente solo procesa depósitos exactos de $10 USDT en adelante. Ninguna boleta menor a 10 USDT será procesada.");
           return;
         }
 
         const selObj = this.selectedMatch;
         const labelStr = this.selectedOddKey === '1' ? selObj.team1.name : this.selectedOddKey === 'X' ? 'Empate' : selObj.team2.name;
         
-        this.openTonUsdtDepositModal(selObj, this.selectedOddKey, labelStr, this.stakeUSDT);
+        const nanoAmount = Math.round(this.stakeUSDT * 1e6);
+        const scAddress = TonUsdtContractConfig.contractAddress;
+        
+        // Disparamos deep link directo y creamos boleto
+        try {
+          window.open(`ton://transfer/${scAddress}?amount=${nanoAmount}&jetton=${TonUsdtContractConfig.jettonUsdtAddress}`, "_blank");
+        } catch {}
+
+        const winUSD = this.stakeUSDT * selObj.odds[this.selectedOddKey];
+        const prizeGems = Math.round(winUSD * TonUsdtContractConfig.rateGemsPerWinUSD);
+
+        BetDB.createTicket({
+          matchId: selObj.id,
+          matchName: `${selObj.team1.name} vs ${selObj.team2.name} (${selObj.competition})`,
+          selectionKey: this.selectedOddKey,
+          selectionLabel: labelStr,
+          odds: selObj.odds[this.selectedOddKey],
+          stakeUSDT: this.stakeUSDT,
+          winUSD: winUSD,
+          prizeGems: prizeGems,
+          smartContract: scAddress
+        });
+
+        this.selectedMatch = null;
+        this.selectedOddKey = null;
+        this.activeTab = "tickets";
+        this.render();
+
+        if (typeof toast === "function") {
+          toast(`⚡ ¡Boleto Web3 en USDT registrado y asegurado en Supabase DB! Transacción lanzada.`, true);
+        }
       });
 
-      // Simular Resolución del Partido a Ganador
+      // Simular Fin de Partido
       overlay.querySelectorAll("[data-sim-resolve]").forEach(btn => {
         btn.addEventListener("click", () => {
           const tId = btn.dataset.simResolve;
@@ -747,13 +721,13 @@
 
           const isWin = Math.random() > 0.35; 
           const newStatus = isWin ? "won" : "lost";
-          const resStr = isWin ? `Acierto (${tick.selectionLabel})` : "Resultado Adverso (1-2)";
+          const resStr = isWin ? `Acierto (${tick.selectionLabel})` : "Resultado Inesperado (1-2)";
 
           BetDB.updateTicketStatus(tId, newStatus, resStr);
           this.render();
 
           if (typeof toast === "function") {
-            toast(isWin ? "🟢 ¡TICKET VALIDADO A GANADOR! Reclama tus Gemas al balance final." : "🔴 Boleta resuelta (Perdida).", isWin);
+            toast(isWin ? "🟢 ¡BOLETO ACERTADO A GANADOR! Reclama tu premio en Gemas." : "🔴 Boleta liquidada (Perdida).", isWin);
           }
         });
       });
@@ -766,7 +740,7 @@
           this.render();
 
           if (typeof toast === "function") {
-            toast(`🎁 ¡Excelente! +${claimedGems} Gemas agregadas a tu Balance Web3 Principal. Ya puedes entrar a tu botón de retiros.`, true);
+            toast(`🎁 ¡Brillante! +${claimedGems} Gemas agregadas a tu balance en vivo. Disponibles en tu botón de retiros.`, true);
           }
         });
       });

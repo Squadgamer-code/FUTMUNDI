@@ -86,6 +86,16 @@
     } catch {}
   }
 
+  
+  window.__FM_UNIVERSAL_OPEN_GAME = function(mode) {
+    console.info("[UniversalOpenGame] Iniciando minijuego físico en modo:", mode);
+    setTimeout(() => {
+      const modalEl = document.getElementById("fm-modal");
+      if(modalEl) modalEl.classList.remove("open");
+      openGame(mode);
+    }, 50);
+  };
+
   function openGame(mode) {
     if (!window.RetroCancha || typeof window.RetroCancha.start !== "function") {
       console.error("[Futmundi] RetroCancha not loaded");

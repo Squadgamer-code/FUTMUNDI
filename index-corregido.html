@@ -1007,12 +1007,12 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
   </div>
 
   <div class="actions">
-    <button class="btn-play" type="button" aria-label="Jugar en el Estadio (PvP)" data-play-local="pvp">
+    <button class="btn-play" type="button" aria-label="Selección de Estadio (PvP)" data-modal="estadio">
       <span class="ill" aria-hidden="true">
         <img src="imagen/estadio.jpg" alt="" loading="lazy" width="512" height="512" />
       </span>
     </button>
-    <button class="btn-play" type="button" aria-label="Jugar en la Cancha (PvE)" data-play-local="pve">
+    <button class="btn-play" type="button" aria-label="Selección de Cancha (PvE)" data-modal="cancha">
       <span class="ill" aria-hidden="true">
         <img src="imagen/cancha.jpg" alt="" loading="lazy" width="512" height="512" />
       </span>
@@ -1267,7 +1267,7 @@ const TEMPLATES = {
         <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía <b>10 USDT</b> en red <b>TON</b> al contrato:</div>
         <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div></div>
       </div>
-      <button class="m-cta" id="t-register" type="button" data-play-local="tournament">Inscribirme y Jugar Torneo (10 USDT)</button>
+      <button class="m-cta" id="t-register" onclick="window.__FM_UNIVERSAL_OPEN_GAME('tournament')" type="button" style="font-size:14px; box-shadow:0 6px 20px rgba(244,197,66,0.4);">🏆 INSCRIBIRME Y ENTRAR A DISPUTAR TORNEO (10 USDT)</button>
       <div id="t-msg" class="m-warn" style="display:none;margin-top:10px"></div>`
   },
   referido: {
@@ -1322,7 +1322,7 @@ const TEMPLATES = {
         <div class="m-prize"><span class="pos">2°</span><div class="val">1.500</div><div class="lbl">Gemas</div></div>
         <div class="m-prize"><span class="pos">3°</span><div class="val">500</div><div class="lbl">Gemas</div></div>
       </div>
-      <button class="m-cta" type="button" data-play-local="pvp">🎮 Entrar a Jugar en Estadio (PvP)</button>`
+      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pvp')" type="button" style="font-size:14px; box-shadow:0 6px 20px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">🎮 DISPUTAR PARTIDO EN EL ESTADIO (PvP FÍSICO)</button>`
   },
   cancha: {
     title: "Futcancha",
@@ -1357,7 +1357,7 @@ const TEMPLATES = {
           <div class="meta">Casual</div>
         </div>
       </div>
-      <button class="m-cta" type="button" data-play-local="pve">🎮 Jugar Partido Amistoso vs CPU (PvE)</button>`
+      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')" type="button" style="font-size:14px; box-shadow:0 6px 20px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">🎮 JUGAR PARTIDO RÁPIDO vs CPU (PvE FÍSICO)</button>`
   },
   market: {
     title: "Market",

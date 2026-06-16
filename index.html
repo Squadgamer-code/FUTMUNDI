@@ -857,6 +857,8 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 
 <link rel="stylesheet" href="./retro-cancha.css" />
 <link rel="stylesheet" href="./futmundi-bet.css" />
+<link rel="stylesheet" href="./futmundi-bet.css" />
+<link rel="stylesheet" href="./futmundi-pes-gameboy.css" />
 </head>
 <body>
 <header class="header">
@@ -1007,12 +1009,12 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
   </div>
 
   <div class="actions">
-    <button class="btn-play" type="button" aria-label="Selección de Estadio Mundial (PvP)" data-modal="estadio">
+    <button class="btn-play" type="button" aria-label="Jugar en el Estadio" data-modal="estadio">
       <span class="ill" aria-hidden="true">
         <img src="imagen/estadio.jpg" alt="" loading="lazy" width="512" height="512" />
       </span>
     </button>
-    <button class="btn-play" type="button" aria-label="Selección de Cancha Local (PvE)" data-modal="cancha">
+    <button class="btn-play" type="button" aria-label="Jugar en la Cancha" data-modal="cancha">
       <span class="ill" aria-hidden="true">
         <img src="imagen/cancha.jpg" alt="" loading="lazy" width="512" height="512" />
       </span>
@@ -1112,42 +1114,37 @@ const TEMPLATES = {
       <button class="m-cta">Reclamar disponibles</button>`
   },
   reclamos: {
-    title: "Recompensa Diaria",
+    title: "Check-in Oficial (00:00 UTC)",
     body: `
-      <div class="m-broadcast-bar"><span class="live">DAILY</span><span class="sep"></span><span>Check-in diario</span></div>
-      <div class="m-hero">
-        <div class="m-trophy">🎁</div>
-        <h3>Día 3 disponible</h3>
-        <div class="m-bignum">2<small>GEMAS</small></div>
+      <div class="m-broadcast-bar"><span class="live">00:00 UTC</span><span class="sep"></span><span>Temporización Blockchain TON</span></div>
+      <div class="m-hero" style="background:#070d09; border-color:#ffe871;">
+        <div class="m-trophy" id="daily-top-icon" style="box-shadow:0 0 20px #ffe871;">🎁</div>
+        <h3 id="daily-top-title" style="color:#ffe871; font-weight:900; font-size:14px;">Recompensa UTC en curso</h3>
+        <div class="m-bignum" id="daily-top-gems">2<small>💎 BROWN</small></div>
+        <div style="color:var(--fm-cyan); font-weight:bold; font-size:11px; margin-top:2px;">CIERRE DE DÍA A LAS 00:00 UTC</div>
         <div class="m-count">
-          <div><b>04</b><span>Hrs</span></div>
-          <div><b>10</b><span>Min</span></div>
-          <div><b>59</b><span>Seg</span></div>
-          <div><b>D3</b><span>Día</span></div>
+          <div><b id="d-h">--</b><span>Hrs</span></div>
+          <div><b id="d-m">--</b><span>Min</span></div>
+          <div><b id="d-s">--</b><span>Seg</span></div>
+          <div><b id="d-u" style="color:#ffe871;">UTC</b><span>00:00</span></div>
         </div>
       </div>
-      <div class="m-section">Racha semanal</div>
-      <div class="m-prizes" style="grid-template-columns:repeat(7,1fr);gap:6px">
-        <div class="m-prize"><div class="val">1💎</div><div class="lbl">D1</div></div>
-        <div class="m-prize"><div class="val">+2pts</div><div class="lbl">D2</div></div>
-        <div class="m-prize gold"><span class="pos">HOY</span><div class="val">2💎</div><div class="lbl">D3</div></div>
-        <div class="m-prize"><div class="val">+3pts</div><div class="lbl">D4</div></div>
-        <div class="m-prize"><div class="val">3💎</div><div class="lbl">D5</div></div>
-        <div class="m-prize"><div class="val">+4pts</div><div class="lbl">D6</div></div>
-        <div class="m-prize"><div class="val">4💎</div><div class="lbl">D7</div></div>
+      <div class="m-section">Racha Semanal (Verificada con Marcaje Web3)</div>
+      <div id="daily-streak-grid" style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:12px;">
+        <!-- Pinta automatico por JS con daily_check.jpg -->
       </div>
-      <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan);margin-top:10px">
-        Bonus mensual: completa los 30 días sin fallar y gana <b>100 💎</b>
+      <div class="m-warn" style="background:rgba(57,255,136,.08); border-color:rgba(57,255,136,.25); color:var(--fm-cyan); margin-top:10px;">
+        Bonus Mensual: completa los 30 días sin perder un check y gana <b>100 💎 Brown</b>
       </div>
-      <div class="m-section">Progreso del mes</div>
-      <div style="height:8px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;border:1px solid rgba(79,217,196,.2)">
-        <div style="width:10%;height:100%;background:linear-gradient(90deg,var(--fm-cyan),var(--fm-gold))"></div>
+      <div class="m-section">Progreso del Mes</div>
+      <div style="height:10px; background:rgba(0,0,0,.6); border-radius:99px; overflow:hidden; border:1px solid rgba(79,217,196,.4);">
+        <div style="width:10%; height:100%; background:linear-gradient(90deg, var(--fm-cyan), var(--fm-gold));" id="daily-month-bar"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--fm-text-dim);margin-top:6px;letter-spacing:.1em">
-        <span>3 / 30 días</span><span>+100 💎</span>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--fm-text-dim); margin-top:6px; letter-spacing:.1em; font-weight:bold;">
+        <span id="daily-month-txt">3 / 30 Días Activos</span><span style="color:#ffe871;">+100 💎 Final</span>
       </div>
-      <div style="height:10px"></div>
-      <button class="m-cta">Hacer check-in</button>`
+      <div style="height:12px"></div>
+      <button class="m-cta" id="daily-claim-action-btn" type="button" style="font-size:15px; box-shadow:0 6px 25px rgba(57,255,136,0.4);">✔ HACER CHECK-IN & RECLAMAR HOY</button>`
   },
   nivel: {
     title: "Nivel del NFT",
@@ -1265,7 +1262,7 @@ const TEMPLATES = {
         <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía <b>10 USDT</b> en red <b>TON</b> al contrato:</div>
         <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div></div>
       </div>
-      <button class="m-cta" id="t-register" onclick="window.__FM_UNIVERSAL_OPEN_GAME('tournament')" type="button" style="font-size:14px; box-shadow:0 6px 20px rgba(244,197,66,0.4);">🏆 INSCRIBIRME Y ENTRAR A DISPUTAR TORNEO (10 USDT)</button>
+      <button class="m-cta" id="t-register" onclick="window.__FM_UNIVERSAL_OPEN_GAME('tournament')" type="button">🏆 INSCRIBIRME Y JUGAR TORNEO (10 USDT)</button>
       <div id="t-msg" class="m-warn" style="display:none;margin-top:10px"></div>`
   },
   referido: {
@@ -1295,67 +1292,55 @@ const TEMPLATES = {
       </div>`
   },
   estadio: {
-    title: "Selección de Estadio",
+    title: "Gran Estadio Mundial (PvP)",
     body: `
-      <div class="m-broadcast-bar"><span class="live">LIVE</span><span class="sep"></span><span>FM · CH 01</span></div>
-      <div class="stadium3d">
+      <div class="m-broadcast-bar"><span class="live">COMPETICIÓN 1v1</span><span class="sep"></span><span>Enfrentamiento Físico en Vivo</span></div>
+      <div class="stadium3d" style="margin-bottom:16px;">
         <div class="stands"></div>
         <div class="lights"></div>
         <div class="field"></div>
-        <div class="badge">Estadio Mundial · 80k</div>
+        <div class="badge">Estadio Mundial Pro · 80k Espectadores</div>
       </div>
-      <div class="m-reward-strip">
-        <span class="lbl">Premio total</span>
-        <span class="val">5.000 💎</span>
+      <div style="background:#121e2b; border:1px solid #1e2d3d; padding:14px; border-radius:16px; margin-bottom:18px; color:#a0b4c8; font-size:0.9rem; text-align:left; line-height:1.4;">
+        ⚽ Enfrenta a tu contrincante en la misma cancha. Sincroniza a tu futbolista NFT y demuestra quién tiene el mejor regate, tiro y táctica en el césped.
       </div>
-      <div class="m-count" style="margin-bottom:12px">
-        <div><b>4d</b><span>Días</span></div>
-        <div><b>10h</b><span>Hrs</span></div>
-        <div><b>59m</b><span>Min</span></div>
-        <div><b>54s</b><span>Seg</span></div>
-      </div>
-      <div class="m-section">Distribución de premios</div>
-      <div class="m-prizes">
-        <div class="m-prize gold"><span class="pos">1°</span><div class="val">2.600</div><div class="lbl">Gemas</div></div>
-        <div class="m-prize"><span class="pos">2°</span><div class="val">1.500</div><div class="lbl">Gemas</div></div>
-        <div class="m-prize"><span class="pos">3°</span><div class="val">500</div><div class="lbl">Gemas</div></div>
-      </div>
-      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pvp')" type="button" style="font-size:14px; box-shadow:0 6px 20px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">🎮 ENTRAR A JUGAR EN EL ESTADIO Pro (PvP FÍSICO)</button>`
+      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pvp')" type="button" style="font-size:15px; box-shadow:0 6px 25px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">
+        ⚽ ENTRAR A JUGAR EN EL ESTADIO (PvP FÍSICO)
+      </button>`
   },
   cancha: {
-    title: "Futcancha",
+    title: "FutCancha de Práctica (PvE)",
     body: `
-      <div class="m-broadcast-bar"><span class="live">PRÁCTICA</span><span class="sep"></span><span>elige tu cancha</span></div>
-      <div class="m-section">Ganancias por partido</div>
-      <div class="m-results">
-        <div class="m-result win"><b>+45</b><span>Victoria</span></div>
-        <div class="m-result draw"><b>+15</b><span>Empate</span></div>
-        <div class="m-result lose"><b>-10</b><span>Derrota</span></div>
+      <div class="m-broadcast-bar"><span class="live">MODO 1 JUGADOR vs IA</span><span class="sep"></span><span>elige tu nivel</span></div>
+      <div style="background:#121e2b; border:1px solid #1e2d3d; padding:12px; border-radius:14px; margin-bottom:14px; color:#a0b4c8; font-size:0.85rem; text-align:left; line-height:1.4;">
+        ⚽ Practica con tu Futbolista NFT en modo local contra la Inteligencia Artificial (CPU). Ganar partidos te sumará puntos y gemas a tu balance.
       </div>
-      <div class="m-section">Elige tu cancha</div>
-      <div class="stadium-grid">
-        <div class="stadium-card gold">
+      <div class="m-section">Elige tu Dificultad y Cancha de Disputa</div>
+      <div class="stadium-grid" style="margin-bottom:16px;">
+        <div class="stadium-card gold" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch"><div class="turf"></div></div>
           <div class="name">Cancha Mundial</div>
-          <div class="meta">Élite · +2 pts</div>
+          <div class="meta">Élite Про · +2 PTS</div>
         </div>
-        <div class="stadium-card">
+        <div class="stadium-card" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch arena"><div class="turf"></div></div>
           <div class="name">Arena Indoor</div>
-          <div class="meta">Fácil · +1 pt</div>
+          <div class="meta">Media · +1 PTS</div>
         </div>
-        <div class="stadium-card">
+        <div class="stadium-card" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch barrial"><div class="turf"></div></div>
-          <div class="name">Barrial</div>
-          <div class="meta">Fácil · +1 pt</div>
+          <div class="name">Barrial Futsal</div>
+          <div class="meta">Normal Pro Físico</div>
         </div>
-        <div class="stadium-card">
+        <div class="stadium-card" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')">
           <div class="iso-pitch"><div class="turf"></div></div>
-          <div class="name">Liga Mundial</div>
-          <div class="meta">Casual</div>
+          <div class="name">Liga de Barrio</div>
+          <div class="meta">Casual Amistoso</div>
         </div>
       </div>
-      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')" type="button" style="font-size:14px; box-shadow:0 6px 20px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">🎮 JUGAR PARTIDO RÁPIDO vs CPU (PvE FÍSICO)</button>`
+      <button class="m-cta" onclick="window.__FM_UNIVERSAL_OPEN_GAME('pve')" type="button" style="font-size:15px; box-shadow:0 6px 25px rgba(57,255,136,0.4); background:#39ff88; color:#000; border-color:#fff;">
+        ⚽ JUGAR EN CANCHA SELECCIONADA vs CPU (PvE FÍSICO)
+      </button>`
   },
   market: {
     title: "Market",
@@ -1371,20 +1356,20 @@ const TEMPLATES = {
           Cada NFT: 4 balones de estamina · 100% durabilidad · −0.8% por balón · <b>Máx 20 NFT por usuario</b>
         </div>
         <div class="shop-grid">
-    <div class="shop-card free"><div class="av">🇧🇷</div><div class="nm">Neymar</div><div class="tg" style="color:#ffe871; font-weight:bold; font-size:11px;">Poder Inicial · Genera 3.2 💎 / Día</div><div class="free-tag">GRATIS</div></div>
-    <div class="shop-card"><div class="av">🇨🇴</div><div class="nm">James Rodríguez</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Estrella · Genera 8 💎 / Día</div><div class="pr">320<small>💎</small></div></div>
-    <div class="shop-card"><div class="av">🇨🇱</div><div class="nm">Alexis Sánchez</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Estrella · Genera 17 💎 / Día</div><div class="pr">640<small>💎</small></div></div>
-    <div class="shop-card"><div class="av">🏴</div><div class="nm">Harry Kane</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Goleador · Genera 28 💎 / Día</div><div class="pr">960<small>💎</small></div></div>
-    <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Pedri</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Maestro · Genera 39 💎 / Día</div><div class="pr">1.280<small>💎</small></div></div>
-    <div class="shop-card"><div class="av">🇧🇷</div><div class="nm">Vinicius Jr</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Velocista · Genera 52 💎 / Día</div><div class="pr">1.600<small>💎</small></div></div>
-    <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Rodri</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Mediocampo · Genera 70 💎 / Día</div><div class="pr">1.920<small>💎</small></div></div>
-    <div class="shop-card"><div class="av">🇫🇷</div><div class="nm">Mbappé</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Velocista · Genera 77 💎 / Día</div><div class="pr">2.080<small>💎</small></div></div>
-    <div class="shop-card"><div class="av">🇳🇴</div><div class="nm">Haaland</div><div class="tg" style="color:#39ff88; font-weight:bold; font-size:11px;">Poder Goleador · Genera 89 💎 / Día</div><div class="pr">2.240<small>💎</small></div></div>
-    <div class="shop-card elite"><div class="av">🇪🇸</div><div class="nm">Lamine Yamal</div><div class="tg" style="color:#ffe871; font-weight:bold; font-size:11px;">Poder Élite · Genera 190 💎 / Día</div><div class="pr">4.000<small>💎</small></div></div>
-    <div class="shop-card elite"><div class="av">🏴</div><div class="nm">Bellingham</div><div class="tg" style="color:#ffe871; font-weight:bold; font-size:11px;">Poder Élite · Genera 244 💎 / Día</div><div class="pr">5.120<small>💎</small></div></div>
-    <div class="shop-card elite"><div class="av">🇦🇷</div><div class="nm">Lionel Messi</div><div class="tg" style="color:#ffe871; font-weight:bold; font-size:11px;">Poder Leyenda · Genera 304 💎 / Día</div><div class="pr">6.400<small>💎</small></div></div>
-    <div class="shop-card elite"><div class="av">🇵🇹</div><div class="nm">Cristiano R.</div><div class="tg" style="color:#ffe871; font-weight:bold; font-size:11px;">Poder Leyenda · Genera 1,067 💎 / Día</div><div class="pr">16.000<small>💎</small></div></div>
-  </div>
+  <div class="shop-card free"><div class="av">🇧🇷</div><div class="nm">Neymar</div><div class="tg" style="color:#39ff88; font-weight:bold;">3.2 💎/Día · ROI 50 Días</div><div class="free-tag">GRATIS</div></div>
+  <div class="shop-card"><div class="av">🇨🇴</div><div class="nm">James Rodríguez</div><div class="tg" style="color:#ffe871; font-weight:bold;">8 💎/Día · ROI 40 Días</div><div class="pr">320<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇨🇱</div><div class="nm">Alexis Sánchez</div><div class="tg" style="color:#ffe871; font-weight:bold;">17 💎/Día · ROI 36 Días</div><div class="pr">640<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🏴</div><div class="nm">Harry Kane</div><div class="tg" style="color:#ffe871; font-weight:bold;">28 💎/Día · ROI 34 Días</div><div class="pr">960<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Pedri</div><div class="tg" style="color:#ffe871; font-weight:bold;">39 💎/Día · ROI 33 Días</div><div class="pr">1.280<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇧🇷</div><div class="nm">Vinicius Jr</div><div class="tg" style="color:#ffe871; font-weight:bold;">52 💎/Día · ROI 31 Días</div><div class="pr">1.600<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Rodri</div><div class="tg" style="color:#ffe871; font-weight:bold;">70 💎/Día · ROI 27.5 Días</div><div class="pr">1.920<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇫🇷</div><div class="nm">Mbappé</div><div class="tg" style="color:#ffe871; font-weight:bold;">77 💎/Día · ROI 27 Días</div><div class="pr">2.080<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇳🇴</div><div class="nm">Haaland</div><div class="tg" style="color:#ffe871; font-weight:bold;">89 💎/Día · ROI 25 Días</div><div class="pr">2.240<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🇪🇸</div><div class="nm">Lamine Yamal</div><div class="tg" style="color:#39ff88; font-weight:bold;">190 💎/Día · ROI 21 Días</div><div class="pr">4.000<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🏴</div><div class="nm">Bellingham</div><div class="tg" style="color:#39ff88; font-weight:bold;">244 💎/Día · ROI 21 Días</div><div class="pr">5.120<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🇦🇷</div><div class="nm">Lionel Messi</div><div class="tg" style="color:#39ff88; font-weight:bold;">304 💎/Día · ROI 21 Días</div><div class="pr">6.400<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🇵🇹</div><div class="nm">Cristiano R.</div><div class="tg" style="color:#39ff88; font-weight:bold;">1,067 💎/Día · ROI 15 Días</div><div class="pr">16.000<small>💎</small></div></div>
+</div>
       </div>
       <div class="m-panel" id="m-unif">
         <div class="m-warn" style="background:rgba(244,197,66,.08);border-color:rgba(244,197,66,.3);color:var(--fm-gold)">
@@ -1701,18 +1686,19 @@ function addInventoryItem(name){
   ensureInventoryShape();
   const cat = itemCategory(name); if(cat === "misc") return { ok:false, error:"Item no reconocido" };
   const max = name === FREE_NFT_NAME ? 1 : (STATE.maxPerNFT || 20);
-  if(countOwnedByName(name) >= max) return { ok:false, error:name === FREE_NFT_NAME ? "Este Futbolista Inicial Gratis ya fue reclamado (1/1)." : `Límite de copias máximo alcanzado: ${max}` };
+  if(countOwnedByName(name) >= max) return { ok:false, error:name === FREE_NFT_NAME ? "Este Futbolista Gratuito Inicial ya fue reclamado (1/1)." : `Límite de copias máximo de 20 alcanzado: ${max}` };
   
-  // Regla Tech Lead: Descontamos Gemas del saldo en vivo
+  // ⚠️ REGLA TECH LEAD: SE DESCUENTA EL COSTO EN GEMAS DEL COMPRADOR ⚠️
   const itemCost = Number(ITEM_PRICES[name]) || 0;
-  if(itemCost > 0) {
+  if (itemCost > 0) {
     if (STATE.balanceGems < itemCost) {
-      alert("❌ SALDO INSUFICIENTE EN TU BILLETERA: Tienes " + STATE.balanceGems.toLocaleString() + " 💎 y " + name + " requiere una inversión de " + itemCost.toLocaleString() + " 💎. Toca el botón flotante de 'Depósito' (💎) para recargar con USDT en la red de TON, o compite en minijuegos físicos para obtener más Gemas.");
-      return { ok: false, error: "Gemas insuficientes para pagar la transacción." };
+      alert("❌ SALDO INSUFICIENTE EN LA BILLETERA: Tu balance en curso es de " + Number(STATE.balanceGems).toLocaleString() + " 💎 y " + name + " requiere una inversión de " + Number(itemCost).toLocaleString() + " 💎. Para incrementar tu saldo, toca el botón de Depósito (💎) en la pantalla central para recargar paquetes de Gemas con USDT en la blockchain de TON, u entra a la arena a ganar partidos.");
+      return { ok: false, error: "Saldo insuficiente para completar la transacción." };
     }
+    // Liquida el costo
     STATE.balanceGems -= itemCost;
     updateHeaderStats();
-    if(typeof toast === "function") toast("🛒 Mercado: -" + itemCost.toLocaleString() + " 💎 abonadas exitosamente.", true);
+    if(typeof toast === "function") toast("🛒 Transacción de Market completada con éxito: -" + Number(itemCost).toLocaleString() + " 💎", true);
   }
 
   const item = makeInventoryItem(name);
@@ -2517,9 +2503,141 @@ function wireModal(name){
       card.appendChild(btn);
     });
   }
-  if(name === 'reclamos'){
-    const btn = inner.querySelector('.m-cta');
-    if(btn){ btn.dataset.action = 'daily-claim'; btn.addEventListener('click', () => claimDailyReward(btn)); }
+  if(name === "reclamos"){
+    const btn = inner.querySelector("#daily-claim-action-btn");
+    const grid = inner.querySelector("#daily-streak-grid");
+    
+    // El dia oficial comienza y termina a las 00:00 UTC
+    const updateDailyTime = () => {
+      const nUTC = new Date();
+      // Ojo: en UTC, mañana a las 00:00:00
+      const tomorrowUTC = new Date(Date.UTC(nUTC.getUTCFullYear(), nUTC.getUTCMonth(), nUTC.getUTCDate() + 1, 0, 0, 0));
+      let msLeft = Math.max(0, tomorrowUTC - nUTC);
+      
+      const hrs = Math.floor(msLeft / 3600000); msLeft -= hrs * 3600000;
+      const mins = Math.floor(msLeft / 60000); msLeft -= mins * 60000;
+      const secs = Math.floor(msLeft / 1000);
+
+      const dH = inner.querySelector("#d-h"); if(!dH) return;
+      dH.textContent = String(hrs).padStart(2, "0");
+      inner.querySelector("#d-m").textContent = String(mins).padStart(2, "0");
+      inner.querySelector("#d-s").textContent = String(secs).padStart(2, "0");
+    };
+    updateDailyTime();
+    clearInterval(window.__fm_daily_utc_timer);
+    window.__fm_daily_utc_timer = setInterval(updateDailyTime, 1000);
+
+    // Renderizamos la racha de los 7 dias verificando en local/nube si ya reclamaron
+    const renderStreakGrid = () => {
+      if(!grid) return;
+      const nowUTC = new Date();
+      // Dia de la semana en curso (Lunes a Domingo o 1 a 7)
+      let currentDayIdx = nowUTC.getUTCDay(); // 0 Sun .. 6 Sat
+      currentDayIdx = currentDayIdx === 0 ? 7 : currentDayIdx; // 1 Lunes .. 7 Domingo
+
+      // Cargamos el mapa de dias reclamados de esta semana UTC
+      const mapKey = "fm_utc_daily_claimed_week_" + getUtcWeekIdentifier();
+      const claimedMap = safeJSON(mapKey, {});
+
+      let html = "";
+      const prizes = ["1 💎", "2 PTS", "2 💎", "3 PTS", "3 💎", "4 PTS", "4 💎"];
+
+      for(let d = 1; d <= 7; d++) {
+        let isClaimed = !!claimedMap[d];
+        let isToday = d === currentDayIdx;
+        let isPast = d < currentDayIdx;
+
+        if (isClaimed) {
+          // Reclamado -> Se incrusta el grandioso Icono de Check de Marcaje (daily_check.jpg)
+          html += `
+            <div style="background:#0e1a12; border:1px solid #39ff88; border-radius:14px; padding:6px 4px; text-align:center; box-shadow:0 0 10px rgba(57,255,136,0.2);">
+              <img src="./generated-assets/daily_check.jpg" alt="Check" style="width:100%; height:32px; object-fit:contain; border-radius:6px; margin-bottom:3px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">
+              <span style="display:block; font-family:'Oswald'; font-weight:900; font-size:11px; color:#39ff88; text-transform:uppercase;">✓ Listo</span>
+              <span style="display:block; font-size:9px; color:#a0b4c8; margin-top:1px;">D${d}</span>
+            </div>
+          `;
+        } else if (isPast) {
+          // Si el dia paso y el usuario no reclamo, perdio ese dia
+          html += `
+            <div style="background:#050a07; border:1px solid #ff4545; border-radius:14px; padding:6px 4px; text-align:center; opacity:0.8;">
+              <div style="font-size:24px; font-weight:900; color:#ff4545; line-height:1; height:32px; display:grid; place-items:center; margin-bottom:3px;">✕</div>
+              <span style="display:block; font-family:'Oswald'; font-weight:900; font-size:10px; color:#ff4545; text-transform:uppercase;">Perdido</span>
+              <span style="display:block; font-size:9px; color:#a0b4c8; margin-top:1px;">D${d}</span>
+            </div>
+          `;
+        } else if (isToday) {
+          // Hoy disponible
+          html += `
+            <div style="background:#1a2a1b; border:2px solid #ffe871; border-radius:14px; padding:6px 4px; text-align:center; box-shadow:0 0 15px rgba(255,232,113,0.4); transform:scale(1.03);">
+              <span style="display:block; font-family:'Oswald'; font-weight:950; font-size:16px; color:#ffe871; height:32px; display:grid; place-items:center; margin-bottom:3px;">${prizes[d-1]}</span>
+              <span style="display:block; font-family:'Oswald'; font-weight:950; font-size:11px; color:#ffe871;">HOY</span>
+              <span style="display:block; font-size:9px; color:#39ff88; font-weight:bold; margin-top:1px;">D${d}</span>
+            </div>
+          `;
+        } else {
+          // Futuro
+          html += `
+            <div style="background:#070d09; border:1px solid #1e2d3d; border-radius:14px; padding:6px 4px; text-align:center; opacity:0.6;">
+              <span style="display:block; font-family:'Oswald'; font-weight:700; font-size:14px; color:#f8fbff; height:32px; display:grid; place-items:center; margin-bottom:3px;">${prizes[d-1]}</span>
+              <span style="display:block; font-family:'Oswald'; font-weight:700; font-size:10px; color:#a0b4c8;">Espera</span>
+              <span style="display:block; font-size:9px; color:#a0b4c8; margin-top:1px;">D${d}</span>
+            </div>
+          `;
+        }
+      }
+      grid.innerHTML = html;
+
+      // Habilitamos o bloqueamos el boton de accion segun Hoy
+      if (claimedMap[currentDayIdx]) {
+        if(btn) {
+          btn.disabled = true;
+          btn.textContent = "✔ CHECK DEL DÍA OFICIAL REALIZADO";
+          btn.style.background = "#0e1a12"; btn.style.borderColor = "#39ff88"; btn.style.color = "#39ff88";
+        }
+      } else {
+        if(btn) {
+          btn.disabled = false;
+          btn.textContent = "✔ HACER CHECK-IN & RECLAMAR DÍA " + currentDayIdx;
+          btn.style.background = "var(--fm-cyan)"; btn.style.borderColor = "#fff"; btn.style.color = "#000";
+        }
+      }
+
+      // Progresos mes
+      const totalClaimedMonth = Object.values(claimedMap).filter(Boolean).length;
+      const mBar = inner.querySelector("#daily-month-bar");
+      if(mBar) mBar.style.width = Math.round((totalClaimedMonth / 30) * 100) + "%";
+      const mTxt = inner.querySelector("#daily-month-txt");
+      if(mTxt) mTxt.textContent = totalClaimedMonth + " / 30 Días UTC Activos";
+    };
+    
+    renderStreakGrid();
+
+    if(btn) {
+      btn.onclick = () => {
+        const nowUTC = new Date();
+        let currentDayIdx = nowUTC.getUTCDay();
+        currentDayIdx = currentDayIdx === 0 ? 7 : currentDayIdx;
+        
+        const mapKey = "fm_utc_daily_claimed_week_" + getUtcWeekIdentifier();
+        const claimedMap = safeJSON(mapKey, {});
+
+        if (claimedMap[currentDayIdx]) {
+          toast("El check de Hoy (00:00 UTC) ya se ejecutó con éxito.", false);
+          return;
+        }
+
+        claimedMap[currentDayIdx] = true;
+        localStorage.setItem(mapKey, JSON.stringify(claimedMap));
+        
+        // Sumamos las gemas
+        const gGana = currentDayIdx % 2 !== 0 ? Math.ceil(currentDayIdx / 2) * 2 : 2;
+        STATE.balanceGems += gGana;
+        updateHeaderStats();
+        
+        renderStreakGrid();
+        toast("✅ ¡Maravilloso! +" + gGana + " Gemas reclamadas. Racha en disco verificada y guardada.", true);
+      };
+    }
   }
   if(name === 'logros'){
     const btn = inner.querySelector('.m-cta');
@@ -2799,5 +2917,8 @@ if(heroImg){
 <script src="./integration.js"></script>
 <script src="./futmundi-bet.js"></script>
 <script type="module" src="./retro-cancha.js"></script>
+<script src="./integration.js"></script>
+<script src="./futmundi-bet.js"></script>
+<script src="./futmundi-pes-gameboy.js"></script>
 </body>
 </html>

@@ -733,6 +733,9 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .selected-player-box{text-align:center;margin-bottom:12px}.selected-player-box img{width:100%;max-height:210px;object-fit:contain;filter:drop-shadow(0 14px 20px rgba(0,0,0,.68))}.selected-player-box b{display:block;font-family:"Oswald";font-size:16px;color:var(--fm-gold)}.selected-player-box span{font-size:11px;color:var(--fm-cyan);letter-spacing:.12em;text-transform:uppercase}
 .equipped-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.equipped-slot{text-align:center;color:var(--fm-text-dim);font-size:10px;letter-spacing:.08em}.equipped-slot img{width:100%;height:92px;object-fit:contain;display:block;filter:drop-shadow(0 8px 12px rgba(0,0,0,.55))}.equipped-slot b{display:block;font-family:"Oswald";font-size:10px;color:var(--fm-text);line-height:1.1}
 .nft-summary{align-items:center}.nft-summary img{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}.dur-low{color:#ff8a72!important}.dur-ok{color:var(--fm-cyan)!important}
+.player-card{cursor:pointer;transition:transform .15s,opacity .15s;border-radius:14px;padding:6px}
+.player-card:hover{transform:translateY(-2px)}
+.player-card.exhausted{opacity:.45;filter:grayscale(.7)}
 
 
 /* Inputs corregidos retiro/deposito */
@@ -1585,16 +1588,8 @@ function itemCategory(name){
   if(window.NFT_CONFIG.dt[name]) return 'dt';
   return 'misc';
 }
-// FIX: ITEM_PRICES se construía dinámicamente a partir de la configuración NFT.
-// Antes no existía y addInventoryItem lanzaba ReferenceError al comprar.
-const ITEM_PRICES = Object.fromEntries(
-  [].concat(
-    Object.entries(window.NFT_CONFIG.players),
-    Object.entries(window.NFT_CONFIG.uniforms),
-    Object.entries(window.NFT_CONFIG.shoes),
-    Object.entries(window.NFT_CONFIG.dt)
-  ).map(([k, v]) => [k, Number(v.price) || 0])
-);
+// FIX: ITEM_PRICES construido dinámicamente desde NFT_CONFIG.
+const ITEM_PRICES = Object.fromEntries([].concat(Object.entries(window.NFT_CONFIG.players),Object.entries(window.NFT_CONFIG.uniforms),Object.entries(window.NFT_CONFIG.shoes),Object.entries(window.NFT_CONFIG.dt)).map(([k,v])=>[k,Number(v.price)||0]));
 function uid(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
 function nftValueUSDT(name){ 
   const config = window.NFT_CONFIG.players[name] || window.NFT_CONFIG.uniforms[name] || window.NFT_CONFIG.shoes[name] || window.NFT_CONFIG.dt[name];
@@ -1791,13 +1786,18 @@ function getEquippedItems(player){
     dt: getItemById(eq.dt)
   };
 }
+// ESPEC: Ordenamiento dinámico — stamina 4/4 arriba, 0/4 abajo.
+function sortPlayersByStamina(players){
+  return [...players].sort((a,b)=>{const sa=Number(a.stamina??0),sb=Number(b.stamina??0);return sb-sa||Number(b.durability??0)-Number(a.durability??0);});
+}
+function staminaBallsHTML(p){const c=Math.max(0,Math.min(4,Number(p.stamina??0))),m=Number(p.maxStamina||4);let h='';for(let i=0;i<m;i++)h+=i<c?'\u26bd':'\u26aa';return h;}
 function renderPlayerCard(player, opts={}){
   const selected = player.id === STATE.selectedPlayerId;
   const st = playerStatusText(player);
-  return `<div class="player-card ${selected?'selected':''}" data-player-id="${player.id}">
+  return `<div class="player-card ${selected?'selected':''} ${Number(player.stamina??0)<=0?'exhausted':''}" data-player-id="${player.id}" data-select-player="${player.id}">
     <img src="${player.img}" alt="${escapeHTML(player.name)}" loading="lazy" decoding="async">
     <b>${escapeHTML(player.name)}</b>
-    <small><span class="${st.cls}">${escapeHTML(st.text)}</span></small>
+    <small><span class="${st.cls}">${staminaBallsHTML(player)} ${escapeHTML(st.text)}</span></small>
     <div class="nft-actions"><button class="mini-cta ${selected?'ghost':''}" type="button" data-select-player="${player.id}">${selected?'Activo':'Seleccionar'}</button></div>
   </div>`;
 }
@@ -1836,7 +1836,7 @@ function renderFutbolistaInventory(){
           }).join('')}
         </div>
         <div class="m-section">Tus jugadores NFT</div>
-        <div class="player-strip">${STATE.inventory.players.map(p => renderPlayerCard(p)).join('')}</div>
+        <div class="player-strip">${sortPlayersByStamina(STATE.inventory.players).map(p => renderPlayerCard(p)).join('')}</div>
       `;
     }
   }
@@ -1845,7 +1845,7 @@ function renderFutbolistaInventory(){
     const panel = inner.querySelector(selector); if(!panel) return;
     const items = STATE.inventory[category] || [];
     panel.innerHTML = `<div class="lbl" style="font-family:'Oswald';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fm-cyan);margin-bottom:8px;text-align:center">${title} · ${items.length}</div>
-      ${items.length ? `<div class="${category==='players'?'player-strip':'equip-grid'}">${items.map(item => category==='players' ? renderPlayerCard(item) : renderComplementCard(item, category)).join('')}</div>` : `<div class="empty-inventory">No tienes ${title.toLowerCase()} todavía.</div>`}`;
+      ${items.length ? `<div class="${category==='players'?'player-strip':'equip-grid'}">${(category==='players' ? sortPlayersByStamina(items) : items).map(item => category==='players' ? renderPlayerCard(item) : renderComplementCard(item, category)).join('')}</div>` : `<div class="empty-inventory">No tienes ${title.toLowerCase()} todavía.</div>`}`;
   });
   inner.querySelectorAll('[data-select-player]').forEach(btn => btn.addEventListener('click', () => selectPlayer(btn.dataset.selectPlayer)));
   inner.querySelectorAll('[data-equip-cat]').forEach(btn => btn.addEventListener('click', () => equipComplement(btn.dataset.equipCat, btn.dataset.equipId)));
@@ -2174,8 +2174,7 @@ function safeJSON(key, fallback){
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
   catch(e){ return fallback; }
 }
-// FIX: getUtcWeekIdentifier no existía y rompía el modal de Check-in (reclamos).
-// Devuelve un identificador estable de semana UTC tipo "2026W24".
+// FIX: getUtcWeekIdentifier no existía y rompía el modal de Check-in.
 function getUtcWeekIdentifier(){
   const d = new Date();
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));

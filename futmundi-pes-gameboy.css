@@ -1,6 +1,8 @@
 /* ==========================================================================
-   FUTMUNDI PES / GAMEBOY EDITION - NUEVO MOTOR FÍSICO 100% APAISADO
-   Estilos de Consola Clásica, Zero Lag en Vercel, Rotación Móvil Nativa
+   FUTMUNDI PES / GAMEBOY ADVANCE SUITE - MOTOR ADAPTATIVO
+   El canvas se adapta a cualquier proporción de pantalla (portrait/landscape)
+   mediante el "Dynamic Dimension Lock" del JS. NO se fuerza rotación CSS
+   porque rotate(90deg) rompía el hit-testing táctil (botón no respondía).
    ========================================================================== */
 
 /* Contenedor Flotante del Minijuego a Pantalla Completa */
@@ -14,7 +16,7 @@
   justify-content: center;
   align-items: center;
   animation: pesGameIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -28,24 +30,10 @@
   to { opacity: 1; transform: none; }
 }
 
-/* Forzar Rotación OBLIGATORIA Landscape en Móviles Verticales (Telegram WebApp) */
-@media screen and (orientation: portrait) {
-  #fm-pes-gameboy-overlay {
-    width: 100vh !important;
-    height: 100vw !important;
-    transform: rotate(90deg) !important;
-    transform-origin: top left !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 100vw !important;
-  }
-}
-
-/* El Escenario / Cancha Físico Nativo Apaisado */
+/* El Escenario / Cancha — se adapta al espacio disponible SIN rotación */
 .pes-soccer-stage {
   width: 100%;
   height: 100%;
-  aspect-ratio: 16/9;
   max-width: 1000px;
   max-height: 100vh;
   margin: auto;
@@ -67,7 +55,7 @@
   background: #101e14;
 }
 
-/* Botón de Rescate y Volver a Plataforma */
+/* Botón de Volver (gestionado por integration.js, aquí por compatibilidad) */
 .pes-game-close-btn {
   position: absolute;
   top: 14px;
@@ -87,17 +75,15 @@
   box-shadow: 0 4px 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,69,69,0.3);
   transition: all 0.15s ease;
   pointer-events: auto;
+  touch-action: manipulation;
 }
 
-.pes-game-close-btn:hover {
+.pes-game-close-btn:hover,
+.pes-game-close-btn:active {
   background: #ff4545;
   color: #fff;
   transform: scale(1.05);
   box-shadow: 0 6px 20px rgba(255,69,69,0.6);
-}
-
-.pes-game-close-btn:active {
-  transform: scale(0.95);
 }
 
 /* El HUD Superior de Broadcast Consola */
@@ -105,7 +91,7 @@
   position: absolute;
   top: 12px;
   left: 16px;
-  right: 160px; /* Evita tapar el close btn */
+  right: 160px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -174,7 +160,7 @@
   gap: 6px;
 }
 
-/* Mando Arcade Táctil (Gameboy Advance Style Ergonomic Controllers) */
+/* Mando Arcade Táctil (Gameboy Advance Style) */
 .pes-touch-controls {
   position: absolute;
   left: 0;
@@ -189,7 +175,7 @@
   padding: 20px 30px;
 }
 
-/* Joystick Táctil de Extrema Agilidad */
+/* Joystick Táctil */
 .pes-joystick-base {
   width: 140px;
   height: 140px;
@@ -241,7 +227,8 @@
   cursor: pointer;
   pointer-events: auto;
   user-select: none;
-  touch-action: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
   border: 4px solid rgba(255,255,255,0.8);
   box-shadow: 0 10px 25px rgba(0,0,0,0.85), inset 0 4px 8px rgba(255,255,255,0.4);
   transition: all 0.1s ease;
@@ -255,21 +242,21 @@
 .pes-btn-pass {
   background: radial-gradient(circle at 35% 35%, #7bf0ff 0%, #2a75f3 70%, #0a4a72 100%);
   color: #fff;
-  margin-bottom: 10px; /* Ergonomía de Gameboy B Button */
+  margin-bottom: 10px;
 }
 
 .pes-btn-shot {
   background: radial-gradient(circle at 35% 35%, #ffe871 0%, #ff8a3c 70%, #c12a14 100%);
   color: #000;
-  width: 96px; /* A Button ligeramente más imponente para disparar misiles */
+  width: 96px;
   height: 96px;
 }
 
-/* Pantallas Overlay de Inicio y Resultados en Vivo */
+/* Pantallas Overlay de Inicio y Resultados */
 .pes-center-message-panel {
   position: absolute;
   z-index: 5000;
-  background: linear-gradient(180deg, rgba(13, 28, 36, 0.95) 0%, rgba(5, 12, 16, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(13, 28, 36, 0.96) 0%, rgba(5, 12, 16, 0.96) 100%);
   border: 3px solid #39ff88;
   padding: 24px 36px;
   border-radius: 24px;
@@ -282,6 +269,9 @@
   color: #fff;
   animation: pesPanelIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
 }
 
 @keyframes pesPanelIn {
@@ -329,16 +319,20 @@
   font-family: "Oswald", system-ui, sans-serif;
   font-weight: 950;
   font-size: 1.25rem;
-  padding: 14px 28px;
+  padding: 16px 32px;
   border-radius: 16px;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   box-shadow: 0 6px 20px rgba(57, 255, 136, 0.5);
   transition: all 0.2s ease;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.pes-panel-cta-btn:hover {
+.pes-panel-cta-btn:hover,
+.pes-panel-cta-btn:active {
   background: #ffe871;
   transform: scale(1.05);
   box-shadow: 0 8px 30px rgba(255, 232, 113, 0.6);

@@ -1,75 +1,54 @@
 # 🏟️ Retro Cancha 03 - Futmundi Web3 Ecosystem Pro (TON Network)
 
-Juego de fútbol estilo arcade top-down en formato horizontal apaisado (Landscape Mode) y plataforma descentralizada de apuestas deportivas en vivo optimizada con **Restricciones de Ciberseguridad Web3 Blindadas (Wallet & NFT Free Strict Lock)**, Contratos Inteligentes en TON para depósitos directos en USDT y consumo en vivo de **`API-Sports (API-Football v3)`** (Zero Lag en Vercel).
+Plataforma deportiva descentralizada, casa de apuestas y la **Grandiosa Suite de Minijuegos Apaisados Estilo PES / Gameboy Advance** 100% programada desde cero para Vercel y Telegram WebApps.
 
 ---
 
-## ✨ Blindaje de Producción y Seguridad Web3 (Mega Build 2026)
+## ✨ El Grandioso Hito: Nuevo Videojuego PES Gameboy Edition
 
-1. **🔒 Bloqueo Estricto Web3 de Accesos (No Wallet, No NFT, No Game)**:
-   - **Billetera de TON Obligatoria**: Por política inquebrantable de la economía del proyecto, ningún usuario ni visitante puede acceder o visualizar el minijuego sin tener su *TON Billetera* físicamente conectada en la parte superior.
-   - **NFT Exclusivo / Free Lock**: Nadie puede entrar al terreno de juego si no posee un **Futbolista NFT activo** en su inventario (sea su NFT inicial Free o comprado en Market). Si un usuario quema, agota o no ha reclamado su NFT Inicial, la entrada se bloquea al instante con una alerta de seguridad Web3 en pantalla.
+1. **🎮 Nuevo Motor Físico (`futmundi-pes-gameboy.js`)**:
+   - Para erradicar de raíz cualquier tipo de parpadeo, recuadro verde o atasco del código heredado de terceros, **he programado desde los cimientos un videojuego de fútbol 100% original y nativo** para Futmundi.
+   - **Estética Clásica Console Feel**: La arena se empaqueta en `960x540` en un True Landscape apaisado impecable (`screen.orientation.lock("landscape")`), proyectando gradas oscuras resplandecientes, una imponente bota con líneas de broadcast apaisadas alternadas (`#185a2a` y `#1e6b32`) y dos porterías de postes de oro en los extremos Izquierdo (`X=0`) y Derecho (`X=960`).
 
-2. **⚔️ Purificación Minimalista de Competición en Estadio (PvP)**:
-   - Se removió la información ajena de premios fijos (5,000 gemas) y el temporizador en la ventana de **Estadio (`TEMPLATES['estadio']`)**.
-   - Ahora opera puramente como lo que representa: la **Grandiosa Arena Competitiva 1v1**, donde los usuarios sincronizan físicamente a sus jugadores para disputar quién es el amo del regate y del gol.
+2. **⚽ Dinámica de Regate y Disparos Curvos ("PES Banana Bend")**:
+   - **Adherencia al Pie**: La física del balón responde de forma hiper realista con bucles de inercia y fricción en el pasto. En cuanto un jugador lo intercepta, este entra en su "zona de control de bota" (`ball.owner = player`), quedándose perfectamente adherido y sin girar alocadamente en el aire.
+   - **Roscas Visuales y Partículas**: Al mantener y soltar tu botón `SHOT` (o Espacio), el muñequito despide la pelota a una tremenda velocidad hacia la portería enemiga, adquiriendo una rosca/curva visual en el aire hacia las escuadras y dejando una gloriosa estela de partículas de polvo de estrellas en el césped.
+   - **Poession Indicator Light**: En el pasto se estampa continuamente un anillo de color brillante justo sobre la sombra del jugador que mantiene el control. E impone el nombre real de tu **Futbolista NFT** en el HUD superior (`[NEYMAR]`, `[MESSI]`, etc.).
 
-3. **⚽ Entradas de Práctica Dinámicas en las 4 Tarjetas de Cancha (PvE)**:
-   - En tu recuadro de **Cancha de Práctica (`TEMPLATES['cancha']`)** para modo 1 Jugador vs CPU, la interactividad es absoluta y directa.
-   - El jugador visualiza su NFT en pantalla y puede hacer clic tanto en el gran botón inferior verde como **directamente sobre cualquiera de las 4 tarjetas de niveles de cancha (`Cancha Mundial`, `Arena Indoor`, `Barrial Futsal`, `Liga de Barrio`)** para que el juego físico se desplaye al segundo en Horizontal con la arena y pasto exacto seleccionado.
+3. **🛡️ Bloqueos Estrictos de Accesos Web3 (`__FM_UNIVERSAL_OPEN_GAME`)**:
+   - Nadie puede acceder a Jugar en PvE, PvP o Torneo si no cumple de forma obligatoria con las dos reglas de oro: **A) Billetera de TON conectada** y **B) Un Futbolista NFT en su inventario**.
 
-4. **🖥️ Landscape Físico Rotado Nativo**:
-   - Para erradicar la sobrecarga vertical de Telegram Mini Apps, la proyección matricial de `retro-cancha.js` dibuja sus 105 metros nativamente de izquierda a derecha. E impone un rotado apaisado por CSS en pantallas *portrait*, dándote un control de bota, Anillo de Posesión de Balón de neón y agilidad de Joystick sencillamente insuperables.
+4. **⌛ Time-Decay Odds Algorithm en el Sportsbook**:
+   - Implementado en `futmundi-bet.js`. A medida que los encuentros de la Copa del Mundo en directo se adentran pasados el pitazo de la segunda mitad (`45'`), la cuota de la selección que va ganando se comprime progresivamente hacia `1.02x` o `1.01x`, eliminando por completo cualquier vulnerabilidad comercial. Consumiendo `/fixtures?live=all` sin lag y con persistencia remota garantizada en Supabase DB.
 
-5. **💾 Persistencia Híbrida Robusta en Supabase DB (`BetDB`)**:
-   - En el Centro de Apuestas (`futmundi-bet.js`), todas las boletas de pronósticos (Local 1, Empate X o Visitante 2), liquidaciones y depósitos USDT al Smart Contract `EQD3u6...MIs` se guardan y unifican de forma permanente en tu Supabase remoto (`window.FM_ADMIN_API_BASE`), garantizando que tus usuarios no tengan ninguna pérdida de registros si cambian de celular.
-
----
-
-## 🔑 Configuración Oficial del Ecosistema
-
-En tus archivos de lógica ya se encuentran embebidos y asegurados tus parámetros oficiales de TON:
-
-```javascript
-  // Configuración del Contrato en futmundi-bet.js (Línea 10)
-  const TonUsdtContractConfig = {
-    // Smart Contract oficial de Futmundi que atiende depósitos exactos ($10+ USDT)
-    contractAddress: "EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs", 
-    jettonUsdtAddress: "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
-    rateGemsPerWinUSD: 10 
-  };
-
-  // Autenticación Master Key de API-Football v3 en futmundi-bet.js (Línea 77)
-  const SportsApiProvider = {
-    apiKey: "cae471625cb7232f9a54146633227bc6", // Tu Clave Privada de Sincronización al Segundo
-    baseUrl: "https://v3.football.api-sports.io",
-  };
-```
+5. **🕒 00:00 UTC Daily Check-in & Auto-Reset de Estamina**:
+   - Reloj asíncrono configurado a las 00:00 UTC. Con el majestuoso "Check de Marcaje Web3" (`daily_check.jpg`) embebido al reclamar y auto-restauración de estamina al máximo (`4/4 balones`) para todo tu inventario al llegar a la medianoche UTC.
 
 ---
 
-## 📁 Estructura Inmaculada de Producción en GitHub
+## 📁 Estructura Inmaculada para Subir a GitHub y Vercel
 
-Extrae y sobreescribe estos archivos sobre la **raíz principal de tu repositorio** en GitHub para desplegar el megaproyecto en Vercel en 1 minuto:
+Sube o extrae directamente el contenido de **`FUTMUNDI-PES-GAMEBOY-ULTIMATE-BUILD.zip`** sobre la raíz de tu repositorio en GitHub para compilar en Vercel:
 
 ```text
 mi-repositorio-futmundi/
-├── index (25).html             # Portal original web3 (⚠️ CON RESTRICCIONES DE WALLET/NFT)
-├── index-corregido.html        # Portal web3 Telegram Mini App (⚠️ CON RESTRICCIONES Y PVP LIMPIO)
-├── retro-cancha.js             # Motor de minijuego (⚠️ APARIENCIA REAL WEBP Y JUEGO APAISADO)
-├── retro-cancha.css            # Estilos generales visuales
-├── futmundi-bet.js             # Sportsbook Minimalista Web3 (API-Football en el fondo)
-├── futmundi-bet.css            # Estilos del Centro de Apuestas Zero Lag
-├── integration.js              # Capa de enlace con Supabase y window.__FM_UNIVERSAL_OPEN_GAME
-├── assets.json                 # Mapeo de rutas visuales
-├── README.md                   # Este manual técnico
-└── generated-assets/           # ⚠️ CARPETA CRÍTICA CON LOS PNG Y WEBP WEBP PRO
-    ├── grass_texture.webp      # Textura del césped en alta resolución real
-    ├── blue_attacker.webp      # Jugador real en WebP
-    ├── keeper_black.webp       # Portero oficial WebP
-    ├── soccer_ball.webp        # Balón fotográfico de producción
-    ├── goal_net.png            # Red del arco transparente
-    └── player_atlas-frames.json# Metadata matricial de frames
+├── index (25).html             # Portal Original Web3 (Enlazado a la nueva PES Suite)
+├── index-corregido.html        # Portal Web3 Telegram Mini App (Enlazado a la PES Suite)
+├── futmundi-pes-gameboy.js     # ⚠️ EL NUEVO E IMPONENTE MOTOR FÍSICO ESTILO PES / GAMEBOY
+├── futmundi-pes-gameboy.css    # ⚠️ ESTILOS DEL NUEVO VIDEOJUEGO DE CONSOLA APAISADA
+├── futmundi-bet.js             # Módulo de Apuestas Minimalista (API-Football v3)
+├── futmundi-bet.css            # Estilos del Sportsbook
+├── retro-cancha.js             # Respaldo del minijuego nativo heredado pulido
+├── retro-cancha.css            # Estilos visuales bases
+├── integration.js              # Capa de comunicación y Puerta Blindada Universal
+├── assets.json                 # Mapeo de recursos gráficos
+├── README.md                   # Este manual de uso
+└── generated-assets/           # ⚠️ ARRASTRAR LA CARPETA COMPLETA AL REPOSITORIO
+    ├── daily_check.jpg         # Sello visual de check-in diario
+    ├── grass_texture.webp      # Césped WebP
+    ├── blue_attacker.webp      # Sprite oficial
+    ├── keeper_black.webp       # Portero oficial Pro
+    └── ...
 ```
 
-**¡Tienes el producto descentralizado de Web3, gaming y apuestas deportivas más monstruoso de The Open Network!** 🏆⚽⚡
+**¡Tienes en tus manos el producto de videojuegos Web3 y apuestas más monstruoso, fluido y hermoso de Web3 en TON!** 🏆⚽⚡

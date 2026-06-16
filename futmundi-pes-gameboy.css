@@ -1,0 +1,345 @@
+/* ==========================================================================
+   FUTMUNDI PES / GAMEBOY EDITION - NUEVO MOTOR FÍSICO 100% APAISADO
+   Estilos de Consola Clásica, Zero Lag en Vercel, Rotación Móvil Nativa
+   ========================================================================== */
+
+/* Contenedor Flotante del Minijuego a Pantalla Completa */
+#fm-pes-gameboy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999999;
+  background: radial-gradient(ellipse at center, #0d1e15 0%, #050c08 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  animation: pesGameIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#fm-pes-gameboy-overlay[hidden] {
+  display: none !important;
+}
+
+@keyframes pesGameIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Forzar Rotación OBLIGATORIA Landscape en Móviles Verticales (Telegram WebApp) */
+@media screen and (orientation: portrait) {
+  #fm-pes-gameboy-overlay {
+    width: 100vh !important;
+    height: 100vw !important;
+    transform: rotate(90deg) !important;
+    transform-origin: top left !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 100vw !important;
+  }
+}
+
+/* El Escenario / Cancha Físico Nativo Apaisado */
+.pes-soccer-stage {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 16/9;
+  max-width: 1000px;
+  max-height: 100vh;
+  margin: auto;
+  position: relative;
+  background: #08100b;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 30px rgba(57, 255, 136, 0.15);
+  border: 3px solid #ffe871;
+  border-radius: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pes-game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #101e14;
+}
+
+/* Botón de Rescate y Volver a Plataforma */
+.pes-game-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid #ff4545;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,69,69,0.3);
+  transition: all 0.15s ease;
+  pointer-events: auto;
+}
+
+.pes-game-close-btn:hover {
+  background: #ff4545;
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(255,69,69,0.6);
+}
+
+.pes-game-close-btn:active {
+  transform: scale(0.95);
+}
+
+/* El HUD Superior de Broadcast Consola */
+.pes-hud-bar {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  right: 160px; /* Evita tapar el close btn */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.pes-hud-badge {
+  background: rgba(10, 20, 14, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Oswald", system-ui, sans-serif;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+}
+
+.pes-hud-team {
+  font-weight: 950;
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+}
+
+.pes-hud-team.blue { color: #3fbfff; text-shadow: 0 0 10px rgba(63,191,255,0.5); }
+.pes-hud-team.red { color: #ff4545; text-shadow: 0 0 10px rgba(255,69,69,0.5); }
+
+.pes-hud-goals {
+  font-size: 1.8rem;
+  font-weight: 950;
+  color: #fff;
+  font-family: tabular-nums;
+  line-height: 1;
+}
+
+.pes-hud-timer {
+  background: #000;
+  border: 2px solid #ffe871;
+  padding: 8px 18px;
+  border-radius: 14px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 950;
+  font-size: 1.7rem;
+  color: #ffe871;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 20px rgba(255, 232, 113, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pes-hud-pts {
+  background: rgba(57, 255, 136, 0.15);
+  border: 2px solid #39ff88;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 950;
+  font-size: 1.15rem;
+  color: #39ff88;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Mando Arcade Táctil (Gameboy Advance Style Ergonomic Controllers) */
+.pes-touch-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 180px;
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 20px 30px;
+}
+
+/* Joystick Táctil de Extrema Agilidad */
+.pes-joystick-base {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.22) 100%);
+  border: 4px solid rgba(255, 232, 113, 0.5);
+  box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 8px 25px rgba(0,0,0,0.8);
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  touch-action: none;
+}
+
+.pes-joystick-knob {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #a0b4c8 60%, #42aaff 100%);
+  border: 3px solid #000;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 2px 5px #fff;
+  pointer-events: none;
+  position: absolute;
+  transition: transform 0.05s ease;
+}
+
+/* Botones de Botas (PASS & SHOT) */
+.pes-actions-cluster {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+
+.pes-btn-arcade {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 950;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  touch-action: none;
+  border: 4px solid rgba(255,255,255,0.8);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.85), inset 0 4px 8px rgba(255,255,255,0.4);
+  transition: all 0.1s ease;
+}
+
+.pes-btn-arcade:active {
+  transform: translateY(4px) scale(0.95);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.9);
+}
+
+.pes-btn-pass {
+  background: radial-gradient(circle at 35% 35%, #7bf0ff 0%, #2a75f3 70%, #0a4a72 100%);
+  color: #fff;
+  margin-bottom: 10px; /* Ergonomía de Gameboy B Button */
+}
+
+.pes-btn-shot {
+  background: radial-gradient(circle at 35% 35%, #ffe871 0%, #ff8a3c 70%, #c12a14 100%);
+  color: #000;
+  width: 96px; /* A Button ligeramente más imponente para disparar misiles */
+  height: 96px;
+}
+
+/* Pantallas Overlay de Inicio y Resultados en Vivo */
+.pes-center-message-panel {
+  position: absolute;
+  z-index: 5000;
+  background: linear-gradient(180deg, rgba(13, 28, 36, 0.95) 0%, rgba(5, 12, 16, 0.95) 100%);
+  border: 3px solid #39ff88;
+  padding: 24px 36px;
+  border-radius: 24px;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.95), 0 0 40px rgba(57, 255, 136, 0.3);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #fff;
+  animation: pesPanelIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+@keyframes pesPanelIn {
+  from { opacity: 0; transform: scale(0.8) translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pes-panel-title {
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 950;
+  font-size: 2.2rem;
+  color: #ffe871;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+}
+
+.pes-panel-subtitle {
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #39ff88;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.pes-panel-score {
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 950;
+  font-size: 3.5rem;
+  color: #fff;
+  margin: 10px 0;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 30px;
+  border-radius: 16px;
+  border: 2px solid #ffe871;
+  box-shadow: inset 0 0 20px rgba(255,232,113,0.2);
+}
+
+.pes-panel-cta-btn {
+  background: linear-gradient(135deg, #39ff88 0%, #20d060 100%);
+  border: 2px solid #fff;
+  color: #0b1319;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 950;
+  font-size: 1.25rem;
+  padding: 14px 28px;
+  border-radius: 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: 0 6px 20px rgba(57, 255, 136, 0.5);
+  transition: all 0.2s ease;
+}
+
+.pes-panel-cta-btn:hover {
+  background: #ffe871;
+  transform: scale(1.05);
+  box-shadow: 0 8px 30px rgba(255, 232, 113, 0.6);
+}

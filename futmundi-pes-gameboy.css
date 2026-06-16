@@ -245,3 +245,60 @@
   color: #fff; background: rgba(0,0,0,0.6); padding: 6px 30px;
   border-radius: 16px; border: 2px solid #ffe871;
 }
+
+/* === v5: Estadísticas finales (faltas / tarjetas) === */
+.pes-end-stats {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-family: "Oswald",sans-serif; color: #e8f5e2;
+  background: rgba(0,0,0,0.45); border: 1px solid rgba(57,255,136,0.25);
+  border-radius: 12px; padding: 8px 14px; min-width: 280px;
+}
+.pes-end-stat-row {
+  display: flex; gap: 16px; justify-content: space-between; width: 100%;
+  font-size: 0.85rem; font-weight: 600;
+}
+.pes-end-stat-row span { white-space: nowrap; }
+
+/* === v5: Tarjetas en el HUD === */
+.pes-hud-cards { display: inline-flex; gap: 3px; margin-left: 4px; }
+.pes-card-y, .pes-card-r {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 14px; height: 18px; padding: 0 4px;
+  font-family: "Oswald",sans-serif; font-weight: 950; font-size: 0.7rem;
+  color: #000; border: 1px solid #000; border-radius: 2px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+.pes-card-y { background: #ffd60a; }
+.pes-card-r { background: #e02020; color: #fff; }
+
+/* === v5: Overlay de MEDIO TIEMPO === */
+.pes-halftime-overlay {
+  position: absolute; inset: 0; z-index: 5000;
+  background: rgba(5,10,7,0.92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.pes-ht-card {
+  background: linear-gradient(180deg, rgba(21,36,25,0.95), rgba(7,13,9,0.98));
+  border: 3px solid #ffe871;
+  border-radius: 22px; padding: 26px 28px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  box-shadow: 0 0 40px rgba(255,232,113,0.4);
+  max-width: 420px;
+}
+.pes-ht-title {
+  font-family: "Oswald",sans-serif; font-weight: 950;
+  font-size: 1.6rem; color: #ffe871;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255,232,113,0.5);
+}
+.pes-ht-score {
+  font-family: "Oswald",sans-serif; font-weight: 950;
+  font-size: 3.5rem; color: #fff;
+  background: rgba(0,0,0,0.5); border-radius: 14px;
+  padding: 4px 28px; border: 2px solid #39ff88;
+}
+.pes-ht-sub {
+  font-size: 0.85rem; color: #39ff88;
+  text-align: center; font-weight: 600;
+}

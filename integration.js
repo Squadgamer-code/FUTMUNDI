@@ -1,13 +1,11 @@
 // Futmundi <-> Futmundi PES Premium Blockchain integration layer.
-// v3: Selector de NFT + consumo diferido de estamina (bug de balones fix).
-// El balón SOLO se descuenta cuando el partido termina de jugarse de verdad.
+// v4: Acceso sin fricción, modo recreativo PvE sin wallet, auto-claim Neymar,
+//     renderer optimizado y robustez ante fallos de TON Connect.
 
 (function () {
   if (window.__fm_game_integration_installed) return;
   window.__fm_game_integration_installed = true;
 
-  // 1. CSS del overlay universal (SIN rotación forzada — era la causa #1 de
-  //    que el botón "ENTRAR A JUGAR" no respondiera a los taps en móvil).
   const style = document.createElement("style");
   style.textContent = `
     #fm-pes-gameboy-overlay {
@@ -57,7 +55,6 @@
   `;
   if (document.head) document.head.appendChild(style);
 
-  // 2. Crear el overlay universal
   const overlay = document.createElement("div");
   overlay.id = "fm-pes-gameboy-overlay";
   overlay.hidden = true;
@@ -83,14 +80,11 @@
     } catch {}
   }
 
-  // 3. FIX BUG DE BALONES: consume la estamina SOLO cuando el partido
-  //    termina de jugarse de verdad. Si el usuario cierra sin jugar,
-  //    no se descuenta ningún balón.
   function consumePlayerStamina(playerId) {
     if (!window.STATE || !window.STATE.inventory) return;
     const player = window.STATE.inventory.players.find(p => p.id === playerId);
     if (!player) return;
-    if (player.stamina <= 0) return; // modo recreativo: no consume
+    if (player.stamina <= 0) return;
     player.stamina = Math.max(0, player.stamina - 1);
     player.durability = Math.max(0, +(player.durability - 0.8).toFixed(1));
     if (typeof window.saveInventory === "function") window.saveInventory();
@@ -100,33 +94,60 @@
     }
   }
 
-  // 4. EL LANZADOR — sin descuento prematuro de balones
+  function hasPlayerNft() {
+    return !!(typeof window.getSelectedPlayer === "function" && window.getSelectedPlayer());
+  }
+
+  function tryAutoClaimNeymar() {
+    if (!window.addInventoryItem) return false;
+    try {
+      const result = window.addInventoryItem('Neymar');
+      return !!(result && result.ok);
+    } catch (e) {
+      console.warn('[Integration] Auto-claim Neymar failed:', e);
+      return false;
+    }
+  }
+
+  function openMarketModal() {
+    if (typeof window.openModal === "function") window.openModal('market');
+  }
+
   function openTruePesGame(modeStr) {
-    if (!window.STATE || !window.STATE.tonWallet) {
-      alert("⚠️ RESTRICCIÓN DE CIBERSEGURIDAD WEB3: Tu Billetera de TON no se encuentra conectada. Conecta tu Billetera en la parte superior para autorizar tu acceso.");
-      return;
+    const isPve = modeStr === 'pve' || modeStr === 'cancha';
+    const isCompetitive = modeStr === 'pvp' || modeStr === 'estadio' || modeStr === 'tournament';
+    const hasWallet = !!(window.STATE && window.STATE.tonWallet);
+
+    // 1. NFT es obligatorio para cualquier modo. Si no lo hay, intentamos regalar Neymar gratis.
+    if (!hasPlayerNft()) {
+      if (tryAutoClaimNeymar() && hasPlayerNft()) {
+        if (typeof toast === "function") toast('🎁 Reclamamos Neymar gratis para tu primera partida. ¡A jugar!', true);
+      } else {
+        alert("⚠️ Necesitas un Futbolista NFT para jugar.\n\n1. Toca la pestaña 'Market' (abajo).\n2. Toca 'Reclamar GRATIS' en Neymar.\n3. Vuelve aquí y toca Jugar.");
+        openMarketModal();
+        return;
+      }
     }
 
-    const pObj = typeof window.getSelectedPlayer === "function" ? window.getSelectedPlayer() : null;
-    if (!pObj) {
-      alert("⚠️ ACCESO DENEGADO: No tienes ningún Futbolista NFT activo en tu inventario. Ve a la pestaña Futbolista o Market y adquiere o reclama tu NFT Gratis Inicial antes de saltar a la arena.");
+    // 2. Modos competitivos / torneo requieren wallet Web3 sí o sí.
+    if (!hasWallet && isCompetitive) {
+      alert("⚠️ El Estadio PvP y el Torneo requieren tu wallet TON conectada para registrar gemas y recompensas en blockchain.\n\nConecta tu wallet en la barra superior (botón TON Connect).");
       return;
     }
 
     const PesGameClass = window.FutmundiPesGameApp || window.PurePesGameboyApp;
     if (!PesGameClass) {
-      alert("⚠️ El motor del juego está terminando de cargar. Por favor, toca Jugar de nuevo en un segundo.");
+      alert("⚠️ El motor del juego está terminando de cargar. Por favor, intenta de nuevo en unos segundos.");
       return;
     }
 
-    // NOTA: Aquí NO se descuentan balones. El consumo es diferido.
-    console.info(`[UniversalLauncher] Abriendo arena modo: ${modeStr}`);
+    console.info(`[UniversalLauncher] Abriendo arena modo: ${modeStr} (wallet=${hasWallet}, recreativo=${!hasWallet && isPve})`);
 
     const fmModal = document.getElementById("fm-modal");
     if (fmModal) fmModal.classList.remove("open");
 
-    overlay.style.display = 'flex';
     overlay.removeAttribute('hidden');
+    overlay.style.display = 'flex';
     document.body.classList.add("fm-game-open");
     document.body.classList.add("fm-pes-game-active");
 
@@ -144,20 +165,28 @@
     requestAnimationFrame(() => {
       window.__current_pes_app = new PesGameClass(mountEl, modeStr, {
         onMatchEnd: handleMatchEnd,
-        onConsumeStamina: consumePlayerStamina
+        onConsumeStamina: consumePlayerStamina,
+        isRecreationalMode: !hasWallet && isPve
       });
     });
   }
+
   window.__FM_UNIVERSAL_OPEN_GAME = openTruePesGame;
   window.openGame = openTruePesGame;
 
-  // 5. Callback de fin de partido
   function handleMatchEnd(detail) {
     console.log("[Futmundi Integration] Partido terminado:", detail);
 
-    // Consumo diferido de estamina: SOLO si el partido se jugó de verdad.
     if (detail.wasPlayed && detail.consumedPlayerId) {
       consumePlayerStamina(detail.consumedPlayerId);
+    }
+
+    // Si fue recreativo (sin wallet) no tocamos backend ni economía.
+    if (!window.STATE || !window.STATE.tonWallet) {
+      if (typeof toast === "function") {
+        toast("🏟️ Partido de práctica finalizado. Conecta tu wallet para ganar gemas reales.", true);
+      }
+      return;
     }
 
     if (detail.mode === "tournament") {
@@ -171,13 +200,9 @@
       const emoji = detail.result === "Victoria" ? "🏆" : detail.result === "Empate" ? "🤝" : "😔";
       if (detail.mode === "tournament") {
         const t = detail.tournament || {};
-        if (t.champion) {
-          toast(`🏆 ¡CAMPEÓN! Score: ${t.finalScore} · Tier: ${t.highestTier}`, true);
-        } else if (t.eliminated) {
-          toast(`😔 Eliminado · ${t.wins}/15 victorias · Score: ${t.finalScore}`, false);
-        } else {
-          toast(`${emoji} ${detail.result} · ${detail.points} PTS`, detail.result !== "Derrota");
-        }
+        if (t.champion) toast(`🏆 ¡CAMPEÓN! Score: ${t.finalScore}`, true);
+        else if (t.eliminated) toast(`😔 Eliminado · ${t.wins}/15 victorias`, false);
+        else toast(`${emoji} ${detail.result} · ${detail.points} PTS`, detail.result !== "Derrota");
       } else {
         toast(`${emoji} ${detail.result} ${detail.score} · ${detail.points} PTS`, detail.result !== "Derrota");
       }
@@ -234,7 +259,7 @@
     setTimeout(() => openTruePesGame(mode), 80);
   }, true);
 
-  // 6. Parche de interfaz (one-shot, sin bucle infinito)
+  // Parche de interfaz (one-shot, sin bucle infinito)
   function enforceUniversalPatcher() {
     if (typeof window.playerStatusText === "function" && !window.__fm_pst_upgraded) {
       window.__fm_pst_upgraded = true;

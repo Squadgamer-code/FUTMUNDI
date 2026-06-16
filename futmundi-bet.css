@@ -1,0 +1,511 @@
+/* ==========================================================================
+   FUTMUNDI BET - ESTILOS MINIMALISTAS WEB3 (ULTRA LIGEROS / ZERO LAG)
+   Diseño Clean & Compacto, Optimizado para Desplazamiento Suave en Vercel
+   ========================================================================== */
+
+/* Botón de Invocación en el Topbar */
+.futmundi-bet-invoke-btn {
+  background: linear-gradient(135deg, #112233 0%, #17283c 100%);
+  border: 1.5px solid #39ff88;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  z-index: 1000;
+}
+
+.futmundi-bet-invoke-btn:hover {
+  background: #39ff88;
+  color: #0b1319;
+  border-color: #ffe871;
+}
+
+/* Modal General Minimalista */
+.fbet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 12, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  animation: fbetFadeIn 0.2s ease-out;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #e8f5e2;
+  pointer-events: auto;
+}
+
+.fbet-modal-overlay[hidden] {
+  display: none !important;
+}
+
+.fbet-modal-box {
+  background: #070d09;
+  border: 1px solid #39ff88;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 780px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  overflow: hidden;
+}
+
+@keyframes fbetFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Encabezado */
+.fbet-header {
+  background: #0e1a12;
+  border-bottom: 1px solid #1e2d3d;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fbet-title {
+  margin: 0;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffe871;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fbet-balance-badge {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid #39ff88;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-size: 0.9rem;
+  color: #39ff88;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fbet-close-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fbet-close-btn:hover {
+  background: #ff4545;
+  border-color: #ff4545;
+}
+
+/* Pestañas de Navegación */
+.fbet-nav-tabs {
+  background: #0a1410;
+  display: flex;
+  border-bottom: 1px solid #1a2735;
+  padding: 0 20px;
+}
+
+.fbet-tab-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 14px 18px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fbet-tab-btn:hover {
+  color: #fff;
+}
+
+.fbet-tab-btn.active {
+  color: #39ff88;
+  border-bottom-color: #39ff88;
+}
+
+/* Cuerpo Minimalista */
+.fbet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Barra de Búsqueda y Filtros Rápidos Mundial */
+.fbet-filters-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: #0d1620;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #1a2836;
+}
+
+.fbet-search-inp {
+  flex: 1;
+  min-width: 200px;
+  background: #060a0f;
+  border: 1px solid #39ff88;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.fbet-search-inp:focus {
+  border-color: #ffe871;
+}
+
+.fbet-quick-filter-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fbet-quick-filter-btn:hover {
+  color: #fff;
+  border-color: #fff;
+}
+
+.fbet-quick-filter-btn.active {
+  background: linear-gradient(135deg, #f4c542 0%, #ff8a3c 100%);
+  color: #000;
+  border-color: #ffe871;
+  font-weight: 900;
+}
+
+/* Tarjetas Minimalistas de Partidos */
+.fbet-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fbet-match-card {
+  background: #152419;
+  border: 1px solid #2a8a4a;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.1s ease;
+}
+
+.fbet-match-card:hover {
+  border-color: #3fbfff;
+}
+
+.fbet-match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fbet-live-dot {
+  color: #ff4545;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fbet-live-dot::before {
+  content: "●";
+  color: #ff4545;
+  animation: pulseMinimal 2s infinite;
+}
+
+@keyframes pulseMinimal {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Rejilla Compacta de Competidores y Marcador */
+.fbet-competitors-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.fbet-team-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fbet-team-compact.right {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+
+.fbet-team-flag {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.fbet-team-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.fbet-score-compact {
+  font-family: "Oswald", system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffe871;
+  background: rgba(0,0,0,0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,232,113,0.2);
+}
+
+/* Cuotas Minimalistas Lisas (1 - X - 2) */
+.fbet-odds-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.fbet-odd-btn {
+  background: #1d5a2a;
+  border: 1px solid #23374b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.1s ease;
+  color: #fff;
+  user-select: none;
+}
+
+.fbet-odd-btn:hover {
+  background: #18283a;
+  border-color: #39ff88;
+}
+
+.fbet-odd-btn.selected {
+  background: #39ff88;
+  border-color: #fff;
+  color: #000;
+}
+
+.fbet-odd-label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: rgba(255,255,255,0.7);
+}
+
+.fbet-odd-btn.selected .fbet-odd-label { color: #000; }
+
+.fbet-odd-val {
+  font-family: "Oswald", system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #3fbfff;
+}
+
+.fbet-odd-btn.selected .fbet-odd-val { color: #000; }
+
+/* Cajón de Apuesta Compacto (Bet Slip) */
+.fbet-slip-minimal {
+  background: #122030;
+  border: 2px solid #ffe871;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: slipMinimalIn 0.2s ease-out;
+}
+
+@keyframes slipMinimalIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: none; }
+}
+
+.fbet-slip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 8px;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 700;
+  color: #ffe871;
+  font-size: 1rem;
+}
+
+.fbet-slip-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fbet-slip-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fbet-slip-selection b { font-size: 1rem; color: #fff; }
+.fbet-slip-selection span { font-size: 0.85rem; color: #39ff88; font-weight: bold; }
+
+.fbet-stake-minimal-inp {
+  background: #060a0f;
+  border: 1.5px solid #3fbfff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1rem;
+  text-align: center;
+  width: 140px;
+  outline: none;
+}
+
+.fbet-return-minimal {
+  text-align: right;
+  font-family: "Oswald", system-ui, sans-serif;
+}
+
+.fbet-return-minimal span { font-size: 0.75rem; color: rgba(255,255,255,0.6); display: block; }
+.fbet-return-minimal strong { font-size: 1.3rem; color: #ffe871; }
+
+.fbet-confirm-minimal-btn {
+  background: #ffe871;
+  border: none;
+  color: #000;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.15s ease;
+}
+
+.fbet-confirm-minimal-btn:hover {
+  background: #39ff88;
+}
+
+/* Vista de Mis Tickets Minimalista */
+.fbet-tickets-minimal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fbet-ticket-minimal-card {
+  background: #152419;
+  border: 1px solid #1e2d3d;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fbet-ticket-minimal-card.won { border-left: 4px solid #39ff88; background: #10241b; }
+.fbet-ticket-minimal-card.lost { border-left: 4px solid #ff4545; opacity: 0.75; }
+
+.fbet-ticket-minimal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fbet-ticket-minimal-info b { font-size: 1.05rem; color: #fff; }
+.fbet-ticket-minimal-info span { font-size: 0.85rem; color: rgba(255,255,255,0.7); }
+
+.fbet-status-minimal-badge {
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: bold;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.fbet-status-minimal-badge.active { background: #3fbfff; color: #000; }
+.fbet-status-minimal-badge.won { background: #39ff88; color: #000; }
+.fbet-status-minimal-badge.lost { background: #ff4545; color: #fff; }
+
+.fbet-claim-minimal-btn {
+  background: #39ff88;
+  border: none;
+  color: #000;
+  font-family: "Oswald", system-ui, sans-serif;
+  font-weight: bold;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}

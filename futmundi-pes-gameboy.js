@@ -160,6 +160,7 @@
     self.audio = new AudioEngine();
     self.raf = null;
     self.running = false;
+    self.hidden = false;           // tab visibility
 
     self.stick = { x:0, y:0, active:false };
     self.keys  = {};
@@ -192,6 +193,8 @@
 
     self._buildStage();
     self._wireEvents();
+    self._resize();
+    self._observeResize();
 
     try {
       if (screen.orientation && screen.orientation.lock)
@@ -204,6 +207,41 @@
   }
 
   var P = FutmundiPesGameApp.prototype;
+
+  // ============================================================
+  //  RESIZE (una sola vez, no en cada frame)
+  // ============================================================
+  P._resize = function () {
+    var self = this;
+    if (!self.canvasEl) return;
+    var aw = Math.max(320, self.canvasEl.clientWidth || 960);
+    var ah = Math.max(240, self.canvasEl.clientHeight || 540);
+    if (self.cW === aw && self.cH === ah) return;
+    self.cW = aw; self.cH = ah;
+    self.canvasEl.width  = aw * self.dpr;
+    self.canvasEl.height = ah * self.dpr;
+    self.canvasEl.style.width = aw + "px";
+    self.canvasEl.style.height = ah + "px";
+    if (self.ctx) self.ctx.setTransform(self.dpr, 0, 0, self.dpr, 0, 0);
+  };
+
+  P._observeResize = function () {
+    var self = this;
+    if (typeof ResizeObserver !== "undefined" && self.canvasEl) {
+      self._resizeObserver = new ResizeObserver(function () {
+        self._resize();
+      });
+      self._resizeObserver.observe(self.canvasEl);
+    } else if (window.addEventListener) {
+      window.addEventListener("resize", self._boundResize = function () { self._resize(); }, { passive: true });
+    }
+    if (typeof document !== "undefined" && document.addEventListener) {
+      self._visHandler = function () {
+        self.hidden = document.hidden;
+      };
+      document.addEventListener("visibilitychange", self._visHandler);
+    }
+  };
 
   // ============================================================
   //  DOM
@@ -807,17 +845,9 @@
     var dt = Math.min(0.05, (now - self.lastT)/1000 || 0);
     self.lastT = now;
 
-    if (self.canvasEl) {
-      var aw = Math.max(320, self.canvasEl.clientWidth || 960);
-      var ah = Math.max(240, self.canvasEl.clientHeight || 540);
-      if (self.cW !== aw || self.cH !== ah) {
-        self.cW = aw; self.cH = ah;
-        self.canvasEl.width  = aw * self.dpr;
-        self.canvasEl.height = ah * self.dpr;
-        self.canvasEl.style.width = aw + "px";
-        self.canvasEl.style.height = ah + "px";
-        self.ctx.setTransform(self.dpr,0,0,self.dpr,0,0);
-      }
+    if (self.hidden) {
+      self.raf = requestAnimationFrame(function (t) { self._loop(t); });
+      return;
     }
 
     if (self.started && !self.over && !self.halftime) {
@@ -1451,7 +1481,7 @@
       ctx.save();
       ctx.fillStyle = "rgba(0,0,0,0.75)";
       ctx.fillRect(0, self.cH/2 - 50, self.cW, 100);
-      ctx.font = "950 2.4rem 'Oswald',system-ui,sans-serif";
+      ctx.font = "900 2.4rem 'Oswald',system-ui,sans-serif";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.shadowBlur = 15; ctx.shadowColor = "#ffe871"; ctx.fillStyle = "#ffe871";
       ctx.fillText(self.msgText, self.cW/2, self.cH/2 - 12);
@@ -1507,6 +1537,11 @@
     cancelAnimationFrame(self.raf);
     window.removeEventListener("keydown", self._onKeyDown);
     window.removeEventListener("keyup", self._onKeyUp);
+    if (self._resizeObserver && self.canvasEl) {
+      try { self._resizeObserver.unobserve(self.canvasEl); } catch (e) {}
+    }
+    if (self._boundResize) window.removeEventListener("resize", self._boundResize);
+    if (self._visHandler && document.removeEventListener) document.removeEventListener("visibilitychange", self._visHandler);
     var ov = document.getElementById("fm-pes-gameboy-overlay");
     if (ov) ov.hidden = true;
     document.body.classList.remove("fm-pes-game-active");

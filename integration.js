@@ -154,9 +154,12 @@
     if (fmModal) fmModal.classList.remove("open");
 
     // Ocultamos elementos asíncronos que provocaban pantalla negra al montar en Vercel
-    overlay.hidden = false;
+    // Ensure overlay is visible and layout is updated before instantiating the game
+    overlay.style.display = 'flex';
+    overlay.removeAttribute('hidden');
     document.body.classList.add("fm-game-open");
     document.body.classList.add("fm-pes-game-active");
+    
     if (mountEl) {
       mountEl.innerHTML = "";
       mountEl.style.display = "flex";
@@ -168,10 +171,14 @@
       }
     } catch {}
 
-    window.__current_pes_app = new PesGameClass(mountEl, modeStr, {
-      isRecreationalMode: isRecreational,
-      onMatchEnd: handleMatchEnd
+    // Use requestAnimationFrame to wait for the browser to layout the overlay and mountEl
+    requestAnimationFrame(() => {
+      window.__current_pes_app = new PesGameClass(mountEl, modeStr, {
+        isRecreationalMode: isRecreational,
+        onMatchEnd: handleMatchEnd
+      });
     });
+
   }
   window.__FM_UNIVERSAL_OPEN_GAME = openTruePesGame;
   window.openGame = openTruePesGame;

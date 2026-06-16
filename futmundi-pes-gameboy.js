@@ -815,6 +815,11 @@
     }
   }
 
-  window.PurePesGameboyApp = PurePesGameboyApp;
-  window.FutmundiPesGameApp = PurePesGameboyApp;
+  // FIX CRÍTICO DE LATENCIA: la clase se llama FutmundiPesGameApp.
+  // Antes se referenciaba "PurePesGameboyApp" (variable inexistente) y eso
+  // lanzaba un ReferenceError que abortaba el IIFE entero, dejando
+  // window.FutmundiPesGameApp === undefined y disparando el error de
+  // "Latencia en Vercel". Ahora los dos alias apuntan a la clase real.
+  window.PurePesGameboyApp = FutmundiPesGameApp;
+  window.FutmundiPesGameApp = FutmundiPesGameApp;
 })();

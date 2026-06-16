@@ -9,7 +9,7 @@
   // 1. Inject CSS for Universal True Standalone Overlay and DOM Auto-Patcher
   const style = document.createElement("style");
   style.textContent = `
-    #fm-game-overlay, #fm-pes-gameboy-overlay {
+    #fm-pes-gameboy-overlay {
       position:fixed;inset:0;z-index:99999999999;
       background:radial-gradient(ellipse at center, #0d1e15 0%, #050c08 100%);
       display:flex;flex-direction:column;
@@ -20,16 +20,11 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    #fm-game-overlay[hidden], #fm-pes-gameboy-overlay[hidden] {
+    #fm-pes-gameboy-overlay[hidden] {
       display:none!important;
     }
     
-    /* ⚠️ REGLA DE ORO DE OPTIMIZACIÓN: 1 SOLO BOTÓN DE VOLVER A FUTMUNDI NO MAS ⚠️ */
-    /* Ocultamos cualquier otro boton de volver secundario o nativo interno de RetroCancha/PES para que opere solo 1 */
-    #fm-game-close { display: none !important; }
-    .pes-game-close-btn { display: none !important; }
-    
-    /* El 1 Solo Botón Rey Universal que flota en la arena de juego */
+    /* El ÚNICO botón de volver que flota en la arena de juego (cero duplicados) */
     .fm-pes-universal-close-btn {
       position:absolute;top:12px;right:14px;
       z-index:100000000;
@@ -52,7 +47,7 @@
       transform:scale(.95);
     }
     
-    #fm-game-mount, #pes-gameboy-mount-target {
+    #pes-gameboy-mount-target {
       position:absolute;inset:0;overflow:hidden;
       background:#08100b;
       display:flex;
@@ -69,7 +64,7 @@
     
     /* Obligamos nativamente Landscape Apaisado en Telegram iOS/Android Vertical */
     @media screen and (orientation: portrait) {
-      #fm-game-overlay, #fm-pes-gameboy-overlay {
+      #fm-pes-gameboy-overlay {
         width: 100vh !important;
         height: 100vw !important;
         transform: rotate(90deg) !important;
@@ -259,7 +254,9 @@
     setTimeout(() => openTruePesGame(mode), 80);
   }, true);
 
-  // --- AUTO-PARCHE UNIVERSAL DE DOM INTERFAZ ---
+  // --- PARCHE DE INTERFAZ (one-shot + reintento corto) ---
+  // Antes corría con setInterval cada 1s para siempre; ahora solo aplica el
+  // upgrade del texto de Neymar sin bucle infinito ni polling de DOM.
   function enforceUniversalPatcher() {
     if (typeof window.playerStatusText === "function" && !window.__fm_pst_upgraded) {
       window.__fm_pst_upgraded = true;
@@ -273,25 +270,20 @@
         }
       };
     }
+  }
 
-    document.querySelectorAll(".player-card small span").forEach(el => {
-      if (el.textContent.includes("Gratis") && el.textContent.includes("días")) {
-        el.textContent = "Gratis · ⚽ 4/4 Estamina";
-        el.className = "dur-ok";
-      }
-    });
-
-    // Erradicar de forma absoluta el recuadro anterior
-    const oldOverlayDiv = document.getElementById("fm-game-overlay");
-    if (oldOverlayDiv && oldOverlayDiv !== overlay) {
-      oldOverlayDiv.remove();
-    }
+  function runPatcher() {
+    enforceUniversalPatcher();
+    let tries = 0;
+    const retry = setInterval(() => {
+      enforceUniversalPatcher();
+      if (++tries >= 4) clearInterval(retry);
+    }, 500);
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", enforceUniversalPatcher);
+    document.addEventListener("DOMContentLoaded", runPatcher);
   } else {
-    enforceUniversalPatcher();
+    runPatcher();
   }
-  setInterval(enforceUniversalPatcher, 1000);
 })();

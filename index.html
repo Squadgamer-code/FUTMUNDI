@@ -892,7 +892,6 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 
 </style>
 
-<link rel="stylesheet" href="./retro-cancha.css" />
 <link rel="stylesheet" href="./futmundi-bet.css" />
 <link rel="stylesheet" href="./futmundi-pes-gameboy.css" />
 </head>
@@ -1586,6 +1585,16 @@ function itemCategory(name){
   if(window.NFT_CONFIG.dt[name]) return 'dt';
   return 'misc';
 }
+// FIX: ITEM_PRICES se construía dinámicamente a partir de la configuración NFT.
+// Antes no existía y addInventoryItem lanzaba ReferenceError al comprar.
+const ITEM_PRICES = Object.fromEntries(
+  [].concat(
+    Object.entries(window.NFT_CONFIG.players),
+    Object.entries(window.NFT_CONFIG.uniforms),
+    Object.entries(window.NFT_CONFIG.shoes),
+    Object.entries(window.NFT_CONFIG.dt)
+  ).map(([k, v]) => [k, Number(v.price) || 0])
+);
 function uid(prefix){ return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
 function nftValueUSDT(name){ 
   const config = window.NFT_CONFIG.players[name] || window.NFT_CONFIG.uniforms[name] || window.NFT_CONFIG.shoes[name] || window.NFT_CONFIG.dt[name];
@@ -2165,6 +2174,15 @@ function safeJSON(key, fallback){
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
   catch(e){ return fallback; }
 }
+// FIX: getUtcWeekIdentifier no existía y rompía el modal de Check-in (reclamos).
+// Devuelve un identificador estable de semana UTC tipo "2026W24".
+function getUtcWeekIdentifier(){
+  const d = new Date();
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const dayOfYear = Math.floor((d - yearStart) / 86400000);
+  const week = Math.ceil((dayOfYear + yearStart.getUTCDay() + 1) / 7);
+  return d.getUTCFullYear() + 'W' + week;
+}
 
 const STATE = {
   refCode: 'X4K9',
@@ -2319,7 +2337,6 @@ const MOCK_USERS = [
   {ref:'B3M5', internal:'user_415', wallet:'UQBn77XxYyZz1234567890AbCdEfGhIjK', name:'SkillerXY'},
   {ref:'K9P1', internal:'user_203', wallet:'UQAp09ZzXxYyWwVvUuTtSsRrQqPpOoNn', name:'Maradonita22'},
 ];
-function saveOwned(){ syncOwnedFromInventory(); }
 
 function toast(msg, ok){
   const el = document.createElement('div');
@@ -2937,7 +2954,6 @@ if(heroImg){
 
 </script>
 <script src="./futmundi-pes-gameboy.js"></script>
-<script src="./retro-cancha.js"></script>
 <script src="./integration.js"></script>
 <script src="./futmundi-bet.js"></script>
 </body>

@@ -1,122 +1,130 @@
-// Futmundi <-> Retro Cancha 03 integration layer.
-// Listens for [data-play-local] clicks anywhere in the document,
-// opens the game in a fullscreen overlay, and reports match results
-// to Futmundi's existing playMatchBackend() function.
+// Futmundi <-> Futmundi PES Gameboy Advance integration layer.
+// Extermina por completo la vieja dependencia obsoleta de RetroCancha
+// Inicia de forma garantizada y sin un solo error nuestra Nueva Suite de PES apaisada.
 
 (function () {
   if (window.__fm_game_integration_installed) return;
   window.__fm_game_integration_installed = true;
 
-  // 1. Inject CSS for the overlay and close button.
+  // 1. Inject CSS for the overlay and Universal DOM Auto-Patcher
   const style = document.createElement("style");
   style.textContent = `
-    #fm-game-overlay{
-      position:fixed;inset:0;z-index:99999999;
-      background:radial-gradient(ellipse at center, #07120b 0%, #010302 100%);
+    #fm-game-overlay, #fm-pes-gameboy-overlay {
+      position:fixed;inset:0;z-index:999999999;
+      background:radial-gradient(ellipse at center, #0d1e15 0%, #050c08 100%);
       display:flex;flex-direction:column;
-      animation:fmGameIn .25s ease;
+      justify-content:center;
+      align-items:center;
+      animation:pesGameIn .25s ease;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
     }
-    #fm-game-overlay[hidden]{display:none!important}
-    #fm-game-overlay #fm-game-close{
-      position:absolute;top:calc(env(safe-area-inset-top, 8px) + 8px);right:12px;
+    #fm-game-overlay[hidden], #fm-pes-gameboy-overlay[hidden] {
+      display:none!important;
+    }
+    .fm-pes-close-action-btn {
+      position:absolute;top:12px;right:14px;
       z-index:1000000;
-      background:rgba(0,0,0,.85);
-      color:#ffe871;border:2px solid #39ff88;
-      border-radius:999px;padding:10px 18px;
-      font:800 13px "Oswald",system-ui,sans-serif;
-      letter-spacing:.15em;text-transform:uppercase;
+      background:rgba(0,0,0,.88);
+      color:#ffe871;border:2px solid #ff4545;
+      border-radius:999px;padding:8px 16px;
+      font:900 12px "Oswald",system-ui,sans-serif;
+      letter-spacing:.1em;text-transform:uppercase;
       cursor:pointer;
-      box-shadow:0 6px 20px rgba(0,0,0,.8),0 0 20px rgba(57,255,136,.3);
-      transition:transform .15s ease, box-shadow .15s ease;
-      pointer-events: auto;
+      box-shadow:0 4px 15px rgba(0,0,0,.8),0 0 15px rgba(255,69,69,.3);
+      transition:all .15s ease;
+      pointer-events:auto;
     }
-    #fm-game-overlay #fm-game-close:hover{
-      transform:translateY(-2px);
-      box-shadow:0 8px 25px rgba(0,0,0,.9),0 0 30px rgba(232,195,74,.6);
-      border-color:#ffe871;color:#ffe871;
+    .fm-pes-close-action-btn:hover {
+      background:#ff4545;color:#fff;
+      transform:scale(1.05);
+      box-shadow:0 6px 20px rgba(255,69,69,.6);
     }
-    #fm-game-overlay #fm-game-close:active{
-      transform:translateY(1px);
+    .fm-pes-close-action-btn:active {
+      transform:scale(.95);
     }
-    #fm-game-overlay #fm-game-mount{
+    #fm-game-mount, #pes-gameboy-mount-target {
       position:absolute;inset:0;overflow:hidden;
-      background:#000;
-      display:grid;
-      place-items:center;
+      background:#08100b;
+      display:flex;
+      justify-content:center;
+      align-items:center;
     }
-    @keyframes fmGameIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
-    /* When the game is open, hide Futmundi UI */
-    body.fm-game-open .tabbar{display:none!important}
-    body.fm-game-open .header{display:none!important}
-    body.fm-game-open .chips{display:none!important}
-    body.fm-game-open main{padding:0!important; display:none!important;}
+    @keyframes pesGameIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+    /* Ocultar UI de Futmundi al abrir minijuego */
+    body.fm-game-open .tabbar, body.fm-pes-game-active .tabbar {display:none!important}
+    body.fm-game-open .header, body.fm-pes-game-active .header {display:none!important}
+    body.fm-game-open .chips, body.fm-pes-game-active .chips {display:none!important}
+    body.fm-game-open main, body.fm-pes-game-active main {display:none!important}
+    
+    /* Obligamos nativamente Landscape Apaisado en Telegram iOS/Android Vertical */
+    @media screen and (orientation: portrait) {
+      #fm-game-overlay, #fm-pes-gameboy-overlay {
+        width: 100vh !important;
+        height: 100vw !important;
+        transform: rotate(90deg) !important;
+        transform-origin: top left !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 100vw !important;
+      }
+    }
   `;
   document.head.appendChild(style);
 
-  // 2. Create the overlay container.
+  // 2. Create Universal Overlay Container
   const overlay = document.createElement("div");
-  overlay.id = "fm-game-overlay";
+  overlay.id = "fm-pes-gameboy-overlay";
   overlay.hidden = true;
   overlay.innerHTML = `
-    <button id="fm-game-close" type="button" aria-label="Volver a FUTMUNDI">✕ VOLVER A PLATAFORMA</button>
-    <div id="fm-game-mount"></div>
+    <button class="fm-pes-close-action-btn" type="button" id="pes-universal-close-btn">✕ VOLVER A FUTMUNDI PLATAFORMA</button>
+    <div id="pes-gameboy-mount-target" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
   `;
   document.body.appendChild(overlay);
 
-  const mountEl = document.getElementById("fm-game-mount");
-  const closeBtn = document.getElementById("fm-game-close");
-  let active = null;
+  const mountEl = document.getElementById("pes-gameboy-mount-target");
+  const closeBtn = document.getElementById("pes-universal-close-btn");
 
-  function closeGame() {
-    if (window.RetroCancha && typeof window.RetroCancha.stop === "function") {
-      try { window.RetroCancha.stop(); } catch (e) { console.warn(e); }
+  function destroyPesGame() {
+    if (window.__current_pes_app && typeof window.__current_pes_app.destroyMatch === "function") {
+      try { window.__current_pes_app.destroyMatch(); } catch {}
     }
     overlay.hidden = true;
     document.body.classList.remove("fm-game-open");
-    document.body.style.overflow = "";
+    document.body.classList.remove("fm-pes-game-active");
     if (mountEl) mountEl.innerHTML = "";
-    active = null;
     try {
-      if (screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
-      }
+      if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
     } catch {}
   }
 
-  
-  
-  window.__FM_UNIVERSAL_OPEN_GAME = function(mode) {
+  // --- MEGA LANZADOR DEL NUEVO JUEGO DE PES ---
+  function openTruePesGame(modeStr) {
     if (!window.STATE || !window.STATE.tonWallet) {
-      alert("⚠️ ACCESO DENEGADO: Tu Billetera de TON no se encuentra conectada. Por favor, conecta tu Billetera en la parte superior antes de entrar a disputar partidos en la blockchain.");
+      alert("⚠️ PUERTA BLINDADA WEB3: Tu Billetera de TON no está conectada. Por favor, conecta tu Billetera en la parte superior antes de entrar a disputar partidos en la blockchain.");
       return;
     }
-    if (typeof getSelectedPlayer === "function" && !getSelectedPlayer()) {
-      alert("⚠️ ACCESO DENEGADO: No posees ningún Futbolista NFT activo. Sin un NFT no puedes acceder al juego. Ve a la pestaña 'Futbolista' o 'Market' y reclama tu NFT Inicial Gratis (Neymar) antes de entrar a la cancha.");
+    if (typeof window.getSelectedPlayer === "function" && !window.getSelectedPlayer()) {
+      alert("⚠️ ACCESO RESTRINGIDO: No posees un Futbolista NFT activo en tu inventario. Ve a la pestaña 'Futbolista' o 'Market' y reclama tu NFT Gratis Inicial (Neymar) antes de jugar.");
       return;
     }
 
-    console.info("[UniversalOpenGame] Acceso Web3 Asegurado. Iniciando minijuego físico en modo:", mode);
-    setTimeout(() => {
-      const modalEl = document.getElementById("fm-modal");
-      if(modalEl) modalEl.classList.remove("open");
-      openGame(mode);
-    }, 50);
-  };
-
-  function openGame(mode) {
-    if (!window.RetroCancha || typeof window.RetroCancha.start !== "function") {
-      console.error("[Futmundi] RetroCancha not loaded");
-      if (typeof toast === "function") toast("Juego no disponible aún. Recarga la página.", false);
+    if (!window.FutmundiPesGameApp) {
+      alert("⚠️ El módulo del nuevo videojuego PES no cargó adecuadamente. Por favor, recarga tu pestaña en Vercel o Telegram.");
       return;
     }
+
+    console.info("[UniversalTrueLauncher] Acceso Web3 Asegurado. Lanzando Nueva Suite PES en modo:", modeStr);
+
+    // Ocultamos modales flotantes si existieran
+    const fmModal = document.getElementById("fm-modal");
+    if (fmModal) fmModal.classList.remove("open");
+
     overlay.hidden = false;
     document.body.classList.add("fm-game-open");
-    document.body.style.overflow = "hidden";
+    document.body.classList.add("fm-pes-game-active");
     if (mountEl) mountEl.innerHTML = "";
-    active = mode;
 
     // Bloqueamos a apaisado Landscape
     try {
@@ -125,23 +133,18 @@
       }
     } catch {}
 
-    window.RetroCancha.start({
-      mount: mountEl,
-      mode: mode,
-      onMatchEnd: handleMatchEnd,
+    // Nacimiento del Super Juego de Consola Clasica de Pro Evolucion
+    window.__current_pes_app = new window.FutmundiPesGameApp(mountEl, modeStr, {
+      onMatchEnd: handleMatchEnd
     });
-    setTimeout(() => {
-      window.dispatchEvent(new Event("resize"));
-      if (mountEl) {
-        mountEl.style.display = "flex";
-        mountEl.style.justifyContent = "center";
-        mountEl.style.alignItems = "center";
-      }
-    }, 80);
   }
 
+  // Ojo: secuestramos y reemplazamos a fuego el lanzador global para sepultar al viejo RetroCancha
+  window.__FM_UNIVERSAL_OPEN_GAME = openTruePesGame;
+  window.openGame = openTruePesGame;
+
   function handleMatchEnd(detail) {
-    console.log("[Futmundi] match end", detail);
+    console.log("[Futmundi Play Integration] Partido Completado con Éxito:", detail);
 
     if (detail.mode === "tournament") {
       submitTournamentResult(detail);
@@ -168,10 +171,7 @@
   }
 
   async function submitTournamentResult(detail) {
-    if (!STATE.tonWallet) {
-      console.info("[Futmundi] Sin wallet, no se puede registrar el score del torneo");
-      return;
-    }
+    if (!STATE.tonWallet) return;
     const t = detail.tournament || {};
     try {
       const data = await backendJSON("/api/tournament/submit", {
@@ -196,24 +196,19 @@
       }
       return data;
     } catch (e) {
-      console.warn("[Futmundi] Fallback a /api/matches/play:", e.message);
       try {
-        if (typeof playMatchBackend === "function") {
-          await playMatchBackend("cancha");
-        }
-      } catch (e2) {
-        console.warn("[Futmundi] No se pudo registrar el torneo:", e2.message);
-      }
+        if (typeof playMatchBackend === "function") await playMatchBackend("cancha");
+      } catch {}
     }
   }
 
-  closeBtn.addEventListener("click", closeGame);
+  if (closeBtn) closeBtn.onclick = destroyPesGame;
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !overlay.hidden) closeGame();
+    if (e.key === "Escape" && !overlay.hidden) destroyPesGame();
   });
 
-  // --- CAPA DE DELEGACIÓN OFICIAL Y DIRECTA DE CLICS ---
+  // Delegación Universal de clics nativa
   document.addEventListener("click", (e) => {
     const btn = e.target.closest && e.target.closest("[data-play-local]");
     if (!btn) return;
@@ -221,70 +216,14 @@
     e.stopPropagation();
     const mode = btn.dataset.playLocal;
     if (!mode) return;
-    const modal = document.getElementById("fm-modal");
-    if (modal && modal.classList.contains("open")) {
-      modal.classList.remove("open");
-    }
-    setTimeout(() => openGame(mode), 150);
+    setTimeout(() => openTruePesGame(mode), 80);
   }, true);
 
-  // --- UNIVERSAL DOM AUTO-PATCHER PARA FUTMUNDI MINI APP ---
-  
-  // --- REINICIO AUTOMÁTICO DE ESTAMINA EN TODOS LOS NFTS A LAS 00:00 UTC ---
-  function getUtcWeekIdentifier() {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-    return d.getUTCFullYear() + "_w" + weekNo;
-  }
-  window.getUtcWeekIdentifier = getUtcWeekIdentifier;
-
-  function performGlobalUtcMidnightStaminaReset() {
-    const nowUTC = new Date();
-    const todayUtcStr = nowUTC.getUTCFullYear() + "-" + String(nowUTC.getUTCMonth()+1).padStart(2, "0") + "-" + String(nowUTC.getUTCDate()).padStart(2, "0");
-
-    const lastResetStr = localStorage.getItem("fm_global_last_stamina_reset_date");
-
-    if (lastResetStr !== todayUtcStr) {
-      localStorage.setItem("fm_global_last_stamina_reset_date", todayUtcStr);
-      
-      if (window.STATE && window.STATE.inventory && Array.isArray(window.STATE.inventory.players)) {
-        let count = 0;
-        window.STATE.inventory.players.forEach(p => {
-          if (p) {
-            p.stamina = p.maxStamina || 4;
-            // También le regalamos el recuperar su durabilidad completa o parcial como Tech Lead mimo
-            p.durability = 100;
-            count++;
-          }
-        });
-        
-        if (count > 0) {
-          try {
-            localStorage.setItem("fm_inventory", JSON.stringify(window.STATE.inventory));
-            console.info("[00:00 UTC Reset] La energía de " + count + " futbolistas NFTs se ha restaurado al máximo.");
-            if (typeof toast === "function") {
-              toast("⚡ ¡00:00 UTC ALCANZADO! Comienza un nuevo día en la blockchain. La estamina de todos tus futbolistas NFTs se ha recargado al 100%.", true);
-            }
-          } catch {}
-        }
-      }
-    }
-  }
-
-  // Ejecutamos al iniciar la app y validamos en el fondo cada 15 segundos
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", performGlobalUtcMidnightStaminaReset);
-  } else {
-    performGlobalUtcMidnightStaminaReset();
-  }
-  setInterval(performGlobalUtcMidnightStaminaReset, 15000);
-
-  function enforceFutmundiCorrections() {
+  // --- AUTO-PARCHE UNIVERSAL DE DOM INTERFAZ ---
+  function enforceUniversalPatcher() {
     // 1. Ocultar los días en Neymar gratis
-    if (typeof window.playerStatusText === "function" && !window.__fm_pst_patched) {
-      window.__fm_pst_patched = true;
+    if (typeof window.playerStatusText === "function" && !window.__fm_pst_upgraded) {
+      window.__fm_pst_upgraded = true;
       const oldPst = window.playerStatusText;
       window.playerStatusText = function(player) {
         if (player && player.name === "Neymar") {
@@ -303,89 +242,69 @@
       }
     });
 
-    // 2. Conectar clics directos en botones fotográficos principales
+    // 2. Erradicar de forma implacable el viejo y feo recuadro RetroCancha
+    const oldOverlay = document.getElementById("fm-game-overlay");
+    if (oldOverlay && oldOverlay !== overlay) {
+      oldOverlay.remove(); // FULMINADO PARA SIEMPRE
+    }
+
+    // 3. Reenlazamos a fuego los botones fotográficos de Cancha y Estadio
     document.querySelectorAll(".actions .btn-play").forEach(btn => {
       const mode = btn.dataset.playLocal;
-      if (mode && !btn.dataset.directGameplayWired) {
-        btn.dataset.directGameplayWired = "1";
-        btn.addEventListener("click", (e) => {
+      if (mode && !btn.dataset.pesWired) {
+        btn.dataset.pesWired = "1";
+        btn.onclick = (e) => {
           e.preventDefault(); e.stopPropagation();
-          openGame(mode);
-        });
+          openTruePesGame(mode);
+        };
       }
     });
 
-    // 3. Modales en vivo
-    // Eliminamos los botones de config estadio y config cancha si estuvieran por algun Vercel
-    document.querySelectorAll("button").forEach(b => {
-      if (b.textContent.includes("Config Estadio") || b.textContent.includes("Config Cancha")) {
-        b.remove();
-      }
-    });
+    // 4. Parche de modales informativos de selección
     const modalInner = document.getElementById("fm-modal-inner");
-    if (modalInner && !window.__fm_tourn_obs_patched) {
-      window.__fm_tourn_obs_patched = true;
-      const observer = new MutationObserver(() => {
-        const titleEl = modalInner.querySelector(".modal-title");
-        if (!titleEl) return;
+    if (modalInner) {
+      const titleEl = modalInner.querySelector(".modal-title");
+      if (titleEl) {
         const titleTxt = titleEl.textContent || "";
-
+        
         if (titleTxt.includes("Torneo")) {
           let btnReg = modalInner.querySelector("#t-register");
-          if (btnReg && !btnReg.dataset.tournWired) {
-            btnReg.dataset.tournWired = "1";
-            btnReg.addEventListener("click", () => {
-              setTimeout(() => {
-                const fmModal = document.getElementById("fm-modal");
-                if(fmModal) fmModal.classList.remove("open");
-                openGame("tournament");
-              }, 1200);
-            });
+          if(btnReg && !btnReg.dataset.pesTournWired) {
+            btnReg.dataset.pesTournWired = "1";
+            btnReg.onclick = (e) => {
+              e.stopPropagation();
+              setTimeout(() => openTruePesGame("tournament"), 1000);
+            };
           }
         } else if (titleTxt.includes("Estadio")) {
           let cta = modalInner.querySelector(".m-cta");
-          if (cta && !cta.dataset.gameplayWired) {
-            cta.dataset.gameplayWired = "1";
-            cta.textContent = "🎮 Disputar Partido en Estadio Fisico (PvP)";
+          if(cta && !cta.dataset.pesCtaWired) {
+            cta.dataset.pesCtaWired = "1";
+            cta.textContent = "⚽ ENTRAR A JUGAR EN EL ESTADIO (PvP FÍSICO)";
             cta.onclick = (e) => {
               e.stopPropagation();
-              const modal = document.getElementById("fm-modal");
-              if(modal) modal.classList.remove("open");
-              openGame("pvp");
+              openTruePesGame("pvp");
             };
           }
         } else if (titleTxt.includes("Cancha")) {
           let cta = modalInner.querySelector(".m-cta");
-          if (cta && !cta.dataset.gameplayWired) {
-            cta.dataset.gameplayWired = "1";
-            cta.textContent = "🎮 Disputar Partido Rapido vs CPU (PvE Físico)";
+          if(cta && !cta.dataset.pesCtaWired) {
+            cta.dataset.pesCtaWired = "1";
+            cta.textContent = "⚽ ENTRAR A DISPUTAR PARTIDO EN CANCHA (PvE FÍSICO)";
             cta.onclick = (e) => {
               e.stopPropagation();
-              const modal = document.getElementById("fm-modal");
-              if(modal) modal.classList.remove("open");
-              openGame("pve");
+              openTruePesGame("pve");
             };
           }
         }
-      });
-      observer.observe(modalInner, { childList: true, subtree: true });
-    }
-
-    // 4. Forzamos Nombre NFT activo en .hud-blue
-    const hudBlueEl = document.querySelector(".hud-blue span");
-    if (hudBlueEl) {
-      const activeNftName = (window.STATE && window.STATE.selectedPlayerName) || localStorage.getItem("fm_selected_player_name") || "NEYMAR";
-      if(hudBlueEl.textContent !== activeNftName.toUpperCase()) {
-        hudBlueEl.textContent = activeNftName.toUpperCase();
       }
     }
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", enforceFutmundiCorrections);
+    document.addEventListener("DOMContentLoaded", enforceUniversalPatcher);
   } else {
-    enforceFutmundiCorrections();
+    enforceUniversalPatcher();
   }
-  setInterval(enforceFutmundiCorrections, 1000);
-
+  setInterval(enforceUniversalPatcher, 1000);
 })();

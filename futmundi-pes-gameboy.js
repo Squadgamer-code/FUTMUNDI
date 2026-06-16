@@ -73,6 +73,7 @@
       this.mountEl = mountEl;
       this.mode = gameMode; 
       this.onMatchEndCallback = detailCallbacks.onMatchEnd || null;
+      this.isRecreational = detailCallbacks.isRecreationalMode || false;
 
       // Atrapamos Nombre de tu NFT seleccionado
       const playerObj = typeof window.getSelectedPlayer === "function" ? window.getSelectedPlayer() : null;
@@ -586,6 +587,11 @@
 
       let rewardGemsWon = isWin ? this.currentOpponent.rewardGems || 25 : isDraw ? 5 : 0;
       let rewardPtsWon = isWin ? this.currentOpponent.rewardPts || 150 : isDraw ? 30 : 0;
+      
+      // Si entro con estamina en 0, es modo recreativo y no genera Gemas de premio
+      if (this.isRecreational) {
+        rewardGemsWon = 0;
+      }
 
       if (this.mode === "tournament") {
         if (isWin || isDraw) {

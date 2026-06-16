@@ -109,62 +109,87 @@
   }
 
   // --- EL SÚPER LANZADOR CON BLOQUEO ESTRICTO WEB3 DE BALONES (ESTAMINA) ---
+    
+  const NFT_PRODUCTION_OFFICIAL = {
+    "Neymar": { price: 0, roiDays: 50, dailyGems: 3.2, perWin: 1.0, profitDays: 50 },
+    "James Rodríguez": { price: 320, roiDays: 40, dailyGems: 8.0, perWin: 2.0, profitDays: 17 },
+    "Alexis Sánchez": { price: 640, roiDays: 36, dailyGems: 17.0, perWin: 4.25, profitDays: 17 },
+    "Harry Kane": { price: 960, roiDays: 34, dailyGems: 28.0, perWin: 7.0, profitDays: 17 },
+    "Pedri": { price: 1280, roiDays: 33, dailyGems: 39.0, perWin: 9.75, profitDays: 17 },
+    "Vinicius Jr": { price: 1600, roiDays: 31, dailyGems: 52.0, perWin: 13.0, profitDays: 21 },
+    "Rodri": { price: 1920, roiDays: 27.55, dailyGems: 70.0, perWin: 17.5, profitDays: 15 },
+    "Mbappé": { price: 2080, roiDays: 27, dailyGems: 77.0, perWin: 19.25, profitDays: 15 },
+    "Haaland": { price: 2240, roiDays: 25, dailyGems: 89.0, perWin: 22.25, profitDays: 12 },
+    "Lamine Yamal": { price: 4000, roiDays: 21, dailyGems: 190.0, perWin: 47.5, profitDays: 10 },
+    "Bellingham": { price: 5120, roiDays: 21, dailyGems: 244.0, perWin: 61.0, profitDays: 10 },
+    "Lionel Messi": { price: 6400, roiDays: 21, dailyGems: 304.0, perWin: 76.0, profitDays: 10 },
+    "Cristiano R.": { price: 16000, roiDays: 15, dailyGems: 1067.0, perWin: 266.75, profitDays: 10 }
+  };
+  window.NFT_PRODUCTION_OFFICIAL = NFT_PRODUCTION_OFFICIAL;
+
   function openTruePesGame(modeStr) {
-    // 1. Verificamos Billetera
     if (!window.STATE || !window.STATE.tonWallet) {
-      alert("⚠️ ACCESO DENEGADO: Por favor, conecta tu Billetera de TON en la barra superior antes de entrar a disputar partidos en la blockchain.");
+      alert("⚠️ RESTRICCIÓN DE CIBERSEGURIDAD WEB3: Tu Billetera de TON no se encuentra conectada. Conecta tu Billetera en la parte superior para autorizar tu acceso.");
       return;
     }
 
-    // 2. Verificamos Futbolista NFT en el inventario
     const pObj = typeof window.getSelectedPlayer === "function" ? window.getSelectedPlayer() : null;
     if (!pObj) {
-      alert("⚠️ ACCESO RESTRINGIDO: No posees un Futbolista NFT activo en tu inventario. Sin un NFT no puede acceder nadie. Ve a la pestaña 'Futbolista' o 'Market' y reclama tu Futbolista Inicial Gratis (Neymar) antes de saltar a la cancha.");
+      alert("⚠️ ACCESO DENEGADO: No tienes ningún Futbolista NFT activo en tu inventario. Sin un NFT no puede acceder nadie a jugar. Ve a la pestaña Futbolista o Market y adquiere o reclama tu NFT Gratis Inicial antes de saltar a la arena.");
       return;
     }
 
-    // 3. ⚠️ BARRERA BLINDADA DE CONSUMO Y ESTAMINA: Verificamos si tiene Balones de Estamina ⚠️
+    if (!window.FutmundiPesGameApp && typeof PurePesGameboyApp === "undefined") {
+      alert("⚠️ Latencia en Vercel: El motor del videojuego está terminando de componer. Por favor, toca el botón de jugar en un segundo o recarga.");
+      return;
+    }
+
+    const PesGameClass = window.FutmundiPesGameApp || window.PurePesGameboyApp || PurePesGameboyApp;
+
+    let isRecreational = false;
     if (pObj.stamina <= 0) {
-      alert(`⚠️ ENERGÍA AGOTADA (0 BALONES): Tu Futbolista NFT (${pObj.name}) ya ha consumido sus 4 balones de estamina por hoy y se encuentra BLOQUEADO. Deberás esperar a la temporización de las 00:00 UTC para que recargue sus 4 balones gratis, o usar la pestaña 'Entrenamiento' para recuperar su estamina inmediatamente.`);
-      return;
+      // Agotó sus 4 balones. Entra en Modo Recreativo (Solo puede ver/jugar pero tiene bloqueo absoluto de generación de Gemas)
+      isRecreational = true;
+      if (typeof toast === "function") {
+        toast(`⚠️ Tu NFT (${pObj.name}) consumió sus balones. Entras a MODO RECREATIVO (No generará Gemas de ganancia hasta el Reset 00:00 UTC).`, false);
+      }
+    } else {
+      // Consume su balón y resta durabilidad nativamente
+      pObj.stamina -= 1;
+      pObj.durability = Math.max(0, +(pObj.durability - 0.8).toFixed(1));
+      if (typeof window.saveInventory === "function") window.saveInventory();
+      if (typeof window.renderFutbolistaInventory === "function") window.renderFutbolistaInventory();
+      
+      if (typeof toast === "function") {
+        toast(`⚽ ¡NFT AUTORIZADO (${pObj.name})! Consumido 1 Balón de Energía (Quedan ${pObj.stamina}/4 balones).`, true);
+      }
     }
 
-    // 4. Si el jugador pasó, ¡le CONSUMIMOS 1 BALÓN Y DURABILIDAD EN ESTE INSTANTE ANTES DE INICIAR EL JUEGO!
-    pObj.stamina -= 1;
-    pObj.durability = Math.max(0, +(pObj.durability - 0.8).toFixed(1));
-    
-    // Sincronizamos con el almacenamiento
-    if (typeof window.saveInventory === "function") window.saveInventory();
-    if (typeof window.renderFutbolistaInventory === "function") window.renderFutbolistaInventory();
+    console.info(`[UniversalTrueLauncher] Ingresando a la cancha en modo: ${modeStr} (Modo Recreativo Cero Gemas: ${isRecreational})`);
 
-    console.info(`[UniversalTrueLauncher] NFT Autorizado (${pObj.name}). Consumido 1 Balón (Quedan ${pObj.stamina}/4). Entrando a la arena en modo:`, modeStr);
-
-    if (typeof toast === "function") {
-      toast(`⚽ ¡NFT EN JUEGO (${pObj.name})! Consumido 1 Balón de Estamina (Quedan ${pObj.stamina}/4).`, true);
-    }
-
-    // Ocultamos modales flotantes si existieran
     const fmModal = document.getElementById("fm-modal");
     if (fmModal) fmModal.classList.remove("open");
 
+    // Ocultamos elementos asíncronos que provocaban pantalla negra al montar en Vercel
     overlay.hidden = false;
     document.body.classList.add("fm-game-open");
     document.body.classList.add("fm-pes-game-active");
-    if (mountEl) mountEl.innerHTML = "";
+    if (mountEl) {
+      mountEl.innerHTML = "";
+      mountEl.style.display = "flex";
+    }
 
-    // Bloqueamos a apaisado Landscape
     try {
       if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock("landscape").catch(() => {});
       }
     } catch {}
 
-    // Instanciamos físicamente y de forma inquebrantable el Súper Videojuego Apaisado Clásico
-    window.__current_pes_app = new window.FutmundiPesGameApp(mountEl, modeStr, {
+    window.__current_pes_app = new PesGameClass(mountEl, modeStr, {
+      isRecreationalMode: isRecreational,
       onMatchEnd: handleMatchEnd
     });
   }
-
   window.__FM_UNIVERSAL_OPEN_GAME = openTruePesGame;
   window.openGame = openTruePesGame;
 

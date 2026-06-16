@@ -891,7 +891,7 @@
   // Inyectamos el Markup del Overlay al Body
   function injectGlobalPesContainer() {
     if (document.getElementById("fm-pes-gameboy-overlay")) return;
-    const overlay ContCont = document.createElement("div");
+    const overlayCont = document.createElement("div");
     overlayCont.id = "fm-pes-gameboy-overlay";
     overlayCont.hidden = true;
     overlayCont.innerHTML = `<div id="pes-gameboy-mount-target" style="width:100%; height:100%; display:flex; justify-content:center; alignItems:center;"></div>`;

@@ -1,6 +1,7 @@
 /* ==========================================================================
    FUTMUNDI PES PRO — Gameplay arcade horizontal estilo PES 2005
-   Sencillo, robusto, sin dependencias críticas. Soporta desktop y táctil.
+   v2: robo de balón, pase/tiro pulidos, consumo de stamina al inicio,
+       anuncio de gemas, integración i18n, sin gemas sin wallet.
    ========================================================================== */
 (function () {
   if (window.__fm_pes_gameboy_installed) return;
@@ -9,6 +10,7 @@
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const rand = (a, b) => a + Math.random() * (b - a);
   const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+  const t = (k, r) => (typeof window.t === "function" ? window.t(k, r) : k);
 
   const TEAMS = [
     { n: "Curdo FC", a: 0.9, c: "#8e8e8e" },
@@ -46,11 +48,11 @@
       if (AC) this.ctx = new AC();
       if (this.ctx && this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
     }
-    tone(f, t, d, v) {
+    tone(f, type, d, v) {
       if (!this.ctx) return;
       try {
         const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-        o.type = t; o.frequency.value = f;
+        o.type = type; o.frequency.value = f;
         g.gain.setValueAtTime(v, this.ctx.currentTime);
         g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + d);
         o.connect(g).connect(this.ctx.destination);
@@ -59,6 +61,7 @@
     }
     kick() { this.tone(180, "triangle", 0.08, 0.15); }
     pass() { this.tone(320, "sine", 0.06, 0.10); }
+    steal() { this.tone(160, "sawtooth", 0.12, 0.12); }
     whistle() { this.tone(880, "sine", 0.20, 0.30); const s = this; setTimeout(() => s.tone(920, "sine", 0.30, 0.30), 150); }
     goal() { this.tone(440, "square", 0.10, 0.20); const s = this; setTimeout(() => s.tone(554, "triangle", 0.12, 0.22), 100); setTimeout(() => s.tone(659, "triangle", 0.25, 0.25), 220); }
   }
@@ -70,19 +73,22 @@
       this.onMatchEnd = callbacks && callbacks.onMatchEnd;
       this.onConsumeStamina = callbacks && callbacks.onConsumeStamina;
       this.isRecreational = (callbacks && callbacks.isRecreationalMode) || false;
+      this.hasWallet = !!(window.STATE && window.STATE.tonWallet);
 
       this.sp = (typeof window.getSelectedPlayer === "function") ? window.getSelectedPlayer() : null;
       this.myNftName = this.sp ? this.sp.name : "FUTBOLISTA";
       this.selectedPlayerId = this.sp ? this.sp.id : null;
+      this.staminaConsumed = false;
+      this.matchCompleted = false;
 
       this.cW = 960; this.cH = 540;
       this.dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
       this.audio = new AudioEngine();
       this.audio.init();
 
-      this.state = "pregame"; // pregame, playing, goal, halftime, ended
+      this.state = "pregame"; // pregame, playing, goal, ended
       this.half = 1;
-      this.timeLeft = 90; // segundos reales por tiempo
+      this.timeLeft = 90;
       this.totalTime = 90;
       this.myGoals = 0; this.riGoals = 0; this.points = 0;
       this.opp = TEAMS[Math.floor(Math.random() * TEAMS.length)];
@@ -96,11 +102,9 @@
       this.charge = 0;
       this.shake = 0;
       this.msg = { text: "", sub: "", timer: 0 };
-      this.goalScored = false;
+      this.parts = [];
       this.lastT = performance.now();
       this.raf = null;
-
-      this.parts = [];
 
       this.buildStage();
       this.resize();
@@ -109,10 +113,7 @@
       this.renderPreGame();
 
       this.raf = requestAnimationFrame((t) => this.loop(t));
-
-      try {
-        if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
-      } catch (e) {}
+      try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {}); } catch (e) {}
     }
 
     buildStage() {
@@ -147,8 +148,8 @@
       this.controlsEl.innerHTML = `
         <div class="pes-joystick-base" id="pes-joy"><div class="pes-joystick-knob" id="pes-knob"></div></div>
         <div class="pes-actions-cluster">
-          <div class="pes-btn-arcade pes-btn-pass" id="pes-pass">PASS</div>
-          <div class="pes-btn-arcade pes-btn-shot" id="pes-shot">SHOT</div>
+          <div class="pes-btn-arcade pes-btn-pass" id="pes-pass">${t('pass')}</div>
+          <div class="pes-btn-arcade pes-btn-shot" id="pes-shot">${t('shot')}</div>
         </div>
       `;
       this.stageEl.appendChild(this.controlsEl);
@@ -201,7 +202,6 @@
     }
 
     bindEvents() {
-      // Teclado
       this.onKeyDown = (e) => {
         const k = e.key.toLowerCase();
         this.keys[k] = true;
@@ -220,7 +220,6 @@
       window.addEventListener("keydown", this.onKeyDown);
       window.addEventListener("keyup", this.onKeyUp);
 
-      // Joystick
       let pid = null;
       const joyMove = (e) => {
         e.preventDefault();
@@ -240,16 +239,11 @@
           this.ui.knob.style.transform = "none";
         }
       };
-      this.ui.joy.addEventListener("pointerdown", (e) => {
-        pid = e.pointerId;
-        try { this.ui.joy.setPointerCapture(pid); } catch (_) {}
-        joyMove(e);
-      });
+      this.ui.joy.addEventListener("pointerdown", (e) => { pid = e.pointerId; try { this.ui.joy.setPointerCapture(pid); } catch (_) {} joyMove(e); });
       this.ui.joy.addEventListener("pointermove", (e) => { if (e.pointerId === pid) joyMove(e); });
       this.ui.joy.addEventListener("pointerup", joyEnd);
       this.ui.joy.addEventListener("pointercancel", joyEnd);
 
-      // Botones
       this.ui.pass.addEventListener("pointerdown", (e) => { e.preventDefault(); this.doPass(); });
       this.ui.shot.addEventListener("pointerdown", (e) => { e.preventDefault(); this.startCharge(); });
       const shotEnd = (e) => { e.preventDefault(); if (this.charging) this.releaseShot(); };
@@ -261,9 +255,8 @@
       const nfts = getAvailableNfts();
       if (nfts.length === 0) {
         this.pregameEl.innerHTML = `
-          <div class="pes-pg-header"><span class="pes-pg-mode">MODO ${this.mode.toUpperCase()}</span><span class="pes-pg-vs">vs ${this.opp.n}</span></div>
-          <div class="pes-pg-title">⚽ NO TIENES NFTS</div>
-          <div class="pes-pg-subtitle">Ve a Market y reclama a Neymar gratis para jugar.</div>
+          <div class="pes-pg-header"><span class="pes-pg-mode">${t('field')} · ${this.mode.toUpperCase()}</span><span class="pes-pg-vs">vs ${this.opp.n}</span></div>
+          <div class="pes-pg-title">⚽ ${t('noNfts')}</div>
         `;
         return;
       }
@@ -275,25 +268,25 @@
           <img src="${p.img || ""}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'">
           <div class="pes-nft-name">${p.name}</div>
           <div class="pes-nft-balls">${staminaIcons(p)}</div>
-          <div class="pes-nft-dur">Dur ${Math.round(Number(p.durability) || 0)}%</div>
+          <div class="pes-nft-dur">${t('durability')} ${Math.round(Number(p.durability) || 0)}%</div>
         </div>`;
       });
+      const selected = nfts.find(p => p.id === this.selectedPlayerId) || nfts[0];
       this.pregameEl.innerHTML = `
-        <div class="pes-pg-header"><span class="pes-pg-mode">MODO ${this.mode.toUpperCase()}</span><span class="pes-pg-vs">vs ${this.opp.n}</span></div>
-        <div class="pes-pg-title">⚽ SELECCIONA TU FUTBOLISTA NFT</div>
+        <div class="pes-pg-header"><span class="pes-pg-mode">${this.mode.toUpperCase()}</span><span class="pes-pg-vs">vs ${this.opp.n}</span></div>
+        <div class="pes-pg-title">⚽ ${t('selectPlayer')}</div>
         <div class="pes-nft-selector-grid">${grid}</div>
-        <div class="pes-pg-selected-box" id="pes-sel-box" style="display:none"></div>
-        <button class="pes-start-btn" id="pes-start-btn" type="button">⚽ ENTRAR A JUGAR</button>
+        <div class="pes-pg-selected-box" id="pes-sel-box" style="display:flex">
+          <img src="${selected.img || ""}" alt="${selected.name}" onerror="this.style.display='none'">
+          <div class="pes-sel-info"><b>${selected.name}</b><span>${staminaIcons(selected)} ${t('stamina')}</span><span>${t('durability')} ${Math.round(Number(selected.durability) || 0)}%</span></div>
+        </div>
+        <button class="pes-start-btn" id="pes-start-btn" type="button">⚽ ${t('enterGame')} ${selected.name.toUpperCase()} ✔</button>
       `;
       this.pregameEl.querySelectorAll("[data-nft-id]").forEach(card => {
-        card.addEventListener("pointerdown", (e) => {
-          e.preventDefault();
-          this.selectNft(card.dataset.nftId);
-        });
+        card.addEventListener("pointerdown", (e) => { e.preventDefault(); this.selectNft(card.dataset.nftId); });
       });
       const startBtn = this.pregameEl.querySelector("#pes-start-btn");
       if (startBtn) startBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); this.startMatch(); });
-      this.selectNft(this.selectedPlayerId || nfts[0].id);
     }
 
     selectNft(id) {
@@ -301,7 +294,7 @@
       const nft = nfts.find(p => p.id === id);
       if (!nft) return;
       if ((Number(nft.stamina) || 0) <= 0) {
-        if (typeof toast === "function") toast(`${nft.name} no tiene balones.`, false);
+        if (typeof toast === "function") toast(`${nft.name} ${t('stamina')} 0`, false);
         return;
       }
       this.selectedPlayerId = id;
@@ -312,19 +305,27 @@
       });
       const box = this.pregameEl.querySelector("#pes-sel-box");
       if (box) {
-        box.style.display = "flex";
-        box.innerHTML = `<img src="${nft.img || ""}" alt="${nft.name}"><div class="pes-sel-info"><b>${nft.name}</b><span>${staminaIcons(nft)} Balones</span><span>Durabilidad ${Math.round(Number(nft.durability) || 0)}%</span></div>`;
+        box.innerHTML = `<img src="${nft.img || ""}" alt="${nft.name}" onerror="this.style.display='none'"><div class="pes-sel-info"><b>${nft.name}</b><span>${staminaIcons(nft)} ${t('stamina')}</span><span>${t('durability')} ${Math.round(Number(nft.durability) || 0)}%</span></div>`;
       }
       const nm = this.hudEl.querySelector("#pes-blue-nm");
       if (nm) nm.textContent = nft.name.toUpperCase();
-      try {
-        if (window.STATE) window.STATE.selectedPlayerId = id;
-        if (typeof window.selectPlayer === "function") window.selectPlayer(id);
-      } catch (e) {}
+      try { if (window.STATE) window.STATE.selectedPlayerId = id; if (typeof window.selectPlayer === "function") window.selectPlayer(id); } catch (e) {}
     }
 
     startMatch() {
       if (!this.sp) return;
+      // Consumir stamina al inicio; si no hay wallet, no se consume (recreativo)
+      if (!this.isRecreational) {
+        if (this.sp.stamina <= 0) {
+          if (typeof toast === "function") toast(t('noStamina'), false);
+          return;
+        }
+        this.sp.stamina = Math.max(0, this.sp.stamina - 1);
+        this.sp.durability = Math.max(0, +(this.sp.durability - 0.8).toFixed(1));
+        this.staminaConsumed = true;
+        if (typeof window.saveInventory === "function") window.saveInventory();
+        if (typeof window.renderFutbolistaInventory === "function") window.renderFutbolistaInventory();
+      }
       this.audio.whistle();
       this.state = "playing";
       this.pregameEl.style.display = "none";
@@ -332,7 +333,7 @@
       this.half = 1; this.timeLeft = this.totalTime;
       this.initTeams();
       this.kickOff("blue");
-      this.showMsg("¡EMPIEZA EL PARTIDO!", "1° TIEMPO");
+      this.showMsg(t('start'), "1° " + t('half'));
     }
 
     initTeams() {
@@ -340,12 +341,12 @@
       const c = { x: this.cW / 2, y: this.cH / 2 };
       this.players = [
         { id: "p1", name: this.myNftName, x: c.x - 120, y: c.y, team: "blue", spd: 5.2, ctrl: true, keeper: false, col: "#ffe871" },
-        { id: "p2", name: "Compañero", x: c.x - 200, y: c.y - 80, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
-        { id: "p3", name: "Compañero", x: c.x - 200, y: c.y + 80, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
+        { id: "p2", name: "Compañero", x: c.x - 220, y: c.y - 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
+        { id: "p3", name: "Compañero", x: c.x - 220, y: c.y + 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
         { id: "gk", name: "Portero", x: 50, y: c.y, team: "blue", spd: 3.8, ctrl: false, keeper: true, col: "#39ff88" },
         { id: "r1", name: this.opp.n, x: c.x + 120, y: c.y, team: "red", spd: 4.8 * this.opp.a, ctrl: false, keeper: false, col: rc },
-        { id: "r2", name: "Defensa", x: c.x + 200, y: c.y - 80, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc },
-        { id: "r3", name: "Defensa", x: c.x + 200, y: c.y + 80, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc },
+        { id: "r2", name: "Defensa", x: c.x + 220, y: c.y - 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc },
+        { id: "r3", name: "Defensa", x: c.x + 220, y: c.y + 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc },
         { id: "rgk", name: "Portero", x: this.cW - 50, y: c.y, team: "red", spd: 3.8, ctrl: false, keeper: true, col: "#ff4545" }
       ];
       this.active = this.players[0];
@@ -376,16 +377,13 @@
       if (this.timeLeft <= 0) {
         if (this.half === 1) {
           this.half = 2; this.timeLeft = this.totalTime;
-          this.showMsg("MEDIO TIEMPO", `${this.myGoals} - ${this.riGoals}`);
+          this.showMsg(t('half'), `${this.myGoals} - ${this.riGoals}`);
           this.audio.whistle();
           this.kickOff("red");
-        } else {
-          this.endMatch();
-          return;
-        }
+        } else { this.endMatch(); return; }
       }
 
-      // Control activo
+      // Jugador activo
       let mx = 0, my = 0;
       if (this.stick.active) { mx += this.stick.x; my += this.stick.y; }
       if (this.keys["w"] || this.keys["arrowup"]) my -= 1;
@@ -402,7 +400,7 @@
         this.active.y = clamp(this.active.y, 20, this.cH - 20);
       }
 
-      // Compañeros IA
+      // Compañeros
       this.players.filter(p => p.team === "blue" && !p.ctrl && !p.keeper).forEach(p => {
         const tx = this.ball.x < this.cW / 2 ? this.cW / 2 - 80 : this.ball.x - 80;
         const ty = this.ball.y + (p.y > this.cH / 2 ? -60 : 60);
@@ -410,26 +408,25 @@
         p.y += (ty - p.y) * dt * 1.5;
       });
 
-      // IA rival
+      // IA rival con robo realista
       this.players.filter(p => p.team === "red" && !p.keeper).forEach(p => {
         const d = dist(p.x, p.y, this.ball.x, this.ball.y);
         const ang = Math.atan2(this.ball.y - p.y, this.ball.x - p.x);
-        if (d > 18) {
-          p.x += Math.cos(ang) * p.spd;
-          p.y += Math.sin(ang) * p.spd;
-        }
-        // Robar o despejar
+        if (d > 18) { p.x += Math.cos(ang) * p.spd; p.y += Math.sin(ang) * p.spd; }
+        // Robar si el balón está libre cerca
         if (d < 22 && !this.ball.owner) {
           const goalAng = Math.atan2(this.cH / 2 - p.y, 0 - p.x);
           this.ball.vx = Math.cos(goalAng) * 16;
           this.ball.vy = Math.sin(goalAng) * 16;
           this.audio.kick();
         }
-        if (d < 20 && this.ball.owner && this.ball.owner.team === "blue" && Math.random() < 0.005) {
+        // Tackle al jugador con balón
+        if (d < 24 && this.ball.owner && this.ball.owner.team === "blue" && this.ball.owner !== p && Math.random() < 0.025) {
           this.ball.owner = null;
-          this.ball.vx = Math.cos(ang) * 12;
-          this.ball.vy = Math.sin(ang) * 12;
-          this.audio.kick();
+          this.ball.vx = Math.cos(ang) * 14;
+          this.ball.vy = Math.sin(ang) * 14;
+          this.audio.steal();
+          this.spawnParts(p.x, p.y, "#ff4545", 8);
         }
       });
 
@@ -437,7 +434,7 @@
       this.players.filter(p => p.keeper).forEach(k => {
         const targetY = clamp(this.ball.y, this.cH / 2 - 70, this.cH / 2 + 70);
         k.y += (targetY - k.y) * dt * 4;
-        if (k.team === "blue") k.x = 40; else k.x = this.cW - 40;
+        k.x = k.team === "blue" ? 40 : this.cW - 40;
       });
 
       // Balón
@@ -447,30 +444,20 @@
         this.ball.y = this.ball.owner.y + 8;
         this.ball.vx = 0; this.ball.vy = 0;
       } else {
-        this.ball.x += this.ball.vx;
-        this.ball.y += this.ball.vy;
+        this.ball.x += this.ball.vx; this.ball.y += this.ball.vy;
         this.ball.vx *= 0.985; this.ball.vy *= 0.985;
-
-        // Banda
         if (this.ball.y < this.ball.r || this.ball.y > this.cH - this.ball.r) {
           this.ball.vy *= -0.8;
           this.ball.y = clamp(this.ball.y, this.ball.r, this.cH - this.ball.r);
         }
-        // Porterías
         const gy = this.cH / 2; const gh = 90;
         if (this.ball.x < 20) {
-          if (this.ball.y > gy - gh && this.ball.y < gy + gh) {
-            this.riGoals++; this.goal("red");
-          } else {
-            this.ball.vx *= -0.8; this.ball.x = 20;
-          }
+          if (this.ball.y > gy - gh && this.ball.y < gy + gh) { this.riGoals++; this.goal("red"); }
+          else { this.ball.vx *= -0.8; this.ball.x = 20; }
         }
         if (this.ball.x > this.cW - 20) {
-          if (this.ball.y > gy - gh && this.ball.y < gy + gh) {
-            this.myGoals++; this.goal("blue");
-          } else {
-            this.ball.vx *= -0.8; this.ball.x = this.cW - 20;
-          }
+          if (this.ball.y > gy - gh && this.ball.y < gy + gh) { this.myGoals++; this.goal("blue"); }
+          else { this.ball.vx *= -0.8; this.ball.x = this.cW - 20; }
         }
       }
 
@@ -480,7 +467,7 @@
         let best = null, bd = 1e9;
         this.players.forEach(p => {
           const d = dist(p.x, p.y, this.ball.x, this.ball.y);
-          if (d < 20 && d < bd) { bd = d; best = p; }
+          if (d < 22 && d < bd) { bd = d; best = p; }
         });
         if (best) {
           owner = best;
@@ -492,7 +479,6 @@
       }
       this.ball.owner = owner;
 
-      // Carga de tiro
       if (this.charging) this.charge = Math.min(1, this.charge + dt * 1.5);
     }
 
@@ -500,15 +486,14 @@
       if (this.state !== "playing" || this.ball.owner !== this.active) return;
       this.ball.owner = null;
       const mates = this.players.filter(p => p.team === "blue" && !p.keeper && p !== this.active);
-      let tgt = mates[0];
-      let best = 1e9;
-      mates.forEach(m => {
-        const d = dist(this.active.x, this.active.y, m.x, m.y);
-        if (d < best) { best = d; tgt = m; }
-      });
+      let tgt = mates[0], best = 1e9;
+      mates.forEach(m => { const d = dist(this.active.x, this.active.y, m.x, m.y); if (d < best) { best = d; tgt = m; } });
+      // Pasar hacia adelante si es posible
+      const fwd = mates.find(m => m.x > this.active.x && dist(this.active.x, this.active.y, m.x, m.y) < 260);
+      if (fwd) tgt = fwd;
       const ang = Math.atan2(tgt.y - this.active.y, tgt.x - this.active.x);
-      this.ball.vx = Math.cos(ang) * 16;
-      this.ball.vy = Math.sin(ang) * 16;
+      this.ball.vx = Math.cos(ang) * 17;
+      this.ball.vy = Math.sin(ang) * 17;
       this.audio.pass();
       this.spawnParts(this.active.x, this.active.y, "#ffe871", 8);
     }
@@ -522,9 +507,10 @@
       if (!this.charging) return;
       this.charging = false;
       this.ball.owner = null;
-      const targetY = this.cH / 2 + rand(-60, 60);
+      const aimY = this.stick.active ? (this.stick.y * 120) : rand(-60, 60);
+      const targetY = this.cH / 2 + aimY;
       const ang = Math.atan2(targetY - this.active.y, this.cW - this.active.x);
-      const power = 16 + this.charge * 14;
+      const power = 16 + this.charge * 16;
       this.ball.vx = Math.cos(ang) * power;
       this.ball.vy = Math.sin(ang) * power;
       this.charge = 0;
@@ -537,37 +523,25 @@
       this.state = "goal";
       this.audio.goal();
       this.shake = 20;
-      const title = team === "blue" ? `¡GOL DE ${this.myNftName.toUpperCase()}!` : `¡GOL DE ${this.opp.n.toUpperCase()}!`;
-      this.showMsg(title, `${this.myGoals} - ${this.riGoals}`);
+      const title = team === "blue" ? `${t('goal')} ${this.myNftName.toUpperCase()}` : `${t('goal')} ${this.opp.n.toUpperCase()}`;
+      this.showMsg(title, `${t('score')}: ${this.myGoals} - ${this.riGoals}`);
       this.spawnParts(team === "blue" ? this.cW - 30 : 30, this.cH / 2, team === "blue" ? "#3fbfff" : "#ff4545", 40);
-      setTimeout(() => {
-        this.state = "playing";
-        this.kickOff(team === "blue" ? "red" : "blue");
-      }, 2200);
+      setTimeout(() => { this.state = "playing"; this.kickOff(team === "blue" ? "red" : "blue"); }, 2200);
     }
 
-    showMsg(text, sub) {
-      this.msg = { text, sub, timer: 2.2 };
-    }
+    showMsg(text, sub) { this.msg = { text, sub, timer: 2.2 }; }
 
     updateFx(dt) {
       this.shake = Math.max(0, this.shake - dt * 20);
       this.msg.timer = Math.max(0, this.msg.timer - dt);
-      for (let i = 0; i < this.parts.length; i++) {
-        const p = this.parts[i];
-        p.x += p.vx; p.y += p.vy; p.life -= dt;
-      }
-      let w = 0;
-      for (let j = 0; j < this.parts.length; j++) {
-        if (this.parts[j].life > 0) this.parts[w++] = this.parts[j];
-      }
+      for (let i = 0; i < this.parts.length; i++) { const p = this.parts[i]; p.x += p.vx; p.y += p.vy; p.life -= dt; }
+      let w = 0; for (let j = 0; j < this.parts.length; j++) { if (this.parts[j].life > 0) this.parts[w++] = this.parts[j]; }
       this.parts.length = w;
     }
 
     spawnParts(x, y, col, n) {
       for (let i = 0; i < n; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const s = 2 + Math.random() * 8;
+        const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 8;
         this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, col, r: 2 + Math.random() * 3, life: 1 });
       }
     }
@@ -580,12 +554,9 @@
 
       // Pasto
       const sw = 60;
-      for (let x = 0; x < this.cW; x += sw) {
-        ctx.fillStyle = (x / sw) % 2 === 0 ? "#185a2a" : "#1e6b32";
-        ctx.fillRect(x, 0, sw, this.cH);
-      }
+      for (let x = 0; x < this.cW; x += sw) { ctx.fillStyle = (x / sw) % 2 === 0 ? "#185a2a" : "#1e6b32"; ctx.fillRect(x, 0, sw, this.cH); }
 
-      // Líneas de campo
+      // Líneas
       ctx.strokeStyle = "rgba(255,255,255,0.85)"; ctx.lineWidth = 3;
       ctx.strokeRect(12, 12, this.cW - 24, this.cH - 24);
       ctx.beginPath(); ctx.moveTo(this.cW / 2, 12); ctx.lineTo(this.cW / 2, this.cH - 12); ctx.stroke();
@@ -602,20 +573,26 @@
       this.drawGoal(12, this.cH / 2, true);
       this.drawGoal(this.cW - 12, this.cH / 2, false);
 
-      // Jugadores (orden por profundidad)
+      // Jugadores
       const ents = [...this.players].sort((a, b) => a.y - b.y);
       ents.forEach(p => this.drawPlayer(p));
 
       // Balón
       this.drawBall();
 
+      // Indicador de carga de tiro
+      if (this.charging && this.active) {
+        ctx.save(); ctx.translate(this.active.x, this.active.y - 30);
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(-20, -4, 40, 8);
+        ctx.fillStyle = `rgb(${255 - this.charge * 255}, ${this.charge * 255}, 0)`;
+        ctx.fillRect(-20, -4, 40 * this.charge, 8);
+        ctx.restore();
+      }
+
       // Partículas
       ctx.globalAlpha = 1;
-      this.parts.forEach(p => {
-        ctx.fillStyle = p.col;
-        ctx.globalAlpha = Math.max(0, p.life);
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
-      });
+      this.parts.forEach(p => { ctx.fillStyle = p.col; ctx.globalAlpha = Math.max(0, p.life); ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); });
       ctx.globalAlpha = 1;
 
       // Mensaje central
@@ -630,7 +607,6 @@
         ctx.font = "700 1rem 'Oswald',system-ui,sans-serif";
         ctx.fillText(this.msg.sub, this.cW / 2, this.cH / 2 + 18);
       }
-
       ctx.restore();
     }
 
@@ -706,20 +682,29 @@
 
     endMatch() {
       this.state = "ended";
+      this.matchCompleted = true;
       this.audio.whistle();
       const win = this.myGoals > this.riGoals;
       const draw = this.myGoals === this.riGoals;
-      const res = win ? "Victoria" : draw ? "Empate" : "Derrota";
-      const gems = this.isRecreational ? 0 : (win ? 25 : draw ? 5 : 0);
-      const pts = this.isRecreational ? 0 : (win ? 150 : draw ? 30 : 0);
-      const headline = win ? "🏆 ¡VICTORIA!" : draw ? "🤝 EMPATE" : "😔 DERROTA";
-      const sub = `Marcador: ${this.myGoals} - ${this.riGoals}` + (gems ? ` · 💎 +${gems}` : "");
+      const res = win ? t('win') : draw ? t('draw') : t('loss');
+      let gems = 0, pts = 0;
+      if (!this.isRecreational) {
+        gems = win ? 25 : draw ? 5 : 0;
+        pts = win ? 150 : draw ? 30 : 0;
+      }
+      const headline = win ? `🏆 ${t('win').toUpperCase()}` : draw ? `🤝 ${t('draw').toUpperCase()}` : `😔 ${t('loss').toUpperCase()}`;
+      let sub = `${t('score')}: ${this.myGoals} - ${this.riGoals}`;
+      if (gems > 0) sub += ` · 💎 +${gems}`;
+      else if (this.isRecreational) sub += ` · ${t('noWalletNoGems')}`;
+      else sub += ` · 0 💎`;
+
       this.endEl.style.display = "flex";
       this.endEl.innerHTML = `
         <h3 class="pes-end-title">${headline}</h3>
         <p class="pes-end-sub">${sub}</p>
+        ${gems > 0 ? `<div class="pes-gems-announce">+${gems} ${t('gems')}</div>` : ''}
         <div class="pes-end-score">${this.myGoals} - ${this.riGoals}</div>
-        <button class="pes-start-btn" id="pes-replay-btn" type="button">🔄 JUGAR DE NUEVO</button>
+        <button class="pes-start-btn" id="pes-replay-btn" type="button">🔄 ${t('playAgain')}</button>
       `;
       const replay = this.endEl.querySelector("#pes-replay-btn");
       if (replay) replay.addEventListener("pointerdown", (e) => { e.preventDefault(); this.resetGame(); });
@@ -731,13 +716,15 @@
       this.state = "pregame";
       this.pregameEl.style.display = "flex";
       this.myGoals = 0; this.riGoals = 0; this.points = 0;
+      this.staminaConsumed = false;
+      this.matchCompleted = false;
       this.renderPreGame();
     }
 
     emitResult(res, gems, pts) {
       const detail = {
         mode: this.mode, result: res, score: `${this.myGoals} - ${this.riGoals}`,
-        gemsDelta: gems, pointsDelta: pts, points: pts, wasPlayed: true,
+        gemsDelta: gems, pointsDelta: pts, points: pts, wasPlayed: this.matchCompleted,
         consumedPlayerId: this.selectedPlayerId
       };
       try {
@@ -748,6 +735,10 @@
     }
 
     destroyMatch() {
+      // Si abandonó y había consumido stamina, no hay recompensa
+      if (this.staminaConsumed && !this.matchCompleted && !this.isRecreational) {
+        if (typeof toast === "function") toast(t('matchAbandoned'), false);
+      }
       cancelAnimationFrame(this.raf);
       window.removeEventListener("keydown", this.onKeyDown);
       window.removeEventListener("keyup", this.onKeyUp);

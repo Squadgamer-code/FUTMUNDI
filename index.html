@@ -50,6 +50,139 @@ window.NFT_CONFIG = {
     'DT Argentina': { price: 2000, boost: '+65% Boost' },
   }
 };
+
+// === SISTEMA MULTI-IDIOMA ===
+window.FM_I18N = {
+  es: {
+    langName: 'Español', title: 'FUTMUNDI', sub: 'El juego de fútbol NFT más épico del mundo',
+    playArena: 'Jugar en el Estadio', playField: 'Jugar en la Cancha', market: 'Market', player: 'Futbolista', ranking: 'Ranking', train: 'Entrena.',
+    logros: 'Logros', goles: 'Goles', reclamos: 'Reclamos', nivel: 'Nivel', deposito: 'Depósito', torneo: 'Torneo', retiro: 'Retiro', referido: 'Referido',
+    achievements: 'Logros', goals: 'Goles', daily: 'Check-in', level: 'Nivel', deposit: 'Depósito', tournament: 'Torneo', withdrawal: 'Retiro', referrals: 'Referidos',
+    stadium: 'Gran Estadio Mundial (PvP)', field: 'FutCancha de Práctica (PvE)', selectPlayer: 'Selecciona tu Futbolista NFT', enterGame: 'Entrar a jugar con',
+    noNfts: 'No tienes NFTs. Ve a Market para reclamar a Neymar gratis.', playFree: 'puedes jugar gratis sin wallet', needWallet: 'requieren wallet TON y un NFT',
+    freeNeymar: 'Si no tienes NFT, el juego te regalará a Neymar para tu primera partida.',
+    pass: 'PASS', shot: 'SHOT', score: 'Marcador', start: '¡EMPIEZA EL PARTIDO!', half: 'Medio tiempo', goal: '¡GOL!',
+    win: 'Victoria', draw: 'Empate', loss: 'Derrota', youWon: 'Ganaste', gems: 'Gemas', playAgain: 'Jugar de nuevo',
+    gameLang: 'Idioma', selectLang: 'Selecciona idioma', close: 'Cerrar', noWalletNoGems: 'Modo recreativo: sin wallet no ganas gemas.',
+    matchCompleteGems: 'Completaste el partido. +{gems} 💎', matchAbandoned: 'Abandonaste. No se generan gemas.',
+    roiHidden: 'Rentabilidad', buy: 'Comprar', claim: 'Reclamar', claimed: 'Reclamado', stamina: 'Balones', durability: 'Durabilidad'
+  },
+  en: {
+    langName: 'English', title: 'FUTMUNDI', sub: 'The most epic NFT football game in the world',
+    playArena: 'Play in Stadium', playField: 'Play in Field', market: 'Market', player: 'Player', ranking: 'Ranking', train: 'Train',
+    logros: 'Achievements', goles: 'Goals', reclamos: 'Claims', nivel: 'Level', deposito: 'Deposit', torneo: 'Tournament', retiro: 'Withdraw', referido: 'Referral',
+    achievements: 'Achievements', goals: 'Goals', daily: 'Daily Check-in', level: 'Level', deposit: 'Deposit', tournament: 'Tournament', withdrawal: 'Withdrawal', referrals: 'Referrals',
+    stadium: 'World Stadium (PvP)', field: 'Practice Field (PvE)', selectPlayer: 'Select your NFT Player', enterGame: 'Enter to play with',
+    noNfts: 'You have no NFTs. Go to Market to claim Neymar for free.', playFree: 'you can play for free without wallet', needWallet: 'require TON wallet and an NFT',
+    freeNeymar: 'If you have no NFT, the game will gift you Neymar for your first match.',
+    pass: 'PASS', shot: 'SHOT', score: 'Score', start: 'MATCH START!', half: 'HALF TIME', goal: 'GOAL!',
+    win: 'Victory', draw: 'Draw', loss: 'Defeat', youWon: 'You won', gems: 'Gems', playAgain: 'Play again',
+    gameLang: 'Language', selectLang: 'Select language', close: 'Close', noWalletNoGems: 'Recreational mode: no wallet, no gems earned.',
+    matchCompleteGems: 'Match completed. +{gems} 💎', matchAbandoned: 'You abandoned. No gems earned.',
+    roiHidden: 'Yield', buy: 'Buy', claim: 'Claim', claimed: 'Claimed', stamina: 'Stamina', durability: 'Durability'
+  },
+  pt: {
+    langName: 'Português', title: 'FUTMUNDI', sub: 'O jogo de futebol NFT mais épico do mundo',
+    playArena: 'Jogar no Estádio', playField: 'Jogar no Campo', market: 'Mercado', player: 'Jogador', ranking: 'Ranking', train: 'Treinar',
+    logros: 'Conquistas', goles: 'Gols', reclamos: 'Reivindicar', nivel: 'Nível', deposito: 'Depósito', torneo: 'Torneio', retiro: 'Saque', referido: 'Indicação',
+    achievements: 'Conquistas', goals: 'Gols', daily: 'Check-in diário', level: 'Nível', deposit: 'Depósito', tournament: 'Torneio', withdrawal: 'Saque', referrals: 'Indicações',
+    stadium: 'Grande Estádio Mundial (PvP)', field: 'Campo de Prática (PvE)', selectPlayer: 'Selecione seu jogador NFT', enterGame: 'Entrar para jogar com',
+    noNfts: 'Você não tem NFTs. Vá ao Mercado para resgatar Neymar de graça.', playFree: 'pode jogar de graça sem carteira', needWallet: 'requerem carteira TON e um NFT',
+    freeNeymar: 'Se não tiver NFT, o jogo dará Neymar de graça para sua primeira partida.',
+    pass: 'PASSE', shot: 'CHUTE', score: 'Placar', start: 'COMEÇA O JOGO!', half: 'INTERVALO', goal: 'GOL!',
+    win: 'Vitória', draw: 'Empate', loss: 'Derrota', youWon: 'Você ganhou', gems: 'Gemas', playAgain: 'Jogar novamente',
+    gameLang: 'Idioma', selectLang: 'Selecione o idioma', close: 'Fechar', noWalletNoGems: 'Modo recreativo: sem carteira, sem gemas.',
+    matchCompleteGems: 'Partida completa. +{gems} 💎', matchAbandoned: 'Você abandonou. Sem gemas.',
+    roiHidden: 'Rentabilidade', buy: 'Comprar', claim: 'Resgatar', claimed: 'Resgatado', stamina: 'Energia', durability: 'Durabilidade'
+  },
+  fil: {
+    langName: 'Filipino', title: 'FUTMUNDI', sub: 'Pinaka-epikong laro ng football NFT sa mundo',
+    playArena: 'Maglaro sa Stadium', playField: 'Maglaro sa Field', market: 'Market', player: 'Mangangalaro', ranking: 'Ranking', train: 'Magsanay',
+    logros: 'Mga Tagumpay', goles: 'Mga Gol', reclamos: 'Mga Claim', nivel: 'Antas', deposito: 'Deposito', torneo: 'Paligsahan', retiro: 'Pag-withdraw', referido: 'Referral',
+    achievements: 'Mga Tagumpay', goals: 'Mga Gol', daily: 'Daily Check-in', level: 'Antas', deposit: 'Deposito', tournament: 'Paligsahan', withdrawal: 'Pag-withdraw', referrals: 'Mga Referral',
+    stadium: 'Dakilang Pandaigdigang Stadium (PvP)', field: 'Field ng Pagsasanay (PvE)', selectPlayer: 'Piliin ang iyong NFT Player', enterGame: 'Pumasok para maglaro kasama si',
+    noNfts: 'Wala kang NFTs. Pumunta sa Market para kunin si Neymar nang libre.', playFree: 'pwedeng maglaro nang libre nang walang wallet', needWallet: 'nangangailangan ng TON wallet at NFT',
+    freeNeymar: 'Kung wala kang NFT, iregalo sa iyo ng laro si Neymar para sa unang laban.',
+    pass: 'PASA', shot: 'TIRA', score: 'Score', start: 'NAGSIMULA NA ANG LARO!', half: 'HALF TIME', goal: 'GOL!',
+    win: 'Panalo', draw: 'Tabla', loss: 'Talo', youWon: 'Nanalo ka', gems: 'Gems', playAgain: 'Maglaro muli',
+    gameLang: 'Wika', selectLang: 'Pumili ng wika', close: 'Isara', noWalletNoGems: 'Recreational mode: walang wallet, walang gems.',
+    matchCompleteGems: 'Tapos ang laro. +{gems} 💎', matchAbandoned: 'Tumigil ka. Walang gems.',
+    roiHidden: 'Kita', buy: 'Bumili', claim: 'Kunin', claimed: 'Nakuha na', stamina: 'Stamina', durability: 'Durability'
+  },
+  ru: {
+    langName: 'Русский', title: 'FUTMUNDI', sub: 'Самая эпическая футбольная NFT-игра в мире',
+    playArena: 'Играть на стадионе', playField: 'Играть на поле', market: 'Рынок', player: 'Игрок', ranking: 'Рейтинг', train: 'Тренировка',
+    logros: 'Достижения', goles: 'Голы', reclamos: 'Награды', nivel: 'Уровень', deposito: 'Депозит', torneo: 'Турнир', retiro: 'Вывод', referido: 'Реферал',
+    achievements: 'Достижения', goals: 'Голы', daily: 'Ежедневный вход', level: 'Уровень', deposit: 'Депозит', tournament: 'Турнир', withdrawal: 'Вывод', referrals: 'Рефералы',
+    stadium: 'Мировой стадион (PvP)', field: 'Поле для практики (PvE)', selectPlayer: 'Выберите своего NFT-игрока', enterGame: 'Войти и играть с',
+    noNfts: 'У вас нет NFT. Зайдите на рынок, чтобы получить Неймара бесплатно.', playFree: 'можно играть бесплатно без кошелька', needWallet: 'требуют кошелек TON и NFT',
+    freeNeymar: 'Если у вас нет NFT, игра подарит вам Неймара для первого матча.',
+    pass: 'ПАС', shot: 'УДАР', score: 'Счет', start: 'МАТЧ НАЧАЛСЯ!', half: 'ПЕРЕРЫВ', goal: 'ГОЛ!',
+    win: 'Победа', draw: 'Ничья', loss: 'Поражение', youWon: 'Вы победили', gems: 'Гемы', playAgain: 'Играть снова',
+    gameLang: 'Язык', selectLang: 'Выберите язык', close: 'Закрыть', noWalletNoGems: 'Режим развлечения: без кошелька гемы не начисляются.',
+    matchCompleteGems: 'Матч завершен. +{gems} 💎', matchAbandoned: 'Вы сдались. Гемы не начислены.',
+    roiHidden: 'Доходность', buy: 'Купить', claim: 'Получить', claimed: 'Получено', stamina: 'Выносливость', durability: 'Прочность'
+  },
+  zh: {
+    langName: '中文', title: 'FUTMUNDI', sub: '世界上最史诗的 NFT 足球游戏',
+    playArena: '在体育场玩', playField: '在球场玩', market: '市场', player: '球员', ranking: '排名', train: '训练',
+    logros: '成就', goles: '进球', reclamos: '领取', nivel: '等级', deposito: '存款', torneo: '锦标赛', retiro: '提款', referido: '推荐',
+    achievements: '成就', goals: '进球', daily: '每日签到', level: '等级', deposit: '存款', tournament: '锦标赛', withdrawal: '提款', referrals: '推荐',
+    stadium: '世界大体育场 (PvP)', field: '练习场 (PvE)', selectPlayer: '选择你的 NFT 球员', enterGame: '进入比赛',
+    noNfts: '你没有 NFT。去市场免费领取内马尔。', playFree: '无需钱包即可免费玩', needWallet: '需要 TON 钱包和 NFT',
+    freeNeymar: '如果你没有 NFT，游戏将赠送内马尔给你首场比赛。',
+    pass: '传球', shot: '射门', score: '比分', start: '比赛开始!', half: '中场休息', goal: '进球!',
+    win: '胜利', draw: '平局', loss: '失败', youWon: '你赢了', gems: '宝石', playAgain: '再玩一次',
+    gameLang: '语言', selectLang: '选择语言', close: '关闭', noWalletNoGems: '娱乐模式：没有钱包，不获得宝石。',
+    matchCompleteGems: '比赛完成。+{gems} 💎', matchAbandoned: '你退出了。没有宝石。',
+    roiHidden: '收益', buy: '购买', claim: '领取', claimed: '已领取', stamina: '体力', durability: '耐久度'
+  },
+  ja: {
+    langName: '日本語', title: 'FUTMUNDI', sub: '世界で最もエピックなNFTサッカーゲーム',
+    playArena: 'スタジアムでプレイ', playField: 'フィールドでプレイ', market: 'マーケット', player: '選手', ranking: 'ランキング', train: 'トレーニング',
+    logros: '実績', goles: 'ゴール', reclamos: '受け取り', nivel: 'レベル', deposito: '入金', torneo: 'トーナメント', retiro: '出金', referido: '紹介',
+    achievements: '実績', goals: 'ゴール', daily: 'デイリーチェックイン', level: 'レベル', deposit: '入金', tournament: 'トーナメント', withdrawal: '出金', referrals: '紹介',
+    stadium: '世界スタジアム (PvP)', field: '練習フィールド (PvE)', selectPlayer: 'NFT選手を選択', enterGame: 'プレイ開始',
+    noNfts: 'NFTを持っていません。マーケットでネイマールを無料で獲得してください。', playFree: 'ウォレットなしで無料プレイ可能', needWallet: 'TONウォレットとNFTが必要',
+    freeNeymar: 'NFTがない場合、ゲームが初戦用にネイマールをプレゼントします。',
+    pass: 'パス', shot: 'シュート', score: 'スコア', start: '試合開始!', half: 'ハーフタイム', goal: 'ゴール!',
+    win: '勝利', draw: '引き分け', loss: '敗北', youWon: '勝ちました', gems: 'ジェム', playAgain: 'もう一度プレイ',
+    gameLang: '言語', selectLang: '言語を選択', close: '閉じる', noWalletNoGems: 'レクリエーションモード：ウォレットなしではジェムを獲得できません。',
+    matchCompleteGems: '試合完了。+{gems} 💎', matchAbandoned: '退出しました。ジェムは獲得できません。',
+    roiHidden: '収益性', buy: '購入', claim: '受け取り', claimed: '受け取り済み', stamina: 'スタミナ', durability: '耐久性'
+  },
+  ko: {
+    langName: '한국어', title: 'FUTMUNDI', sub: '세상에서 가장 에픽한 NFT 축구 게임',
+    playArena: '경기장에서 플레이', playField: '필드에서 플레이', market: '마켓', player: '선수', ranking: '랭킹', train: '훈련',
+    logros: '업적', goles: '골', reclamos: '수령', nivel: '레벨', deposito: '입금', torneo: '토너먼트', retiro: '출금', referido: '추천',
+    achievements: '업적', goals: '골', daily: '데일리 체크인', level: '레벨', deposit: '입금', tournament: '토너먼트', withdrawal: '출금', referrals: '추천',
+    stadium: '월드 스타디움 (PvP)', field: '연습 필드 (PvE)', selectPlayer: 'NFT 선수 선택', enterGame: '플레이 시작',
+    noNfts: 'NFT가 없습니다. 마켓에서 네이마르를 무료로 받으세요.', playFree: '지갑 없이 무료 플레이 가능', needWallet: 'TON 지갑과 NFT 필요',
+    freeNeymar: 'NFT가 없으면 게임이 첫 경기용 네이마르를 선물합니다.',
+    pass: '패스', shot: '슛', score: '스코어', start: '경기 시작!', half: '하프타임', goal: '골!',
+    win: '승리', draw: '무승부', loss: '패배', youWon: '승리했습니다', gems: '젬', playAgain: '다시 플레이',
+    gameLang: '언어', selectLang: '언어 선택', close: '닫기', noWalletNoGems: '레크리에이션 모드: 지갑 없이는 젬을 획득할 수 없습니다.',
+    matchCompleteGems: '경기 완료. +{gems} 💎', matchAbandoned: '게임을 종료했습니다. 젬 없음.',
+    roiHidden: '수익성', buy: '구매', claim: '수령', claimed: '수령 완료', stamina: '스태미나', durability: '내구도'
+  }
+};
+window.FM_LANG = localStorage.getItem('fm_lang') || 'es';
+window.t = function(key, replacements) {
+  const dict = window.FM_I18N[window.FM_LANG] || window.FM_I18N.es;
+  let text = dict[key] || window.FM_I18N.es[key] || key;
+  if (replacements) {
+    Object.entries(replacements).forEach(([k, v]) => {
+      text = text.replace(new RegExp('\\{' + k + '\\}', 'g'), v);
+    });
+  }
+  return text;
+};
+window.setLanguage = function(lang) {
+  if (!window.FM_I18N[lang]) return;
+  window.FM_LANG = lang;
+  localStorage.setItem('fm_lang', lang);
+  window.location.reload();
+};
 </script>
 <style>
 :root{
@@ -907,7 +1040,10 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
     <span>🏆 4.0</span>
     <span>OVR: 0</span>
   </div>
-  <button class="close" aria-label="Cerrar">×</button>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <button id="fm-lang-btn" class="chip" type="button" style="cursor:pointer;user-select:none;">🌐 <span id="fm-lang-label">ES</span></button>
+    <button class="close" aria-label="Cerrar">×</button>
+  </div>
 </header>
 <div class="chips">
   <span class="chip">👥 Referidos</span>
@@ -917,8 +1053,8 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 </div>
 
 <main>
-  <h1 class="title">FUTMUNDI</h1>
-  <p class="sub">El juego de fútbol NFT más épico del mundo</p>
+  <h1 class="title" data-i18n="title">FUTMUNDI</h1>
+  <p class="sub" data-i18n="sub">El juego de fútbol NFT más épico del mundo</p>
 
   <div class="stage">
     <!-- Riel izquierdo -->
@@ -935,7 +1071,7 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="M8 21h8"/>
           </svg>
         </span>
-        <span class="lbl">Logros</span>
+        <span class="lbl" data-i18n="logros">Logros</span>
       </button>
 
       <!-- Goles: balón con red -->
@@ -947,7 +1083,7 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="M12 6.5V3.5M8.2 9.3 5.4 7.8M15.8 9.3l2.8-1.5M9.7 13.8 8 18M14.3 13.8 16 18"/>
           </svg>
         </span>
-        <span class="lbl">Goles</span>
+        <span class="lbl" data-i18n="goles">Goles</span>
       </button>
 
       <!-- Reclamos: regalo con lazo + badge numérico -->
@@ -962,7 +1098,7 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="M12 7.5c1.2-2.5 2.6-4 4.5-4a2.2 2.2 0 0 1 0 4Z"/>
           </svg>
         </span>
-        <span class="lbl">Reclamos</span>
+        <span class="lbl" data-i18n="reclamos">Reclamos</span>
       </button>
 
       <!-- Nivel: estrella con galón -->
@@ -973,7 +1109,7 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="M9.5 11.5 12 13l2.5-1.5"/>
           </svg>
         </span>
-        <span class="lbl">Nivel</span>
+        <span class="lbl" data-i18n="nivel">Nivel</span>
       </button>
     </aside>
 
@@ -996,7 +1132,7 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="m9.5 6 2.5 2.5L14.5 6"/>
           </svg>
         </span>
-        <span class="lbl">Depósito</span>
+        <span class="lbl" data-i18n="deposito">Depósito</span>
       </button>
 
       <!-- Torneo: copa con cintas -->
@@ -1012,7 +1148,7 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="M9 18.5 8 21M15 18.5 16 21"/>
           </svg>
         </span>
-        <span class="lbl">Torneo</span>
+        <span class="lbl" data-i18n="torneo">Torneo</span>
       </button>
 
       <!-- Retiro: cartera con flecha saliendo -->
@@ -1026,7 +1162,7 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="m9.5 5 2.5-2.5L14.5 5"/>
           </svg>
         </span>
-        <span class="lbl">Retiro</span>
+        <span class="lbl" data-i18n="retiro">Retiro</span>
       </button>
 
       <!-- Referido: 2 personas + flecha de invitación + badge -->
@@ -1041,50 +1177,50 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
             <path d="M19 4.5v3M17.5 6h3"/>
           </svg>
         </span>
-        <span class="lbl">Referido</span>
+        <span class="lbl" data-i18n="referido">Referido</span>
       </button>
     </aside>
   </div>
 
   <div class="actions">
-    <button class="btn-play" type="button" aria-label="Jugar en el Estadio" data-modal="estadio">
+    <button class="btn-play" type="button" aria-label="Jugar en el Estadio" data-i18n-aria="playArena" data-modal="estadio">
       <span class="ill" aria-hidden="true">
         <img src="imagen/estadio.jpg" alt="" loading="lazy" width="512" height="512" />
       </span>
     </button>
-    <button class="btn-play" type="button" aria-label="Jugar en la Cancha" data-modal="cancha">
+    <button class="btn-play" type="button" aria-label="Jugar en la Cancha" data-i18n-aria="playField" data-modal="cancha">
       <span class="ill" aria-hidden="true">
         <img src="imagen/cancha.jpg" alt="" loading="lazy" width="512" height="512" />
       </span>
     </button>
   </div>
 
-  <div id="fm-game-requirements" style="width:100%; max-width:420px; margin:10px auto 0; padding:8px 12px; border-radius:12px; background:rgba(57,255,136,.08); border:1px solid rgba(57,255,136,.25); color:var(--fm-cyan); font-size:11px; letter-spacing:.08em; text-align:center; line-height:1.4;">
+  <div id="fm-game-requirements" data-i18n="gameRequirements" style="width:100%; max-width:420px; margin:10px auto 0; padding:8px 12px; border-radius:12px; background:rgba(57,255,136,.08); border:1px solid rgba(57,255,136,.25); color:var(--fm-cyan); font-size:11px; letter-spacing:.08em; text-align:center; line-height:1.4;">
     ⚽ <b>CANCHA:</b> puedes jugar gratis sin wallet. <b>ESTADIO / TORNEO:</b> requieren wallet TON y un NFT. Si no tienes NFT, el juego te regalará a Neymar para tu primera partida.
   </div>
 
   <!-- BOTÓN OFICIAL DE APUESTAS SPORTS (USDT TON) -->
   <div style="width: 100%; max-width: 420px; margin-top: 18px; padding: 0 8px;">
-    <button data-open-sports-bet="true" type="button" style="width: 100%; padding: 12px 20px; border-radius: 18px; background: linear-gradient(180deg, var(--fm-surface), #050a07); border: 1px solid var(--fm-cyan); color: var(--fm-text); font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 4px 15px rgba(57,255,136,0.18); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease;">
+    <button data-open-sports-bet="true" data-i18n="sportsBet" type="button" style="width: 100%; padding: 12px 20px; border-radius: 18px; background: linear-gradient(180deg, var(--fm-surface), #050a07); border: 1px solid var(--fm-cyan); color: var(--fm-text); font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 4px 15px rgba(57,255,136,0.18); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease;">
       <span style="font-size: 22px;">🎲</span> APUESTAS SPORTS MUNDIAL (USDT TON)
     </button>
   </div>
 </main>
 
 <nav class="tabbar">
-  <button class="tab active" type="button" data-modal="market">
+  <button class="tab active" type="button" data-modal="market" data-i18n="market">
     <svg viewBox="0 0 24 24"><path d="M3 7h18l-2 12H5L3 7Z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
     Market
   </button>
-  <button class="tab" type="button" data-modal="futbolista">
+  <button class="tab" type="button" data-modal="futbolista" data-i18n="player">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 3 2.5 4.5L19 9l-3 4 1 5-5-2.5L7 18l1-5-3-4 4.5-1.5L12 3Z"/></svg>
     Futbolista
   </button>
-  <button class="tab" type="button" data-modal="ranking-tab">
+  <button class="tab" type="button" data-modal="ranking-tab" data-i18n="ranking">
     <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V11"/><path d="M12 21V5"/><path d="M18 21v-7"/></svg>
     Ranking
   </button>
-  <button class="tab" type="button" data-modal="entrena">
+  <button class="tab" type="button" data-modal="entrena" data-i18n="train">
     <svg viewBox="0 0 24 24"><path d="M3 12h2M19 12h2M6 8v8M18 8v8M9 6v12M15 6v12"/></svg>
     Entrena.
   </button>
@@ -1097,8 +1233,22 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 
 <script>
 const TEMPLATES = {
+  language: {
+    title: t('gameLang'),
+    body: `
+      <div class="m-section">${t('selectLang')}</div>
+      <div class="shop-grid" style="grid-template-columns:1fr 1fr;max-height:320px;">
+        ${Object.entries(window.FM_I18N).map(([code, dict]) => `
+          <button class="shop-card" data-set-lang="${code}" type="button" style="cursor:pointer;text-align:center;padding:14px 8px;">
+            <div class="nm">${dict.langName}</div>
+            <div class="tg" style="text-transform:uppercase;letter-spacing:.1em;">${code}</div>
+          </button>
+        `).join('')}
+      </div>
+      <button class="m-cta" data-close-lang type="button">${t('close')}</button>`
+  },
   logros: {
-    title: "Logros",
+    title: t("logros"),
     body: `
       <div class="m-broadcast-bar"><span class="live">PROGRESO</span><span class="sep"></span><span>5 💎 cada 1000 pts</span></div>
       <div class="m-hero">
@@ -1133,7 +1283,7 @@ const TEMPLATES = {
       <button class="m-cta">Reclamar logros listos</button>`
   },
   goles: {
-    title: "Recompensas por Goles",
+    title: t("goles"),
     body: `
       <div class="m-broadcast-bar"><span class="live">GOLES</span><span class="sep"></span><span>Gemas Brown</span></div>
       <div class="m-hero">
@@ -1156,7 +1306,7 @@ const TEMPLATES = {
       <button class="m-cta">Reclamar disponibles</button>`
   },
   reclamos: {
-    title: "Check-in Oficial (00:00 UTC)",
+    title: t("reclamos"),
     body: `
       <div class="m-broadcast-bar"><span class="live">00:00 UTC</span><span class="sep"></span><span>Temporización Blockchain TON</span></div>
       <div class="m-hero" style="background:#070d09; border-color:#ffe871;">
@@ -1189,7 +1339,7 @@ const TEMPLATES = {
       <button class="m-cta" id="daily-claim-action-btn" type="button" style="font-size:15px; box-shadow:0 6px 25px rgba(57,255,136,0.4);">✔ HACER CHECK-IN & RECLAMAR HOY</button>`
   },
   nivel: {
-    title: "Nivel del NFT",
+    title: t("nivel"),
     body: `
       <div class="m-broadcast-bar"><span class="live">NIVEL</span><span class="sep"></span><span>Progresión de tu jugador</span></div>
       <div class="m-hero">
@@ -1215,7 +1365,7 @@ const TEMPLATES = {
       </div>`
   },
   ranking: {
-    title: "Ranking",
+    title: t("ranking"),
     body: `
       <div class="m-broadcast-bar"><span class="live">RANKINGS</span><span class="sep"></span><span>Mundial · S1</span></div>
       <div class="m-hero">
@@ -1231,7 +1381,7 @@ const TEMPLATES = {
       </div>`
   },
   retiro: {
-    title: "Retiro",
+    title: t("retiro"),
     body: `
       <div class="m-broadcast-bar"><span class="live">WITHDRAW</span><span class="sep"></span><span>Red TON · USDT</span></div>
       <div class="m-hero"><h3>Saldo disponible</h3><div class="m-bignum" id="r-balance">3200<small>💎</small></div></div>
@@ -1246,7 +1396,7 @@ const TEMPLATES = {
       <button class="m-cta" id="r-submit">Solicitar retiro</button>`
   },
   deposito: {
-    title: "Depósito",
+    title: t("deposito"),
     body: `
       <div class="m-broadcast-bar"><span class="live">DEPOSIT</span><span class="sep"></span><span>USDT · Red TON</span></div>
       <div class="m-hero"><div class="m-trophy">💎</div><h3>Compra Gemas</h3><div class="m-bignum">USDT<small>TON</small></div></div>
@@ -1272,7 +1422,7 @@ const TEMPLATES = {
       </div>`
   },
   torneo: {
-    title: "Torneo",
+    title: t("torneo"),
     body: `
       <div class="m-broadcast-bar"><span class="live">TOURNAMENT</span><span class="sep"></span><span>10 USDT · Red TON</span></div>
       <div class="m-hero">
@@ -1308,7 +1458,7 @@ const TEMPLATES = {
       <div id="t-msg" class="m-warn" style="display:none;margin-top:10px"></div>`
   },
   referido: {
-    title: "Referidos",
+    title: t("referido"),
     body: `
       <div class="m-broadcast-bar"><span class="live">REFERIDOS</span><span class="sep"></span><span>Gana 10% por amigo</span></div>
       <div class="m-hero">
@@ -1334,7 +1484,7 @@ const TEMPLATES = {
       </div>`
   },
   estadio: {
-    title: "Gran Estadio Mundial (PvP)",
+    title: t("stadium"),
     body: `
       <div class="m-broadcast-bar"><span class="live">COMPETICIÓN 1v1</span><span class="sep"></span><span>Enfrentamiento Físico en Vivo</span></div>
       <div class="stadium3d" style="margin-bottom:16px;">
@@ -1351,7 +1501,7 @@ const TEMPLATES = {
       </button>`
   },
   cancha: {
-    title: "FutCancha de Práctica (PvE)",
+    title: t("field"),
     body: `
       <div class="m-broadcast-bar"><span class="live">MODO 1 JUGADOR vs IA</span><span class="sep"></span><span>elige tu nivel</span></div>
       <div style="background:#121e2b; border:1px solid #1e2d3d; padding:12px; border-radius:14px; margin-bottom:14px; color:#a0b4c8; font-size:0.85rem; text-align:left; line-height:1.4;">
@@ -1385,7 +1535,7 @@ const TEMPLATES = {
       </button>`
   },
   market: {
-    title: "Market",
+    title: t("market"),
     body: `
       <div class="m-tabs" data-tabs="market">
         <button class="m-tab active" data-tab="m-players">Jugadores</button>
@@ -1398,19 +1548,19 @@ const TEMPLATES = {
           Cada NFT: 4 balones de estamina · 100% durabilidad · −0.8% por balón · <b>Máx 20 NFT por usuario</b>
         </div>
         <div class="shop-grid">
-  <div class="shop-card free"><div class="av">🇧🇷</div><div class="nm">Neymar</div><div class="tg" style="color:#39ff88; font-weight:bold;">3.2 💎/Día · ROI 50 Días</div><div class="free-tag">GRATIS</div></div>
-  <div class="shop-card"><div class="av">🇨🇴</div><div class="nm">James Rodríguez</div><div class="tg" style="color:#ffe871; font-weight:bold;">8 💎/Día · ROI 40 Días</div><div class="pr">320<small>💎</small></div></div>
-  <div class="shop-card"><div class="av">🇨🇱</div><div class="nm">Alexis Sánchez</div><div class="tg" style="color:#ffe871; font-weight:bold;">17 💎/Día · ROI 36 Días</div><div class="pr">640<small>💎</small></div></div>
-  <div class="shop-card"><div class="av">🏴</div><div class="nm">Harry Kane</div><div class="tg" style="color:#ffe871; font-weight:bold;">28 💎/Día · ROI 34 Días</div><div class="pr">960<small>💎</small></div></div>
-  <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Pedri</div><div class="tg" style="color:#ffe871; font-weight:bold;">39 💎/Día · ROI 33 Días</div><div class="pr">1.280<small>💎</small></div></div>
-  <div class="shop-card"><div class="av">🇧🇷</div><div class="nm">Vinicius Jr</div><div class="tg" style="color:#ffe871; font-weight:bold;">52 💎/Día · ROI 31 Días</div><div class="pr">1.600<small>💎</small></div></div>
-  <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Rodri</div><div class="tg" style="color:#ffe871; font-weight:bold;">70 💎/Día · ROI 27.5 Días</div><div class="pr">1.920<small>💎</small></div></div>
-  <div class="shop-card"><div class="av">🇫🇷</div><div class="nm">Mbappé</div><div class="tg" style="color:#ffe871; font-weight:bold;">77 💎/Día · ROI 27 Días</div><div class="pr">2.080<small>💎</small></div></div>
-  <div class="shop-card"><div class="av">🇳🇴</div><div class="nm">Haaland</div><div class="tg" style="color:#ffe871; font-weight:bold;">89 💎/Día · ROI 25 Días</div><div class="pr">2.240<small>💎</small></div></div>
-  <div class="shop-card elite"><div class="av">🇪🇸</div><div class="nm">Lamine Yamal</div><div class="tg" style="color:#39ff88; font-weight:bold;">190 💎/Día · ROI 21 Días</div><div class="pr">4.000<small>💎</small></div></div>
-  <div class="shop-card elite"><div class="av">🏴</div><div class="nm">Bellingham</div><div class="tg" style="color:#39ff88; font-weight:bold;">244 💎/Día · ROI 21 Días</div><div class="pr">5.120<small>💎</small></div></div>
-  <div class="shop-card elite"><div class="av">🇦🇷</div><div class="nm">Lionel Messi</div><div class="tg" style="color:#39ff88; font-weight:bold;">304 💎/Día · ROI 21 Días</div><div class="pr">6.400<small>💎</small></div></div>
-  <div class="shop-card elite"><div class="av">🇵🇹</div><div class="nm">Cristiano R.</div><div class="tg" style="color:#39ff88; font-weight:bold;">1,067 💎/Día · ROI 15 Días</div><div class="pr">16.000<small>💎</small></div></div>
+  <div class="shop-card free"><div class="av">🇧🇷</div><div class="nm">Neymar</div><div class="tg" style="color:#39ff88; font-weight:bold;">3.2 💎/Día</div><div class="free-tag">GRATIS</div></div>
+  <div class="shop-card"><div class="av">🇨🇴</div><div class="nm">James Rodríguez</div><div class="tg" style="color:#ffe871; font-weight:bold;">8 💎/Día</div><div class="pr">320<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇨🇱</div><div class="nm">Alexis Sánchez</div><div class="tg" style="color:#ffe871; font-weight:bold;">17 💎/Día</div><div class="pr">640<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🏴</div><div class="nm">Harry Kane</div><div class="tg" style="color:#ffe871; font-weight:bold;">28 💎/Día</div><div class="pr">960<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Pedri</div><div class="tg" style="color:#ffe871; font-weight:bold;">39 💎/Día</div><div class="pr">1.280<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇧🇷</div><div class="nm">Vinicius Jr</div><div class="tg" style="color:#ffe871; font-weight:bold;">52 💎/Día</div><div class="pr">1.600<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇪🇸</div><div class="nm">Rodri</div><div class="tg" style="color:#ffe871; font-weight:bold;">70 💎/Día</div><div class="pr">1.920<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇫🇷</div><div class="nm">Mbappé</div><div class="tg" style="color:#ffe871; font-weight:bold;">77 💎/Día</div><div class="pr">2.080<small>💎</small></div></div>
+  <div class="shop-card"><div class="av">🇳🇴</div><div class="nm">Haaland</div><div class="tg" style="color:#ffe871; font-weight:bold;">89 💎/Día</div><div class="pr">2.240<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🇪🇸</div><div class="nm">Lamine Yamal</div><div class="tg" style="color:#39ff88; font-weight:bold;">190 💎/Día</div><div class="pr">4.000<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🏴</div><div class="nm">Bellingham</div><div class="tg" style="color:#39ff88; font-weight:bold;">244 💎/Día</div><div class="pr">5.120<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🇦🇷</div><div class="nm">Lionel Messi</div><div class="tg" style="color:#39ff88; font-weight:bold;">304 💎/Día</div><div class="pr">6.400<small>💎</small></div></div>
+  <div class="shop-card elite"><div class="av">🇵🇹</div><div class="nm">Cristiano R.</div><div class="tg" style="color:#39ff88; font-weight:bold;">1,067 💎/Día</div><div class="pr">16.000<small>💎</small></div></div>
 </div>
       </div>
       <div class="m-panel" id="m-unif">
@@ -1434,7 +1584,7 @@ const TEMPLATES = {
       <button class="m-cta">Ir a la tienda completa</button>`
   },
   futbolista: {
-    title: "Tu Futbolista",
+    title: t("player"),
     body: `
       <div class="m-tabs" data-tabs="fut">
         <button class="m-tab active" data-tab="f-eq">Equipar</button>
@@ -1497,7 +1647,7 @@ const TEMPLATES = {
       </div>`
   },
   entrena: {
-    title: "Entrenamiento",
+    title: t("train"),
     body: `
       <div class="m-broadcast-bar"><span class="live">TRAINING</span><span class="sep"></span><span>USDT · Red TON</span></div>
       <div class="m-hero">
@@ -2350,6 +2500,16 @@ function toast(msg, ok){
 }
 
 function wireModal(name){
+  if(name === 'language'){
+    inner.querySelectorAll('[data-set-lang]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.dataset.setLang;
+        if(window.setLanguage) window.setLanguage(lang);
+      });
+    });
+    inner.querySelector('[data-close-lang]')?.addEventListener('click', closeModal);
+    return;
+  }
   if(name === 'referido'){
     const ensureLink = () => {
       const link = buildReferralLink();
@@ -2865,6 +3025,13 @@ document.querySelectorAll('[data-modal]').forEach(btn => {
   });
 });
 
+const langBtn = document.getElementById('fm-lang-btn');
+const langLabel = document.getElementById('fm-lang-label');
+if(langBtn){
+  if(langLabel) langLabel.textContent = (window.FM_LANG || 'es').toUpperCase();
+  langBtn.addEventListener('click', () => openModal('language'));
+}
+
 const appClose = document.querySelector('.close');
 if(appClose){
   appClose.addEventListener('click', () => {
@@ -2959,5 +3126,22 @@ if(heroImg){
 <script src="./futmundi-pes-gameboy.js"></script>
 <script src="./integration.js"></script>
 <script src="./futmundi-bet.js"></script>
+
+<script>
+(function(){
+  function applyTranslations(){
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if(typeof t === 'function') el.textContent = t(key);
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+      const key = el.getAttribute('data-i18n-aria');
+      if(typeof t === 'function') el.setAttribute('aria-label', t(key));
+    });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyTranslations);
+  else applyTranslations();
+})();
+</script>
 </body>
 </html>

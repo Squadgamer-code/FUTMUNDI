@@ -186,6 +186,18 @@
 .pes-end-title { font-family: "Oswald",sans-serif; font-weight: 900; font-size: 1.6rem; color: #ffe871; text-align: center; }
 .pes-end-sub { font-family: "Oswald",sans-serif; font-weight: 700; font-size: 0.95rem; color: #39ff88; text-align: center; }
 .pes-end-score { font-family: "Oswald",sans-serif; font-weight: 900; font-size: 3rem; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 30px; border-radius: 16px; border: 2px solid #ffe871; }
+.pes-gems-announce {
+  font-family: "Oswald",sans-serif; font-weight: 900; font-size: 2.2rem;
+  color: #0b1319; background: linear-gradient(135deg, #ffe871 0%, #39ff88 100%);
+  padding: 10px 30px; border-radius: 16px; border: 2px solid #fff;
+  box-shadow: 0 0 30px rgba(57,255,136,0.6), 0 0 60px rgba(255,232,113,0.4);
+  animation: pesGemsPop 0.6s ease-out;
+}
+@keyframes pesGemsPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
 
 @media (max-width: 640px) {
   .pes-joystick-base { width: 90px; height: 90px; }

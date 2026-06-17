@@ -1117,6 +1117,29 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 }
 .player-ovr-pill.legend b em,.mine-ovr.legend b em{color:#020805}
 
+
+
+/* Fix visual modal Retiro/Admin en móvil */
+#r-wallet,#r-amount,#r-captcha{
+  width:100%!important;
+  max-width:100%!important;
+  display:block!important;
+}
+#r-net{display:block;margin-top:4px;line-height:1.35;word-break:break-word}
+#r-msg{line-height:1.4;word-break:break-word}
+.admin-row{align-items:flex-start!important;flex-wrap:wrap!important}
+.admin-row .admin-pill{flex:0 0 auto}
+.admin-row .meta{min-width:180px!important}
+.admin-actions{width:100%;justify-content:flex-start!important;margin-top:6px}
+.admin-actions .admin-btn{flex:1 1 auto;min-width:88px;text-align:center}
+@media(max-width:520px){
+  .m-row{align-items:flex-start}
+  .m-row .icn{flex:0 0 38px}
+  .modal-card{max-width:calc(100vw - 18px)!important}
+  .admin-row .meta{min-width:100%!important}
+  .admin-actions .admin-btn{font-size:9px;padding:7px 6px;min-width:82px}
+}
+
 </style>
 
 <link rel="stylesheet" href="./futmundi-bet.css" />

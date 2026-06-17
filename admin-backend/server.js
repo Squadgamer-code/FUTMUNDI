@@ -3,9 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import crypto from 'node:crypto';
 import nacl from 'tweetnacl';
-import { Address, beginCell, toNano } from '@ton/core';
-import { TonClient } from '@ton/ton';
-import { sha256 } from '@ton/crypto';
+import { Address, beginCell, toNano, internal, SendMode } from '@ton/core';
+import { TonClient, WalletContractV4 } from '@ton/ton';
+import { sha256, mnemonicToPrivateKey } from '@ton/crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const PORT = Number(process.env.PORT || 8787);
@@ -19,6 +19,8 @@ const TONCENTER_API_KEY = process.env.TONCENTER_API_KEY || '';
 const USDT_DECIMALS = 6;
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const PAYOUT_WALLET_MNEMONIC = process.env.PAYOUT_WALLET_MNEMONIC || process.env.HOT_WALLET_MNEMONIC || process.env.INVOICE_WALLET_MNEMONIC || '';
+const PAYOUT_WALLET_VERSION = String(process.env.PAYOUT_WALLET_VERSION || 'v4r2').toLowerCase();
 
 const corsOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -202,6 +204,8 @@ function validatePaymentAmount(kind, amountUsdt, gems){
     if(usdt !== 10) throw new Error('El torneo requiere 10 USDT');
   } else if(kind === 'training'){
     if(usdt <= 0 || usdt > 5000) throw new Error('Monto de entrenamiento inválido');
+  } else if(kind === 'bet'){
+    if(usdt < 10 || usdt > 25000) throw new Error('Monto de apuesta inválido');
   } else {
     throw new Error('Tipo de pago inválido');
   }
@@ -286,6 +290,100 @@ async function buildUsdtTransaction({ ownerAddress, amountUsdt, kind, gems }){
       comment
     }
   };
+}
+
+
+function requirePayoutWallet(){
+  if(!PAYOUT_WALLET_MNEMONIC){
+    throw new Error('PAYOUT_WALLET_MNEMONIC no está configurado en Render. Aprobar no puede pagar USDT sin la seed de la wallet pagadora.');
+  }
+}
+function getPayoutMnemonicWords(){
+  return PAYOUT_WALLET_MNEMONIC
+    .replace(/,/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+async function openPayoutWallet(){
+  requirePayoutWallet();
+  const words = getPayoutMnemonicWords();
+  if(words.length !== 24) throw new Error('PAYOUT_WALLET_MNEMONIC debe contener 24 palabras');
+  const keyPair = await mnemonicToPrivateKey(words);
+  const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey });
+  const contract = tonClient.open(wallet);
+  return { keyPair, wallet, contract, address: wallet.address };
+}
+function buildJettonTransferBody({ amountUsdt, destinationAddress, responseAddress, comment }){
+  const queryId = BigInt(Date.now());
+  const forwardPayload = beginCell().storeUint(0, 32).storeStringTail(comment || `FUTMUNDI:${queryId}`).endCell();
+  const body = beginCell()
+    .storeUint(0xf8a7ea5, 32)
+    .storeUint(queryId, 64)
+    .storeCoins(toUsdtUnits(amountUsdt))
+    .storeAddress(Address.parse(destinationAddress))
+    .storeAddress(Address.parse(responseAddress))
+    .storeUint(0, 1)
+    .storeCoins(toNano('0.02'))
+    .storeBit(1)
+    .storeRef(forwardPayload)
+    .endCell();
+  return { body, queryId };
+}
+async function sendUsdtFromPayoutWallet({ toAddress, amountUsdt, comment }){
+  const payout = await openPayoutWallet();
+  const payoutFriendly = payout.address.toString({ bounceable:false, urlSafe:true });
+  const configuredInvoice = Address.parse(INVOICE_WALLET_ADDRESS).toString({ bounceable:false, urlSafe:true });
+  if(payoutFriendly !== configuredInvoice){
+    console.warn(`ADVERTENCIA: la seed de PAYOUT_WALLET_MNEMONIC firma ${payoutFriendly}, pero INVOICE_WALLET_ADDRESS es ${configuredInvoice}. Se pagará desde la wallet de la seed.`);
+  }
+
+  const payoutJettonWallet = await getJettonWalletAddress(payout.address.toString({ bounceable:true, urlSafe:true }));
+  await assertUsdtWalletReady(payout.address.toString({ bounceable:true, urlSafe:true }), payoutJettonWallet, amountUsdt);
+  const { body, queryId } = buildJettonTransferBody({
+    amountUsdt,
+    destinationAddress: toAddress,
+    responseAddress: payout.address.toString({ bounceable:true, urlSafe:true }),
+    comment
+  });
+  const seqno = await payout.contract.getSeqno();
+  await payout.contract.sendTransfer({
+    secretKey: payout.keyPair.secretKey,
+    seqno,
+    sendMode: SendMode.PAY_GAS_SEPARATELY,
+    messages: [internal({
+      to: payoutJettonWallet,
+      value: toNano('0.08'),
+      body
+    })]
+  });
+  return {
+    ok:true,
+    queryId: queryId.toString(),
+    seqno,
+    payerWallet: payout.address.toString({ bounceable:false, urlSafe:true }),
+    payerJettonWallet: payoutJettonWallet.toString({ bounceable:true, urlSafe:true }),
+    toAddress: Address.parse(toAddress).toString({ bounceable:false, urlSafe:true }),
+    amountUsdt:Number(amountUsdt),
+    txHash:`pending-query-${queryId.toString()}`
+  };
+}
+async function markWithdrawalPaid(w, txHash, note=null){
+  const { data:bal, error:balErr } = await supabase.from('balances').select('*').eq('user_id', w.user_id).single();
+  if(balErr) throw new Error(balErr.message);
+  const updBal = await supabase.from('balances').update({
+    locked_gems: Math.max(0, Number(bal.locked_gems || 0) - Number(w.gems_requested || 0)),
+    total_withdrawn_usdt: Number(bal.total_withdrawn_usdt || 0) + Number(w.amount_usdt_net || 0)
+  }).eq('user_id', w.user_id).select('*').single();
+  if(updBal.error) throw new Error(updBal.error.message);
+  const upd = await supabase.from('withdrawals').update({
+    status:'paid',
+    tx_hash:txHash || w.tx_hash,
+    paid_at:new Date().toISOString(),
+    admin_note:note || w.admin_note
+  }).eq('id', w.id).select('*').single();
+  if(upd.error) throw new Error(upd.error.message);
+  return { withdrawal:upd.data, balance:updBal.data };
 }
 
 
@@ -474,7 +572,14 @@ async function createNftForUser(userId, catalogCode, source='admin_gift'){
 }
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'futmundi-admin-backend', supabase: !!supabase });
+  res.json({
+    ok: true,
+    service: 'futmundi-admin-backend',
+    version: 'withdraw-pay-v2',
+    supabase: !!supabase,
+    payoutWalletConfigured: !!PAYOUT_WALLET_MNEMONIC,
+    withdrawPayAction: true
+  });
 });
 
 app.get('/api/admin/payload', (_req, res) => {
@@ -811,7 +916,10 @@ app.get('/api/admin/withdrawals', async (req, res) => {
     requireAdmin(req);
     requireSupabase();
     const status = req.query.status || 'pending';
-    const { data, error } = await supabase.from('withdrawals').select('*, app_users(wallet_address, ref_code)').eq('status', status).order('created_at', { ascending:false }).limit(100);
+    let query = supabase.from('withdrawals').select('*, app_users(wallet_address, ref_code)').order('created_at', { ascending:false }).limit(100);
+    if(String(status).includes(',')) query = query.in('status', String(status).split(',').map(s => s.trim()).filter(Boolean));
+    else query = query.eq('status', status);
+    const { data, error } = await query;
     if(error) throw new Error(error.message);
     return res.json({ ok:true, withdrawals:data || [] });
   }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
@@ -831,18 +939,22 @@ app.post('/api/admin/withdrawals/action', async (req, res) => {
       if(upd.error) throw new Error(upd.error.message);
       return res.json({ ok:true, withdrawal:upd.data });
     }
+    if(action === 'pay'){
+      if(!['pending','approved'].includes(w.status)) throw new Error('Retiro no se puede pagar');
+      const amount = Number(w.amount_usdt_net || 0);
+      if(!amount || amount <= 0) throw new Error('Monto USDT neto inválido');
+      const payment = await sendUsdtFromPayoutWallet({
+        toAddress: w.wallet_to,
+        amountUsdt: amount,
+        comment: `FUTMUNDI:WITHDRAWAL:${w.id}:${amount}`
+      });
+      const paid = await markWithdrawalPaid(w, payment.txHash, note || `Pago USDT enviado. queryId=${payment.queryId}`);
+      return res.json({ ok:true, ...paid, payment });
+    }
     if(action === 'paid'){
       if(!['pending','approved'].includes(w.status)) throw new Error('Retiro no se puede marcar pagado');
-      const { data:bal, error:balErr } = await supabase.from('balances').select('*').eq('user_id', w.user_id).single();
-      if(balErr) throw new Error(balErr.message);
-      const updBal = await supabase.from('balances').update({
-        locked_gems: Math.max(0, Number(bal.locked_gems || 0) - Number(w.gems_requested || 0)),
-        total_withdrawn_usdt: Number(bal.total_withdrawn_usdt || 0) + Number(w.amount_usdt_net || 0)
-      }).eq('user_id', w.user_id).select('*').single();
-      if(updBal.error) throw new Error(updBal.error.message);
-      const upd = await supabase.from('withdrawals').update({ status:'paid', tx_hash:txHash || w.tx_hash, paid_at:new Date().toISOString(), admin_note:note || w.admin_note }).eq('id', w.id).select('*').single();
-      if(upd.error) throw new Error(upd.error.message);
-      return res.json({ ok:true, withdrawal:upd.data, balance:updBal.data });
+      const paid = await markWithdrawalPaid(w, txHash || w.tx_hash, note || w.admin_note);
+      return res.json({ ok:true, ...paid });
     }
     if(action === 'reject'){
       if(!['pending','approved'].includes(w.status)) throw new Error('Retiro no se puede rechazar');

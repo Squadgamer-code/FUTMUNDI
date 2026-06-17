@@ -34,3 +34,12 @@ services:
         value: EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs
       - key: TONCENTER_ENDPOINT
         value: https://toncenter.com/api/v2/jsonRPC
+
+      # Retiros automáticos USDT: crear estas variables en Render Environment.
+      # PAYOUT_WALLET_MNEMONIC debe ser una Secret Env Var con las 24 palabras de la wallet que tiene USDT + TON.
+      - key: PAYOUT_WALLET_MNEMONIC
+        sync: false
+      - key: PAYOUT_WALLET_VERSION
+        value: v4r2
+      - key: TONCENTER_API_KEY
+        sync: false

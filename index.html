@@ -1103,6 +1103,16 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
   .mine-ovr b{font-size:14px}.mine-ovr small{font-size:8px}.player-ovr-pill{gap:4px;padding:3px 6px}.player-ovr-pill span{font-size:8px}
 }
 
+
+.mine-ovr b em,.player-ovr-pill b em{
+  font-style:normal;
+  margin-left:3px;
+  color:#06110b;
+  opacity:.82;
+  font-size:.78em;
+}
+.player-ovr-pill.legend b em,.mine-ovr.legend b em{color:#020805}
+
 </style>
 
 <link rel="stylesheet" href="./futmundi-bet.css" />
@@ -1833,7 +1843,31 @@ function trainingCostUSDT(name){ return +(nftValueUSDT(name) * (window.STATE?.tr
 
 // Poder de Mina / OVR: rating visible de cada Futbolista NFT calculado con
 // su generación diaria de gemas y su valor en Market. Escala 48-99.
-function getPlayerMiningStats(name){
+function getComplementBoostPercent(item){
+  if(!item || !item.name || !item.category) return 0;
+  const cfgGroup = item.category === 'uniforms' ? window.NFT_CONFIG?.uniforms
+    : item.category === 'shoes' ? window.NFT_CONFIG?.shoes
+    : item.category === 'dt' ? window.NFT_CONFIG?.dt
+    : null;
+  const cfg = cfgGroup ? cfgGroup[item.name] : null;
+  const boostText = String(cfg?.boost || '');
+  const num = Number((boostText.match(/(\d+(?:\.\d+)?)/) || [0,0])[1]) || 0;
+
+  // Referencias existentes:
+  // Uniformes vienen como +1000/+1500/+3000/+4000 Físico → equivalen a +10/+15/+30/+40% de boost OVR.
+  // Zapatillas y DT ya vienen expresados como +15/+35/+45/+65%.
+  if(item.category === 'uniforms') return +(num / 100).toFixed(2);
+  return num;
+}
+function getEquipmentMiningBoost(player){
+  if(!player || itemCategory(player.name) !== 'players') return { percent:0, ovrBoost:0, dailyBonus:0, details:[], equipped:{} };
+  const equipped = getEquippedItems(player);
+  const items = [equipped.uniform, equipped.shoes, equipped.dt].filter(Boolean);
+  const details = items.map(item => ({ name:item.name, category:item.category, percent:getComplementBoostPercent(item) })).filter(x => x.percent > 0);
+  const percent = +details.reduce((n,x)=>n+x.percent,0).toFixed(2);
+  return { percent, ovrBoost:0, dailyBonus:0, details, equipped };
+}
+function getPlayerMiningStats(name, player=null){
   const players = window.NFT_CONFIG?.players || {};
   const cfg = players[name];
   if(!cfg) return null;
@@ -1849,39 +1883,61 @@ function getPlayerMiningStats(name){
 
   const rank = Math.max(0, entries.findIndex(x => x.name === name));
   const maxRank = Math.max(1, entries.length - 1);
-  const ovr = Math.round(48 + (rank / maxRank) * 51);
+  const baseOvr = Math.round(48 + (rank / maxRank) * 51);
+  const equip = player ? getEquipmentMiningBoost(player) : { percent:0, details:[] };
+
+  // El porcentaje de equipo incrementa el OVR de Mina, pero con coeficiente arcade
+  // para mantener progresión balanceada: bonusOVR = baseOVR * (% equipo) * 20%.
+  // Cap superior 125 para que incluso los Leyenda puedan subir si tienen anexos.
+  const ovrBoost = Math.max(0, Math.round(baseOvr * (Number(equip.percent || 0) / 100) * 0.20));
+  const ovr = Math.min(125, baseOvr + ovrBoost);
+
   const dailyGems = Number(cfg.dailyGems || 0);
+  const effectiveDailyGems = +(dailyGems * (1 + (Number(equip.percent || 0) / 100) * 0.20)).toFixed(2);
   const priceGems = Number(cfg.price || 0);
   const valueUSDT = +(priceGems / (window.STATE?.gemsPerUSDT || 32)).toFixed(2);
   const roiDays = Number(cfg.roiDays || (dailyGems > 0 && priceGems > 0 ? priceGems / dailyGems : 0));
-  const mineUSDPerDay = +(dailyGems / (window.STATE?.gemsPerUSDT || 32)).toFixed(2);
+  const mineUSDPerDay = +(effectiveDailyGems / (window.STATE?.gemsPerUSDT || 32)).toFixed(2);
   let tier = 'Bronce', cls = 'bronze';
-  if(ovr >= 96){ tier = 'Leyenda'; cls = 'legend'; }
+  if(ovr >= 115){ tier = 'Mítico'; cls = 'legend'; }
+  else if(ovr >= 100){ tier = 'Leyenda+'; cls = 'legend'; }
+  else if(ovr >= 96){ tier = 'Leyenda'; cls = 'legend'; }
   else if(ovr >= 90){ tier = 'Diamante'; cls = 'diamond'; }
   else if(ovr >= 82){ tier = 'Élite'; cls = 'elite'; }
   else if(ovr >= 74){ tier = 'Pro'; cls = 'pro'; }
   else if(ovr >= 64){ tier = 'Oro'; cls = 'gold'; }
   else if(ovr >= 55){ tier = 'Plata'; cls = 'silver'; }
-  return { ovr, tier, cls, dailyGems, priceGems, valueUSDT, roiDays, mineUSDPerDay };
+  return {
+    ovr, baseOvr, ovrBoost, tier, cls,
+    dailyGems, effectiveDailyGems, priceGems, valueUSDT, roiDays, mineUSDPerDay,
+    equipmentBoostPercent: Number(equip.percent || 0), equipmentDetails: equip.details || []
+  };
 }
-function miningOVRBadgeHTML(name, compact=false){
-  const st = getPlayerMiningStats(name);
+function miningOVRBadgeHTML(name, compact=false, player=null){
+  const st = getPlayerMiningStats(name, player);
   if(!st) return '';
-  const daily = Number(st.dailyGems || 0).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+  const daily = Number(st.effectiveDailyGems || st.dailyGems || 0).toLocaleString('es-ES', { maximumFractionDigits: 1 });
   const price = Number(st.priceGems || 0).toLocaleString('es-ES');
+  const boostLabel = st.ovrBoost > 0 ? ` +${st.ovrBoost}` : '';
+  const eqLabel = st.equipmentBoostPercent > 0 ? ` · Eq +${st.equipmentBoostPercent}%` : '';
   if(compact){
-    return `<div class="player-ovr-pill ${st.cls}"><b>OVR ${st.ovr}</b><span>${daily} 💎/día</span></div>`;
+    return `<div class="player-ovr-pill ${st.cls}"><b>OVR ${st.ovr}${boostLabel ? `<em>${boostLabel}</em>` : ''}</b><span>${daily} 💎/día</span></div>`;
   }
-  return `<div class="mine-ovr ${st.cls}"><div><b>OVR ${st.ovr}</b><span>Poder de Mina</span></div><small>${daily} 💎/día · Valor ${price} 💎 · ${st.tier}</small></div>`;
+  const details = st.equipmentDetails?.length ? ` · ${st.equipmentDetails.map(x => `${x.name} +${x.percent}%`).join(' · ')}` : '';
+  return `<div class="mine-ovr ${st.cls}"><div><b>OVR ${st.ovr}${boostLabel ? `<em>${boostLabel}</em>` : ''}</b><span>Poder de Mina</span></div><small>${daily} 💎/día · Valor ${price} 💎 · Base ${st.baseOvr}${eqLabel} · ${st.tier}${details}</small></div>`;
 }
 function syncMiningStatsOnItem(item){
   if(!item || item.category !== 'players') return item;
-  const st = getPlayerMiningStats(item.name);
+  const st = getPlayerMiningStats(item.name, item);
   if(!st) return item;
+  item.baseMiningOVR = st.baseOvr;
   item.miningOVR = st.ovr;
   item.minePower = st.ovr;
   item.mineTier = st.tier;
-  item.dailyGems = st.dailyGems;
+  item.dailyGems = st.effectiveDailyGems;
+  item.baseDailyGems = st.dailyGems;
+  item.equipmentBoostPercent = st.equipmentBoostPercent;
+  item.equipmentOvrBoost = st.ovrBoost;
   item.valueGems = st.priceGems;
   item.valueUSDT = st.valueUSDT;
   item.mineUSDPerDay = st.mineUSDPerDay;
@@ -1964,10 +2020,10 @@ function playerStatusText(player){
   if(player?.name === FREE_NFT_NAME){
     const st = freeNftStatus(player);
     const cls = (st.days <= 3 || st.earned >= st.cap) ? 'dur-low' : 'dur-ok';
-    const mine = getPlayerMiningStats(player.name);
+    const mine = getPlayerMiningStats(player.name, player);
     return { cls, text: `${mine ? 'OVR '+mine.ovr+' · ' : ''}Gratis · ${Math.max(0, st.days)} días · $${st.earned.toFixed(2)}/$${st.cap}` };
   }
-  const mine = getPlayerMiningStats(player?.name);
+  const mine = getPlayerMiningStats(player?.name, player);
   return { cls: player.durability <= 20 ? 'dur-low' : 'dur-ok', text: `${mine ? 'OVR '+mine.ovr+' · ' : ''}Dur. ${player.durability.toFixed(1)}% · ⚽ ${player.stamina}/${player.maxStamina}` };
 }
 
@@ -2083,8 +2139,10 @@ function equipComplement(category, itemId){
   STATE.inventory.players.forEach(p => { if(p.equipped && p.equipped[slot] === itemId) p.equipped[slot] = null; });
   player.equipped = player.equipped || { uniform:null, shoes:null, dt:null };
   player.equipped[slot] = itemId;
+  syncMiningStatsOnItem(player);
   saveInventory();
-  toast(`${item.name} aplicado a ${player.name}`, true);
+  const mine = getPlayerMiningStats(player.name, player);
+  toast(`${item.name} aplicado a ${player.name}${mine ? ' · OVR Mina ' + mine.ovr + (mine.ovrBoost > 0 ? ' (+' + mine.ovrBoost + ')' : '') : ''}`, true);
   renderFutbolistaInventory();
 }
 function getEquippedItems(player){
@@ -2106,7 +2164,7 @@ function renderPlayerCard(player, opts={}){
   return `<div class="player-card ${selected?'selected':''} ${Number(player.stamina??0)<=0?'exhausted':''}" data-player-id="${player.id}" data-select-player="${player.id}">
     <img src="${player.img}" alt="${escapeHTML(player.name)}" loading="lazy" decoding="async">
     <b>${escapeHTML(player.name)}</b>
-    ${miningOVRBadgeHTML(player.name, true)}
+    ${miningOVRBadgeHTML(player.name, true, player)}
     <small><span class="${st.cls}">${staminaBallsHTML(player)} ${escapeHTML(st.text)}</span></small>
     <div class="nft-actions"><button class="mini-cta ${selected?'ghost':''}" type="button" data-select-player="${player.id}">${selected?'Activo':'Seleccionar'}</button></div>
   </div>`;
@@ -2135,7 +2193,7 @@ function renderFutbolistaInventory(){
         <div class="selected-player-box">
           <img src="${selected.img}" alt="${escapeHTML(selected.name)}">
           <b>${escapeHTML(selected.name)}</b>
-          ${miningOVRBadgeHTML(selected.name)}
+          ${miningOVRBadgeHTML(selected.name, false, selected)}
           <span>${escapeHTML(playerStatusText(selected).text)}</span>
         </div>
         <div class="m-section">Complementos aplicados</div>
@@ -2168,7 +2226,7 @@ function selectedPlayerSummaryHTML(){
   const eq = getEquippedItems(p);
   const comp = [eq.uniform?.name, eq.shoes?.name, eq.dt?.name].filter(Boolean).join(' · ') || 'Sin complementos';
   const st = playerStatusText(p);
-  const mine = getPlayerMiningStats(p.name);
+  const mine = getPlayerMiningStats(p.name, p);
   const mineLine = mine ? `OVR ${mine.ovr} · Mina ${Number(mine.dailyGems).toLocaleString('es-ES', {maximumFractionDigits:1})} 💎/día<br>` : '';
   return `<div class="m-row nft-summary"><img src="${p.img}" alt="${escapeHTML(p.name)}"><div class="meta"><b>${escapeHTML(p.name)}</b><span>${mineLine}<span class="${st.cls}">${escapeHTML(st.text)}</span><br>${escapeHTML(comp)}</span></div><div class="right">${mine ? 'OVR '+mine.ovr : 'ACTIVO'}</div></div>`;
 }

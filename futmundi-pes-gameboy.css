@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FUTMUNDI PES v4 — ESTILOS DEL SELECTOR DE NFT + MOTOR ADAPTATIVO
+   FUTMUNDI PES PRO — ESTILOS DEL GAMEPLAY ARCADE HORIZONTAL
    ========================================================================== */
 
 #fm-pes-gameboy-overlay {
@@ -14,11 +14,10 @@
 
 .pes-soccer-stage {
   width: 100%; height: 100%;
-  max-width: 1000px; max-height: 100vh;
+  max-width: 1200px; max-height: 100vh;
   margin: auto; position: relative;
   background: #08100b; overflow: hidden;
   box-shadow: 0 10px 40px rgba(0,0,0,0.9);
-  border-radius: 0;
   display: flex; justify-content: center; align-items: center;
 }
 
@@ -42,22 +41,16 @@
   font-family: "Oswald",system-ui,sans-serif;
   box-shadow: 0 4px 12px rgba(0,0,0,0.7); backdrop-filter: blur(4px);
 }
-.pes-hud-team { font-weight: 950; font-size: 0.85rem; }
+.pes-hud-team { font-weight: 900; font-size: 0.85rem; }
 .pes-hud-team.blue { color: #3fbfff; text-shadow: 0 0 8px rgba(63,191,255,0.5); }
 .pes-hud-team.red { color: #ff4545; text-shadow: 0 0 8px rgba(255,69,69,0.5); }
-.pes-hud-goals { font-size: 1.4rem; font-weight: 950; color: #fff; line-height: 1; }
+.pes-hud-goals { font-size: 1.4rem; font-weight: 900; color: #fff; line-height: 1; }
 .pes-hud-timer {
   background: #000; border: 2px solid #ffe871; padding: 4px 12px;
-  border-radius: 10px; font-family: "Oswald",sans-serif; font-weight: 950;
+  border-radius: 10px; font-family: "Oswald",sans-serif; font-weight: 900;
   font-size: 1.2rem; color: #ffe871;
   box-shadow: 0 0 15px rgba(255,232,113,0.3);
   display: flex; align-items: center; gap: 6px;
-}
-.pes-hud-pts {
-  background: rgba(57,255,136,0.15); border: 2px solid #39ff88;
-  padding: 4px 10px; border-radius: 10px;
-  font-family: "Oswald",sans-serif; font-weight: 950; font-size: 0.85rem; color: #39ff88;
-  display: flex; align-items: center; gap: 4px;
 }
 
 /* === Controles táctiles === */
@@ -78,12 +71,13 @@
   width: 52px; height: 52px; border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fff 0%, #a0b4c8 60%, #42aaff 100%);
   border: 3px solid #000; box-shadow: 0 6px 16px rgba(0,0,0,0.8), inset 0 2px 4px #fff;
-  pointer-events: none; position: absolute; transition: transform 0.05s ease;
+  pointer-events: none; position: absolute; top: 50%; left: 50%; margin: -26px 0 0 -26px;
+  transition: transform 0.05s ease;
 }
 .pes-actions-cluster { display: flex; gap: 16px; align-items: flex-end; pointer-events: auto; }
 .pes-btn-arcade {
   width: 78px; height: 78px; border-radius: 50%;
-  font-family: "Oswald",sans-serif; font-weight: 950; font-size: 1rem;
+  font-family: "Oswald",sans-serif; font-weight: 900; font-size: 1rem;
   text-transform: uppercase; letter-spacing: 0.05em;
   display: flex; justify-content: center; align-items: center;
   cursor: pointer; pointer-events: auto; user-select: none; touch-action: manipulation;
@@ -100,7 +94,7 @@
   color: #000; width: 88px; height: 88px;
 }
 
-/* === PANEL PRE-JUEGO CON SELECTOR DE NFT === */
+/* === PANEL PRE-JUEGO === */
 .pes-pre-game-panel {
   position: absolute; inset: 0; z-index: 5000;
   background: linear-gradient(180deg, rgba(8,16,11,0.98) 0%, rgba(5,10,7,0.99) 100%);
@@ -114,24 +108,19 @@
   margin-bottom: 10px;
 }
 .pes-pg-mode {
-  font-family: "Oswald",sans-serif; font-weight: 950;
+  font-family: "Oswald",sans-serif; font-weight: 900;
   font-size: 1.1rem; color: #ffe871; text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.pes-pg-vs {
-  font-size: 0.8rem; color: #ff4545; font-weight: 700;
-}
+.pes-pg-vs { font-size: 0.8rem; color: #ff4545; font-weight: 700; }
 .pes-pg-title {
-  font-family: "Oswald",sans-serif; font-weight: 950;
-  font-size: 1.3rem; color: #39ff88; text-align: center;
-  margin-bottom: 2px;
+  font-family: "Oswald",sans-serif; font-weight: 900;
+  font-size: 1.3rem; color: #39ff88; text-align: center; margin-bottom: 2px;
 }
 .pes-pg-subtitle {
-  font-size: 0.8rem; color: rgba(232,245,226,0.6); margin-bottom: 12px;
-  text-align: center;
+  font-size: 0.8rem; color: rgba(232,245,226,0.6); margin-bottom: 12px; text-align: center;
 }
 
-/* === GRID DE NFTs === */
 .pes-nft-selector-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
   width: 100%; max-width: 500px; margin-bottom: 12px;
@@ -140,7 +129,6 @@
 .pes-nft-selector-grid::-webkit-scrollbar { width: 4px; }
 .pes-nft-selector-grid::-webkit-scrollbar-thumb { background: rgba(57,255,136,0.3); border-radius: 4px; }
 
-/* Tarjeta individual de NFT */
 .pes-nft-pick {
   background: linear-gradient(180deg, rgba(21,36,25,0.9), rgba(7,13,9,0.95));
   border: 2px solid rgba(57,255,136,0.25);
@@ -150,36 +138,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 .pes-nft-pick:active { transform: scale(0.96); }
-.pes-nft-pick:hover { border-color: var(--fm-gold, #f4c542); transform: translateY(-2px); }
 .pes-nft-pick-active {
   border-color: #ffe871 !important;
   box-shadow: 0 0 18px rgba(255,232,113,0.5);
   background: linear-gradient(180deg, rgba(40,36,10,0.9), rgba(20,18,5,0.95));
 }
-.pes-nft-pick img {
-  width: 100%; height: 70px; object-fit: contain; display: block;
-  margin-bottom: 4px; border-radius: 8px;
-}
-.pes-nft-name {
-  font-family: "Oswald",sans-serif; font-weight: 700; font-size: 0.72rem;
-  color: #e8f5e2; line-height: 1.1; margin-bottom: 2px;
-}
+.pes-nft-pick img { width: 100%; height: 70px; object-fit: contain; display: block; margin-bottom: 4px; border-radius: 8px; }
+.pes-nft-name { font-family: "Oswald",sans-serif; font-weight: 700; font-size: 0.72rem; color: #e8f5e2; margin-bottom: 2px; }
 .pes-nft-balls { font-size: 0.7rem; letter-spacing: 1px; }
 .pes-nft-dur { font-size: 0.6rem; color: rgba(122,151,133,0.8); }
+.pes-nft-empty { grid-column: 1 / -1; text-align: center; padding: 20px; color: rgba(232,245,226,0.5); font-size: 0.85rem; }
 
-.pes-nft-empty-card { opacity: 0.4; filter: grayscale(0.8); }
-.pes-nft-noenergy {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-  background: rgba(255,69,69,0.9); color: #fff; font-size: 0.6rem; font-weight: 900;
-  padding: 2px 6px; border-radius: 4px; white-space: nowrap;
-  font-family: "Oswald",sans-serif;
-}
-.pes-nft-empty {
-  grid-column: 1 / -1; text-align: center; padding: 20px;
-  color: rgba(232,245,226,0.5); font-size: 0.85rem;
-}
-
-/* === Caja de NFT seleccionado === */
 .pes-pg-selected-box {
   display: flex; align-items: center; gap: 10px;
   background: linear-gradient(90deg, rgba(40,36,10,0.6), rgba(21,36,25,0.6));
@@ -191,11 +160,10 @@
 .pes-sel-info b { font-family: "Oswald",sans-serif; color: #ffe871; font-size: 1rem; }
 .pes-sel-info span { font-size: 0.75rem; color: #39ff88; }
 
-/* === Botón ENTRAR A JUGAR === */
 .pes-start-btn {
   width: 100%; max-width: 380px;
   padding: 16px 20px; border-radius: 16px;
-  font-family: "Oswald",sans-serif; font-weight: 950; font-size: 1.1rem;
+  font-family: "Oswald",sans-serif; font-weight: 900; font-size: 1.1rem;
   text-transform: uppercase; letter-spacing: 0.05em;
   background: linear-gradient(135deg, #39ff88 0%, #20d060 100%);
   border: 3px solid #fff; color: #0b1319;
@@ -205,25 +173,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 .pes-start-btn:active { transform: scale(0.97); }
-.pes-start-btn:hover {
-  background: linear-gradient(135deg, #ffe871 0%, #ff8a3c 100%);
-  box-shadow: 0 8px 30px rgba(255,232,113,0.6);
-}
-.pes-start-disabled {
-  background: rgba(20,30,22,0.8) !important;
-  color: rgba(232,245,226,0.4) !important;
-  border-color: rgba(57,255,136,0.2) !important;
-  box-shadow: none !important;
-}
+.pes-start-btn:hover { background: linear-gradient(135deg, #ffe871 0%, #ff8a3c 100%); box-shadow: 0 8px 30px rgba(255,232,113,0.6); }
 
-/* Animación shake cuando no hay NFT seleccionado */
-@keyframes pesShake {
-  0%,100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
-}
-
-/* === Panel de fin de partido === */
+/* === Panel fin de partido === */
 .pes-end-panel {
   position: absolute; inset: 0; z-index: 5000;
   background: rgba(5,10,7,0.97);
@@ -231,74 +183,19 @@
   align-items: center; justify-content: center;
   gap: 14px; padding: 20px;
 }
-.pes-end-title {
-  font-family: "Oswald",sans-serif; font-weight: 950;
-  font-size: 1.6rem; color: #ffe871; text-align: center;
-  text-shadow: 0 3px 8px rgba(0,0,0,0.8);
-}
-.pes-end-sub {
-  font-family: "Oswald",sans-serif; font-weight: 700;
-  font-size: 0.95rem; color: #39ff88; text-align: center;
-}
-.pes-end-score {
-  font-family: "Oswald",sans-serif; font-weight: 950; font-size: 3rem;
-  color: #fff; background: rgba(0,0,0,0.6); padding: 6px 30px;
-  border-radius: 16px; border: 2px solid #ffe871;
-}
+.pes-end-title { font-family: "Oswald",sans-serif; font-weight: 900; font-size: 1.6rem; color: #ffe871; text-align: center; }
+.pes-end-sub { font-family: "Oswald",sans-serif; font-weight: 700; font-size: 0.95rem; color: #39ff88; text-align: center; }
+.pes-end-score { font-family: "Oswald",sans-serif; font-weight: 900; font-size: 3rem; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 30px; border-radius: 16px; border: 2px solid #ffe871; }
 
-/* === v5: Estadísticas finales (faltas / tarjetas) === */
-.pes-end-stats {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  font-family: "Oswald",sans-serif; color: #e8f5e2;
-  background: rgba(0,0,0,0.45); border: 1px solid rgba(57,255,136,0.25);
-  border-radius: 12px; padding: 8px 14px; min-width: 280px;
-}
-.pes-end-stat-row {
-  display: flex; gap: 16px; justify-content: space-between; width: 100%;
-  font-size: 0.85rem; font-weight: 600;
-}
-.pes-end-stat-row span { white-space: nowrap; }
-
-/* === v5: Tarjetas en el HUD === */
-.pes-hud-cards { display: inline-flex; gap: 3px; margin-left: 4px; }
-.pes-card-y, .pes-card-r {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 14px; height: 18px; padding: 0 4px;
-  font-family: "Oswald",sans-serif; font-weight: 950; font-size: 0.7rem;
-  color: #000; border: 1px solid #000; border-radius: 2px;
-  box-shadow: 0 0 4px rgba(0,0,0,0.5);
-}
-.pes-card-y { background: #ffd60a; }
-.pes-card-r { background: #e02020; color: #fff; }
-
-/* === v5: Overlay de MEDIO TIEMPO === */
-.pes-halftime-overlay {
-  position: absolute; inset: 0; z-index: 5000;
-  background: rgba(5,10,7,0.92);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-}
-.pes-ht-card {
-  background: linear-gradient(180deg, rgba(21,36,25,0.95), rgba(7,13,9,0.98));
-  border: 3px solid #ffe871;
-  border-radius: 22px; padding: 26px 28px;
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
-  box-shadow: 0 0 40px rgba(255,232,113,0.4);
-  max-width: 420px;
-}
-.pes-ht-title {
-  font-family: "Oswald",sans-serif; font-weight: 950;
-  font-size: 1.6rem; color: #ffe871;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  text-shadow: 0 0 12px rgba(255,232,113,0.5);
-}
-.pes-ht-score {
-  font-family: "Oswald",sans-serif; font-weight: 950;
-  font-size: 3.5rem; color: #fff;
-  background: rgba(0,0,0,0.5); border-radius: 14px;
-  padding: 4px 28px; border: 2px solid #39ff88;
-}
-.pes-ht-sub {
-  font-size: 0.85rem; color: #39ff88;
-  text-align: center; font-weight: 600;
+@media (max-width: 640px) {
+  .pes-joystick-base { width: 90px; height: 90px; }
+  .pes-joystick-knob { width: 40px; height: 40px; margin: -20px 0 0 -20px; }
+  .pes-btn-arcade { width: 60px; height: 60px; font-size: 0.75rem; }
+  .pes-btn-shot { width: 70px; height: 70px; }
+  .pes-touch-controls { height: 120px; padding: 10px 12px; }
+  .pes-hud-team { font-size: 0.65rem; }
+  .pes-hud-goals { font-size: 1.1rem; }
+  .pes-hud-timer { font-size: 0.95rem; }
+  .pes-pg-title { font-size: 1.05rem; }
+  .pes-nft-selector-grid { grid-template-columns: repeat(2, 1fr); }
 }

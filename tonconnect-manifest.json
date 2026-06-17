@@ -1,7 +1,7 @@
 {
-  "url": "https://futmundi.example.com",
+  "url": "https://futmundi-wine.vercel.app",
   "name": "FUTMUNDI",
-  "iconUrl": "https://futmundi.example.com/descarga22.png",
-  "termsOfUseUrl": "https://futmundi.example.com/terms",
-  "privacyPolicyUrl": "https://futmundi.example.com/privacy"
+  "iconUrl": "https://futmundi-wine.vercel.app/descarga22.png",
+  "termsOfUseUrl": "https://futmundi-wine.vercel.app/terms",
+  "privacyPolicyUrl": "https://futmundi-wine.vercel.app/privacy"
 }

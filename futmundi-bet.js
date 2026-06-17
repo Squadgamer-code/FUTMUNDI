@@ -364,18 +364,20 @@
     }
 
     injectInvokeButton() {
-      let topbar = document.querySelector(".futmundi-buttons") || document.querySelector(".futmundi-topbar") || document.body;
+      const slot = document.querySelector("#fm-bet-banner-slot");
+      let topbar = slot || document.querySelector(".futmundi-buttons") || document.querySelector(".futmundi-topbar") || document.body;
       const btn = document.createElement("button");
       btn.className = "futmundi-bet-invoke-btn";
       btn.id = "fbet-invoke-global-btn";
-      btn.innerHTML = `<span>🎲 Apuestas Mundial</span><strong id="fbet-global-bal-badge" style="color:#39ff88;">💎 ${BetDB.getUserGems()}</strong>`;
-      
-      if (topbar.classList && topbar.classList.contains("futmundi-buttons")) {
+      btn.type = "button";
+      btn.innerHTML = `<span>⚽ APUESTAS MUNDIAL</span><strong id="fbet-global-bal-badge">💎 ${BetDB.getUserGems()}</strong>`;
+
+      if (slot) {
+        slot.replaceChildren(btn);
+      } else if (topbar.classList && topbar.classList.contains("futmundi-buttons")) {
         topbar.appendChild(btn);
       } else {
-        btn.style.position = "fixed";
-        btn.style.top = "10px";
-        btn.style.right = "180px";
+        btn.classList.add("floating-fallback");
         document.body.appendChild(btn);
       }
 

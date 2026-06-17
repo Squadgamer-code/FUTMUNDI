@@ -700,3 +700,55 @@
   word-break: break-all;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
+/* Banner de Apuestas Mundial colocado dentro del home, debajo de gameRequirements */
+.fm-bet-banner-slot {
+  width: 100%;
+  max-width: 420px;
+  margin: 12px auto 0;
+  padding: 0 8px;
+}
+
+.fm-bet-banner-slot .futmundi-bet-invoke-btn {
+  width: 100%;
+  min-height: 56px;
+  justify-content: center;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 18% 30%, rgba(255,232,113,.16), transparent 28%),
+    linear-gradient(180deg, rgba(14,26,18,.96), rgba(3,8,5,.98));
+  border: 1.5px solid rgba(57,255,136,.75);
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.38),
+    0 0 22px rgba(57,255,136,.22),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  font-size: 1rem;
+  letter-spacing: .16em;
+}
+
+.fm-bet-banner-slot .futmundi-bet-invoke-btn strong {
+  color: #39ff88;
+  background: rgba(57,255,136,.10);
+  border: 1px solid rgba(57,255,136,.28);
+  border-radius: 999px;
+  padding: 2px 10px;
+  letter-spacing: .06em;
+}
+
+.futmundi-bet-invoke-btn.floating-fallback {
+  position: fixed;
+  top: 10px;
+  right: 180px;
+}
+
+@media (max-width: 640px) {
+  .fm-bet-banner-slot {
+    max-width: 360px;
+    margin-top: 10px;
+  }
+  .fm-bet-banner-slot .futmundi-bet-invoke-btn {
+    min-height: 52px;
+    font-size: .88rem;
+    letter-spacing: .12em;
+  }
+}

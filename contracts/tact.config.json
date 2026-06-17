@@ -1,0 +1,9 @@
+{
+  "projects": [
+    {
+      "name": "FutmundiTonTreasury",
+      "path": "./FutmundiTonTreasury.tact",
+      "output": "./build"
+    }
+  ]
+}

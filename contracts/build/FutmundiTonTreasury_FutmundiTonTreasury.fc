@@ -1,0 +1,503 @@
+#pragma version =0.4.6;
+#pragma allow-post-modification;
+#pragma compute-asm-ltr;
+
+;; FutmundiTonTreasury_FutmundiTonTreasury.headers.fc
+;;
+;; Header files for FutmundiTonTreasury
+;; NOTE: declarations are sorted for optimal order
+;;
+
+;; __tact_context_get
+(int, slice, int, slice) __tact_context_get() inline;
+
+;; __tact_context_get_sender
+slice __tact_context_get_sender() inline;
+
+;; $DeployOk$_store
+builder $DeployOk$_store(builder build_0, (int) v) inline;
+
+;; $DeployOk$_store_cell
+cell $DeployOk$_store_cell((int) v, builder b) inline;
+
+;; $FutmundiTonTreasury$_store
+builder $FutmundiTonTreasury$_store(builder build_0, (slice, slice, int, int, int, int, int) v) inline;
+
+;; $FutmundiTonTreasury$_load
+(slice, ((slice, slice, int, int, int, int, int))) $FutmundiTonTreasury$_load(slice sc_0) inline;
+
+;; $Context$_get_value
+_ $Context$_get_value((int, slice, int, slice) v) inline;
+
+;; $FutmundiTonTreasury$init$_load
+(slice, ((slice, slice))) $FutmundiTonTreasury$init$_load(slice sc_0) inline;
+
+;; $FutmundiTonTreasury$_contract_init
+(slice, slice, int, int, int, int, int) $FutmundiTonTreasury$_contract_init(slice $owner, slice $feeWallet) impure inline;
+
+;; $FutmundiTonTreasury$_contract_load
+(slice, slice, int, int, int, int, int) $FutmundiTonTreasury$_contract_load() impure inline;
+
+;; $FutmundiTonTreasury$_contract_store
+() $FutmundiTonTreasury$_contract_store((slice, slice, int, int, int, int, int) v) impure inline;
+
+;; $FutmundiTonTreasury$_fun_config
+((slice, slice, int, int, int, int, int), slice) $FutmundiTonTreasury$_fun_config((slice, slice, int, int, int, int, int) $self) impure inline_ref;
+
+;; $MessageParameters$_constructor_bounce_to_value_mode_body
+((int, cell, int, slice, int)) $MessageParameters$_constructor_bounce_to_value_mode_body(int $bounce, slice $to, int $value, int $mode, cell $body) inline;
+
+;; $FutmundiTonTreasury$_fun_notify
+((slice, slice, int, int, int, int, int), ()) $FutmundiTonTreasury$_fun_notify((slice, slice, int, int, int, int, int) $self, cell $body) impure inline;
+
+;; $FutmundiTonTreasury$_fun_requireOwner
+((slice, slice, int, int, int, int, int), ()) $FutmundiTonTreasury$_fun_requireOwner((slice, slice, int, int, int, int, int) $self) impure inline_ref;
+
+;; $FutmundiTonTreasury$_fun_owner
+((slice, slice, int, int, int, int, int), slice) $FutmundiTonTreasury$_fun_owner((slice, slice, int, int, int, int, int) $self) impure inline_ref;
+
+;; $SendParameters$_constructor_to_value_mode_body
+((int, cell, cell, cell, int, slice, int)) $SendParameters$_constructor_to_value_mode_body(slice $to, int $value, int $mode, cell $body) inline;
+
+;; $DeployOk$_constructor_queryId
+((int)) $DeployOk$_constructor_queryId(int $queryId) inline;
+
+
+;; FutmundiTonTreasury_FutmundiTonTreasury.stdlib.fc
+global (int, slice, int, slice) __tact_context;
+global slice __tact_context_sender;
+global cell __tact_child_contract_codes;
+global int __tact_randomized;
+
+(int, slice, int, slice) __tact_context_get() inline {
+    return __tact_context;
+}
+
+slice __tact_context_get_sender() inline {
+    return __tact_context_sender;
+}
+
+int $global_myBalance() impure asm """
+    BALANCE FIRST
+""";
+
+() $global_nativeReserve(int $amount, int $mode) impure asm """
+    RAWRESERVE
+""";
+
+() $global_message((int, cell, int, slice, int) $params) impure asm """
+    NEWC
+    b{01} STSLICECONST  // store tag = $0 and ihr_disabled = true
+    1 STI               // store `bounce`
+    b{000} STSLICECONST // store bounced = false and src = addr_none
+    STSLICE             // store `to`
+    SWAP
+    STGRAMS             // store `value`
+    106 PUSHINT         // 1 + 4 + 4 + 64 + 32 + 1
+    STZEROES
+    // → Stack state
+    // s0: Builder
+    // s1: `body`
+    // s2: `mode`
+    STDICT
+    ENDC
+    SWAP
+    SENDRAWMSG
+""";
+
+() $global_send((int, cell, cell, cell, int, slice, int) $params) impure asm """
+    NEWC
+    b{01} STSLICECONST  // store tag = $0 and ihr_disabled = true
+    1 STI               // store `bounce`
+    b{000} STSLICECONST // store bounced = false and src = addr_none
+    STSLICE             // store `to`
+    SWAP
+    STGRAMS             // store `value`
+    105 PUSHINT         // 1 + 4 + 4 + 64 + 32
+    STZEROES            // store currency_collection, ihr_fee, fwd_fee, created_lt and created_at
+    // → Stack state
+    // s0: Builder
+    // s1: `data`
+    // s2: `code`
+    // s3: `body`
+    // s4: `mode`
+
+    // Group 2: Placing the Builder after code and data, then checking those for nullability
+    s2 XCHG0
+    DUP2
+    ISNULL
+    SWAP
+    ISNULL
+    AND
+    // → Stack state
+    // s0: -1 (true) if `data` and `code` are both null, 0 (false) otherwise
+    // s1: `code`
+    // s2: `data`
+    // s3: Builder
+    // s4: `body`
+    // s5: `mode`
+
+    // Group 3: Left branch of the IFELSE, executed if s0 is -1 (true)
+    <{
+        DROP2 // drop `data` and `code`, since either of those is null
+        b{0} STSLICECONST
+    }> PUSHCONT
+
+    // Group 3: Right branch of the IFELSE, executed if s0 is 0 (false)
+    <{
+        // _ split_depth:(Maybe (## 5))
+        //   special:(Maybe TickTock)
+        //   code:(Maybe ^Cell)
+        //   data:(Maybe ^Cell)
+        //   library:(Maybe ^Cell)
+        // = StateInit;
+        ROT                // place message Builder on top
+        b{10} STSLICECONST // store Maybe = true, Either = false
+        // Start composing inlined StateInit
+        b{00} STSLICECONST // store split_depth and special first
+        STDICT             // store code
+        STDICT             // store data
+        b{0} STSLICECONST  // store library
+    }> PUSHCONT
+
+    // Group 3: IFELSE that does the branching shown above
+    IFELSE
+    // → Stack state
+    // s0: Builder
+    // s1: null or StateInit
+    // s2: `body`
+    // s3: `mode`
+
+    // Group 4: Finalizing the message
+    STDICT // store `body` as ref with an extra Maybe bit, since `body` might be null
+    ENDC
+    // → Stack state
+    // s0: Cell
+    // s1: `mode`
+
+    // Group 5: Sending the message, with `mode` on top
+    SWAP
+    SENDRAWMSG // https://github.com/tact-lang/tact/issues/1558
+""";
+
+((slice, slice, int, int, int, int, int), ()) $FutmundiTonTreasury$_fun_notify((slice, slice, int, int, int, int, int) $self, cell $body) impure inline {
+    var (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)) = $self;
+    slice $to = __tact_context_get_sender();
+    int $bounce = false;
+    if (false) {
+        int $balance = $global_myBalance();
+        int $balanceBeforeMessage = ($balance - $Context$_get_value(__tact_context_get()));
+        if (($balanceBeforeMessage < 0)) {
+            $global_nativeReserve(0, 0);
+            $global_message($MessageParameters$_constructor_bounce_to_value_mode_body($bounce, $to, 0, 130, $body));
+            return (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw), ());
+        }
+    }
+    $global_message($MessageParameters$_constructor_bounce_to_value_mode_body($bounce, $to, 0, 66, $body));
+    return (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw), ());
+}
+
+((slice, slice, int, int, int, int, int), ()) $FutmundiTonTreasury$_fun_requireOwner((slice, slice, int, int, int, int, int) $self) impure inline_ref {
+    var (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)) = $self;
+    throw_unless(132, ( equal_slices_bits(__tact_context_get_sender(), $self'owner) ));
+    return (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw), ());
+}
+
+((slice, slice, int, int, int, int, int), slice) $FutmundiTonTreasury$_fun_owner((slice, slice, int, int, int, int, int) $self) impure inline_ref {
+    var (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)) = $self;
+    var $fresh$ret_1 = $self'owner;
+    return (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw), $fresh$ret_1);
+}
+
+;; FutmundiTonTreasury_FutmundiTonTreasury.constants.fc
+;; String "FUTMUNDI TON Treasury v1: 1 TON = 40 gems; withdraw fee 6% + 1 TON"
+slice __gen_slice_string_439cd483fc501736f0e3267d0d6119219d7ff372a2dcb758232d2932a4c4fca5() asm """
+    B{b5ee9c724101010100440000844655544d554e444920544f4e2054726561737572792076313a203120544f4e203d2034302067656d733b20776974686472617720666565203625202b203120544f4ecc2ae20d} B>boc <s PUSHSLICE
+""";
+
+;; FutmundiTonTreasury_FutmundiTonTreasury.storage.fc
+;;
+;; Type: Context
+;; TLB: _ bounceable:bool sender:address value:int257 raw:^slice = Context
+;;
+
+_ $Context$_get_value((int, slice, int, slice) v) inline {
+    var (v'bounceable, v'sender, v'value, v'raw) = v;
+    return v'value;
+}
+
+;;
+;; Type: SendParameters
+;; TLB: _ mode:int257 body:Maybe ^cell code:Maybe ^cell data:Maybe ^cell value:int257 to:address bounce:bool = SendParameters
+;;
+
+((int, cell, cell, cell, int, slice, int)) $SendParameters$_constructor_to_value_mode_body(slice $to, int $value, int $mode, cell $body) inline {
+    return ($mode, $body, null(), null(), $value, $to, true);
+}
+
+;;
+;; Type: MessageParameters
+;; TLB: _ mode:int257 body:Maybe ^cell value:int257 to:address bounce:bool = MessageParameters
+;;
+
+((int, cell, int, slice, int)) $MessageParameters$_constructor_bounce_to_value_mode_body(int $bounce, slice $to, int $value, int $mode, cell $body) inline {
+    return ($mode, $body, $value, $to, $bounce);
+}
+
+;;
+;; Type: DeployOk
+;; Header: 0xaff90f57
+;; TLB: deploy_ok#aff90f57 queryId:uint64 = DeployOk
+;;
+
+builder $DeployOk$_store(builder build_0, (int) v) inline {
+    var (v'queryId) = v;
+    build_0 = store_uint(build_0, 2952335191, 32);
+    build_0 = build_0.store_uint(v'queryId, 64);
+    return build_0;
+}
+
+cell $DeployOk$_store_cell((int) v, builder b) inline {
+    return $DeployOk$_store(b, v).end_cell();
+}
+
+((int)) $DeployOk$_constructor_queryId(int $queryId) inline {
+    return ($queryId);
+}
+
+;;
+;; Type: FutmundiTonTreasury
+;; TLB: _ owner:address feeWallet:address paused:bool feeBps:uint16 fixedFee:coins minWithdraw:coins maxWithdraw:coins = FutmundiTonTreasury
+;;
+
+builder $FutmundiTonTreasury$_store(builder build_0, (slice, slice, int, int, int, int, int) v) inline {
+    var (v'owner, v'feeWallet, v'paused, v'feeBps, v'fixedFee, v'minWithdraw, v'maxWithdraw) = v;
+    build_0 = build_0.store_slice(v'owner);
+    build_0 = build_0.store_slice(v'feeWallet);
+    build_0 = build_0.store_int(v'paused, 1);
+    build_0 = build_0.store_uint(v'feeBps, 16);
+    build_0 = build_0.store_varuint16(v'fixedFee);
+    build_0 = build_0.store_varuint16(v'minWithdraw);
+    build_0 = build_0.store_varuint16(v'maxWithdraw);
+    return build_0;
+}
+
+(slice, ((slice, slice, int, int, int, int, int))) $FutmundiTonTreasury$_load(slice sc_0) inline {
+    var v'owner = sc_0~load_msg_addr();
+    var v'feeWallet = sc_0~load_msg_addr();
+    var v'paused = sc_0~load_int(1);
+    var v'feeBps = sc_0~load_uint(16);
+    var v'fixedFee = sc_0~load_varuint16();
+    var v'minWithdraw = sc_0~load_varuint16();
+    var v'maxWithdraw = sc_0~load_varuint16();
+    return (sc_0, (v'owner, v'feeWallet, v'paused, v'feeBps, v'fixedFee, v'minWithdraw, v'maxWithdraw));
+}
+
+(slice, ((slice, slice))) $FutmundiTonTreasury$init$_load(slice sc_0) inline {
+    var v'owner = sc_0~load_msg_addr();
+    var v'feeWallet = sc_0~load_msg_addr();
+    return (sc_0, (v'owner, v'feeWallet));
+}
+
+(slice, slice, int, int, int, int, int) $FutmundiTonTreasury$_contract_load() impure inline {
+    slice $sc = get_data().begin_parse();
+    int $loaded = $sc~load_int(1);
+    if ($loaded) {
+        return $sc~$FutmundiTonTreasury$_load();
+    }
+    else {
+        (slice $owner, slice $feeWallet) = $sc~$FutmundiTonTreasury$init$_load();
+        $sc.end_parse();
+        return $FutmundiTonTreasury$_contract_init($owner, $feeWallet);
+    }
+}
+
+() $FutmundiTonTreasury$_contract_store((slice, slice, int, int, int, int, int) v) impure inline {
+    builder b = begin_cell();
+    b = b.store_int(true, 1);
+    b = $FutmundiTonTreasury$_store(b, v);
+    set_data(b.end_cell());
+}
+
+;;
+;; Contract FutmundiTonTreasury functions
+;;
+
+(slice, slice, int, int, int, int, int) $FutmundiTonTreasury$_contract_init(slice $owner, slice $feeWallet) impure inline {
+    var (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)) = (null(), null(), null(), null(), null(), null(), null());
+    $self'owner = $owner;
+    $self'feeWallet = $feeWallet;
+    $self'paused = false;
+    $self'feeBps = 600;
+    $self'fixedFee = 1000000000;
+    $self'minWithdraw = 4000000000;
+    $self'maxWithdraw = 80000000000;
+    return ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw);
+}
+
+((slice, slice, int, int, int, int, int), slice) $FutmundiTonTreasury$_fun_config((slice, slice, int, int, int, int, int) $self) impure inline_ref {
+    var (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)) = $self;
+    var $fresh$ret_0 = __gen_slice_string_439cd483fc501736f0e3267d0d6119219d7ff372a2dcb758232d2932a4c4fca5();
+    return (($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw), $fresh$ret_0);
+}
+
+;;
+;; Get methods of a Contract FutmundiTonTreasury
+;;
+
+_ %config() method_id(103021) {
+    var self = $FutmundiTonTreasury$_contract_load();
+    var res = self~$FutmundiTonTreasury$_fun_config();
+    return res;
+}
+
+_ %owner() method_id(83229) {
+    var self = $FutmundiTonTreasury$_contract_load();
+    var res = self~$FutmundiTonTreasury$_fun_owner();
+    return res;
+}
+
+;;
+;; Routing of a Contract FutmundiTonTreasury
+;;
+
+;; message opcode reader utility: only binary receivers
+;; Returns 32 bit message opcode, otherwise throws the "Invalid incoming message" exit code
+(slice, int) ~load_opcode_internal(slice s) asm( -> 1 0) "32 LDUQ 130 THROWIFNOT";
+
+() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
+    
+    ;; Context
+    var cs = in_msg_cell.begin_parse();
+    cs~skip_bits(2);
+    var msg_bounceable = cs~load_int(1);
+    var msg_bounced = cs~load_int(1);
+    slice msg_sender_addr = cs~load_msg_addr();
+    __tact_context = (msg_bounceable, msg_sender_addr, msg_value, cs);
+    __tact_context_sender = msg_sender_addr;
+    
+    ;; Load contract data
+    var ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw) = $FutmundiTonTreasury$_contract_load();
+    
+    ;; Handle bounced messages
+    if (msg_bounced) { return (); }
+    int op = 0;
+    int in_msg_length = slice_bits(in_msg);
+    if (in_msg_length >= 32) {
+        op = in_msg~load_uint(32);
+        ;; Receive WithdrawTON message
+        if (op == 0x46544d01) {
+            var $msg'queryId = in_msg~load_uint(64);
+            var $msg'amount = in_msg~load_varuint16();
+            var $msg'to = in_msg~load_msg_addr();
+            ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)~$FutmundiTonTreasury$_fun_requireOwner();
+            throw_unless(21237, (~ $self'paused));
+            throw_unless(43129, ($msg'amount >= $self'minWithdraw));
+            throw_unless(38338, ($msg'amount <= $self'maxWithdraw));
+            int $percentFee = (($msg'amount * $self'feeBps) / 10000);
+            int $totalFee = ($percentFee + $self'fixedFee);
+            throw_unless(26906, ($msg'amount > $totalFee));
+            int $userAmount = ($msg'amount - $totalFee);
+            $global_send($SendParameters$_constructor_to_value_mode_body($msg'to, $userAmount, 1, null()));
+            if (($self'fixedFee > 0)) {
+                $global_send($SendParameters$_constructor_to_value_mode_body($self'feeWallet, $self'fixedFee, 1, null()));
+            }
+            $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+            return ();
+        }
+        
+        ;; Receive UpdateFees message
+        if (op == 0x46544d02) {
+            var $msg'feeBps = in_msg~load_uint(16);
+            var $msg'fixedFee = in_msg~load_varuint16();
+            var $msg'minWithdraw = in_msg~load_varuint16();
+            var $msg'maxWithdraw = in_msg~load_varuint16();
+            ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)~$FutmundiTonTreasury$_fun_requireOwner();
+            throw_unless(46136, ($msg'feeBps <= 2000));
+            throw_unless(47377, ($msg'fixedFee >= 0));
+            throw_unless(54821, ($msg'minWithdraw > 0));
+            throw_unless(38680, ($msg'maxWithdraw >= $msg'minWithdraw));
+            $self'feeBps = $msg'feeBps;
+            $self'fixedFee = $msg'fixedFee;
+            $self'minWithdraw = $msg'minWithdraw;
+            $self'maxWithdraw = $msg'maxWithdraw;
+            $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+            return ();
+        }
+        
+        ;; Receive Pause message
+        if (op == 0x46544d03) {
+            var $_ = empty_tuple();
+            ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)~$FutmundiTonTreasury$_fun_requireOwner();
+            $self'paused = true;
+            $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+            return ();
+        }
+        
+        ;; Receive Unpause message
+        if (op == 0x46544d04) {
+            var $_ = empty_tuple();
+            ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)~$FutmundiTonTreasury$_fun_requireOwner();
+            $self'paused = false;
+            $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+            return ();
+        }
+        
+        ;; Receive UpdateFeeWallet message
+        if (op == 0x46544d06) {
+            var $msg'feeWallet = in_msg~load_msg_addr();
+            ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)~$FutmundiTonTreasury$_fun_requireOwner();
+            $self'feeWallet = $msg'feeWallet;
+            $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+            return ();
+        }
+        
+        ;; Receive EmergencyWithdrawTON message
+        if (op == 0x46544d05) {
+            var $msg'amount = in_msg~load_varuint16();
+            var $msg'to = in_msg~load_msg_addr();
+            ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)~$FutmundiTonTreasury$_fun_requireOwner();
+            throw_unless(40815, ($msg'amount > 0));
+            $global_send($SendParameters$_constructor_to_value_mode_body($msg'to, $msg'amount, 1, null()));
+            $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+            return ();
+        }
+        
+        ;; Receive Deploy message
+        if (op == 0x946a98b6) {
+            var $deploy'queryId = in_msg~load_uint(64);
+            ($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw)~$FutmundiTonTreasury$_fun_notify($DeployOk$_store_cell($DeployOk$_constructor_queryId($deploy'queryId), begin_cell()));
+            $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+            return ();
+        }
+        
+    }
+    ;; Empty Receiver and Text Receivers
+    var text_op = slice_hash(in_msg);
+    ;; Receive "Fund" message
+    if (text_op == 0xea3e96c7b594e707a4b34f455c6233f4344123525688190a761452b0ad3b7cbf) {
+        throw_unless(23306, ($Context$_get_value(__tact_context_get()) > 0));
+        $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+        return ();
+    }
+    ;; Receive "Deposit" message
+    if (text_op == 0xfac1310ee85a533149654bd4ff87fea1d66ccc31677419258f6593b8c691e3f0) {
+        throw_unless(23306, ($Context$_get_value(__tact_context_get()) > 0));
+        $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+        return ();
+    }
+    ;; Receive "Bet" message
+    if (text_op == 0x95925b5c85e46ec474ffe6bf5b3d185d76fd55ce2398ef4a8fb31ad6373e1258) {
+        throw_unless(23306, ($Context$_get_value(__tact_context_get()) > 0));
+        $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+        return ();
+    }
+    ;; Receive "Tournament" message
+    if (text_op == 0x91cc3c51d91d613a15a37022955e4094cd88c7951001cb87fbe235bf684d9fda) {
+        throw_unless(23306, ($Context$_get_value(__tact_context_get()) > 0));
+        $FutmundiTonTreasury$_contract_store(($self'owner, $self'feeWallet, $self'paused, $self'feeBps, $self'fixedFee, $self'minWithdraw, $self'maxWithdraw));
+        return ();
+    }
+    ;; Throw if not handled
+    throw(130);
+}

@@ -12,6 +12,10 @@
 <script>
 // Backend seguro para validar admin por firma TON.
 window.FM_ADMIN_API_BASE = 'https://futmundi-admin-backend.onrender.com';
+// Referidos: por defecto usa link web seguro para evitar errores de Telegram "no existe" si el short_name del BotFather no coincide.
+// Si confirmas el @bot y short_name reales, puedes activar el link TMA con:
+// window.FM_REFERRAL_USE_TELEGRAM = true; window.FM_BOT_USERNAME='TuBot'; window.FM_MINIAPP_SHORT_NAME='tu_short_name';
+window.FM_REFERRAL_USE_TELEGRAM = window.FM_REFERRAL_USE_TELEGRAM || false;
 
 // SINGLE SOURCE OF TRUTH: NFT & TOKENOMICS CONFIGURATION
 window.NFT_CONFIG = {
@@ -1553,7 +1557,7 @@ const TEMPLATES = {
       <div class="m-section">Tu enlace de invitación</div>
       <div class="m-row" style="margin-bottom:12px" id="ref-link-row">
         <div class="icn">🔗</div>
-        <div class="meta"><b id="ref-link">t.me/FutmundiBot/futmundi?startapp=TU-CODIGO</b><span>Toca para copiar</span></div>
+        <div class="meta"><b id="ref-link">Generando enlace...</b><span id="ref-link-help">Toca para copiar</span></div>
       </div>
       <div class="m-section">Compartir en</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -2528,12 +2532,26 @@ function getIncomingRefCode(){
     return (tgParam || url.searchParams.get('startapp') || url.searchParams.get('start') || url.searchParams.get('ref') || '').trim().toUpperCase();
   }catch(e){ return ''; }
 }
-function buildReferralLink(){
-  const bot = String(STATE.botUser || '').replace(/^@/, '');
+function buildWebReferralLink(){
   const code = encodeURIComponent(STATE.refCode || '');
-  const shortName = String(STATE.miniAppShortName || '').replace(/^\//, '');
-  // Link directo de Telegram Mini App. El shortName debe coincidir con BotFather.
-  return shortName ? `https://t.me/${bot}/${shortName}?startapp=${code}` : `https://t.me/${bot}?startapp=${code}`;
+  const origin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'https://futmundi-wine.vercel.app';
+  const path = window.location.pathname && window.location.pathname !== '/' ? window.location.pathname : '/';
+  return `${origin}${path}?ref=${code}`;
+}
+function buildTelegramMiniAppReferralLink(){
+  const bot = String(STATE.botUser || '').replace(/^@/, '').trim();
+  const code = encodeURIComponent(STATE.refCode || '');
+  const shortName = String(STATE.miniAppShortName || '').replace(/^\//, '').trim();
+  if(!bot) return '';
+  // Para Mini Apps el short_name debe ser EXACTAMENTE el configurado en BotFather.
+  // Si no coincide, Telegram muestra “no existe”.
+  return shortName ? `https://t.me/${bot}/${shortName}?startapp=${code}` : `https://t.me/${bot}?start=${code}`;
+}
+function buildReferralLink(){
+  const useTelegram = !!(window.FM_REFERRAL_USE_TELEGRAM || localStorage.getItem('fm_referral_use_telegram') === '1' || STATE.useTelegramReferralLink);
+  const tg = buildTelegramMiniAppReferralLink();
+  // Default seguro: link web con ?ref=. Evita el error “no existe” cuando el short_name/bot de Telegram no está confirmado.
+  return useTelegram && tg ? tg : buildWebReferralLink();
 }
 
 // ===== App State (mini-app) =====
@@ -2552,8 +2570,9 @@ function getUtcWeekIdentifier(){
 
 const STATE = {
   refCode: 'X4K9',
-  botUser: 'FutmundiBot',
-  miniAppShortName: 'futmundi', // cambiar si el short name en BotFather es distinto
+  botUser: window.FM_BOT_USERNAME || localStorage.getItem('fm_bot_username') || 'FutmundiBot',
+  miniAppShortName: window.FM_MINIAPP_SHORT_NAME || localStorage.getItem('fm_miniapp_short_name') || '', // colocar el short_name real de BotFather si se activa link Telegram
+  useTelegramReferralLink: !!(window.FM_REFERRAL_USE_TELEGRAM || localStorage.getItem('fm_referral_use_telegram') === '1'),
   incomingRefCode: getIncomingRefCode(),
   contract: 'EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs',
   // Seguridad: la validación admin debe hacerse en backend mediante firma de wallet.
@@ -2726,10 +2745,15 @@ function wireModal(name){
   if(name === 'referido'){
     const ensureLink = () => {
       const link = buildReferralLink();
-      const txt = `🔥 Únete a FUTMUNDI y juega fútbol NFT en Telegram. Usa mi enlace: ${link}`;
+      const tgLink = buildTelegramMiniAppReferralLink();
+      const txt = `🔥 Únete a FUTMUNDI y juega fútbol NFT. Usa mi enlace: ${link}`;
       const linkEl = inner.querySelector('#ref-link');
+      const helpEl = inner.querySelector('#ref-link-help');
       if(linkEl) linkEl.textContent = link;
-      return { link, txt };
+      if(helpEl){
+        helpEl.textContent = (STATE.useTelegramReferralLink && tgLink) ? 'Link Telegram Mini App activo' : 'Link web seguro · toca para copiar';
+      }
+      return { link, tgLink, txt };
     };
     if(STATE.tonWallet) syncUserState().then(ensureLink); else ensureLink();
     inner.querySelector('#ref-link-row').addEventListener('click', ()=>{

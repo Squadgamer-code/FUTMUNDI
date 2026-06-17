@@ -710,7 +710,7 @@ app.post('/api/matches/play', async (req, res) => {
     const { address, mode, nftId } = req.body || {};
     if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
     const { user } = await getOrCreateUser(address);
-    const result = req.body?.result || (Math.random() < 0.58 ? 'win' : Math.random() < 0.78 ? 'draw' : 'loss');
+    const result = (Math.random() < 0.58 ? 'win' : Math.random() < 0.78 ? 'draw' : 'loss);
     const gemsMap = mode === 'estadio' ? { win:90, draw:30, loss:0 } : { win:45, draw:15, loss:0 };
     const pointsMap = { win:15, draw:5, loss:-10 };
     const gemsDelta = gemsMap[result] ?? 0;

@@ -2538,20 +2538,23 @@ function buildWebReferralLink(){
   const path = window.location.pathname && window.location.pathname !== '/' ? window.location.pathname : '/';
   return `${origin}${path}?ref=${code}`;
 }
+function buildTelegramBotReferralLink(){
+  const bot = String(STATE.botUser || '').replace(/^@/, '').trim();
+  const code = encodeURIComponent(STATE.refCode || '');
+  return bot ? `https://t.me/${bot}?start=${code}` : buildWebReferralLink();
+}
 function buildTelegramMiniAppReferralLink(){
   const bot = String(STATE.botUser || '').replace(/^@/, '').trim();
   const code = encodeURIComponent(STATE.refCode || '');
   const shortName = String(STATE.miniAppShortName || '').replace(/^\//, '').trim();
-  if(!bot) return '';
-  // Para Mini Apps el short_name debe ser EXACTAMENTE el configurado en BotFather.
-  // Si no coincide, Telegram muestra “no existe”.
-  return shortName ? `https://t.me/${bot}/${shortName}?startapp=${code}` : `https://t.me/${bot}?start=${code}`;
+  if(!bot || !shortName) return '';
+  // OJO: este link solo funciona si shortName existe exactamente en BotFather.
+  return `https://t.me/${bot}/${shortName}?startapp=${code}`;
 }
 function buildReferralLink(){
-  const useTelegram = !!(window.FM_REFERRAL_USE_TELEGRAM || localStorage.getItem('fm_referral_use_telegram') === '1' || STATE.useTelegramReferralLink);
-  const tg = buildTelegramMiniAppReferralLink();
-  // Default seguro: link web con ?ref=. Evita el error “no existe” cuando el short_name/bot de Telegram no está confirmado.
-  return useTelegram && tg ? tg : buildWebReferralLink();
+  // Link Telegram robusto. No usa /short_name porque si el short_name no coincide Telegram dice “no existe”.
+  // Abre el bot con start=CODIGO. Si luego confirmas el short_name real, puede usarse buildTelegramMiniAppReferralLink().
+  return buildTelegramBotReferralLink();
 }
 
 // ===== App State (mini-app) =====
@@ -2751,7 +2754,7 @@ function wireModal(name){
       const helpEl = inner.querySelector('#ref-link-help');
       if(linkEl) linkEl.textContent = link;
       if(helpEl){
-        helpEl.textContent = (STATE.useTelegramReferralLink && tgLink) ? 'Link Telegram Mini App activo' : 'Link Telegram Mini App · toca para copiar';
+        helpEl.textContent = (STATE.useTelegramReferralLink && tgLink) ? 'Link del bot Telegram activo' : 'Link del bot Telegram · toca para copiar';
       }
       return { link, tgLink, txt };
     };
@@ -3180,8 +3183,16 @@ async function adminLoadDeposits(){
 async function adminLoadWithdrawals(){
   adminLoading('Cargando retiros pendientes...');
   try{
-    const data = await adminFetch('/api/admin/withdrawals?status=pending,approved', { method:'GET' });
-    adminSetContent(`<div class="admin-list">${(data.withdrawals || []).map(w => `
+    const [pendingRes, approvedRes] = await Promise.allSettled([
+      adminFetch('/api/admin/withdrawals?status=pending', { method:'GET' }),
+      adminFetch('/api/admin/withdrawals?status=approved', { method:'GET' })
+    ]);
+    const withdrawals = [];
+    if(pendingRes.status === 'fulfilled') withdrawals.push(...(pendingRes.value.withdrawals || []));
+    if(approvedRes.status === 'fulfilled') withdrawals.push(...(approvedRes.value.withdrawals || []));
+    const seenWd = new Set();
+    const uniqueWithdrawals = withdrawals.filter(w => { if(seenWd.has(w.id)) return false; seenWd.add(w.id); return true; });
+    adminSetContent(`<div class="admin-list">${uniqueWithdrawals.map(w => `
       <div class="admin-row">
         <div class="admin-pill">${adminMoney(w.amount_usdt_net)} USDT</div>
         <div class="meta"><b>${escapeHTML(w.wallet_to)}</b><span>${w.gems_requested} 💎 → neto ${w.gems_net} 💎 · fee ${w.fee_percent_gems}+${w.fee_fixed_gems} · Estado: ${escapeHTML(w.status)} · ${new Date(w.created_at).toLocaleString()}</span></div>

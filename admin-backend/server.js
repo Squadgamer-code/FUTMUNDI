@@ -21,9 +21,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const PAYOUT_WALLET_MNEMONIC = process.env.PAYOUT_WALLET_MNEMONIC || process.env.HOT_WALLET_MNEMONIC || process.env.INVOICE_WALLET_MNEMONIC || '';
 const PAYOUT_WALLET_VERSION = String(process.env.PAYOUT_WALLET_VERSION || 'v4r2').toLowerCase();
-const TREASURY_CONTRACT_ADDRESS = process.env.TREASURY_CONTRACT_ADDRESS || INVOICE_WALLET_ADDRESS;
+const TREASURY_CONTRACT_ADDRESS = process.env.TREASURY_CONTRACT_ADDRESS || process.env.TON_TREASURY_CONTRACT_ADDRESS || 'EQDfw35pL2OJ48GTKjPH1W3Y7Pi3rxcHN36qyPGdymzqm91s';
 const TREASURY_OWNER_ADDRESS = process.env.TREASURY_OWNER_ADDRESS || 'EQBoGfQlVqaQPJRqlIPyGkpHlDZsb6zqsgABVNNDtdbbhieR';
-const WITHDRAW_REQUEST_OPCODE = 0xd6ebd015; // Tact ABI: WithdrawRequest
+const WITHDRAW_REQUEST_OPCODE = 0x46544d01; // Tact ABI: WithdrawTON
 
 const corsOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -197,22 +197,22 @@ function toUsdtUnits(amountUsdt){
   return BigInt(Math.round(n * 10 ** USDT_DECIMALS));
 }
 
-function validatePaymentAmount(kind, amountUsdt, gems){
-  const usdt = Number(amountUsdt);
+function validatePaymentAmount(kind, amountTon, gems){
+  const ton = Number(amountTon);
   const g = Number(gems || 0);
   if(kind === 'deposit'){
-    const allowed = new Map([[10,320],[50,1600],[125,4000],[500,16000]]);
-    if(!allowed.has(usdt) || allowed.get(usdt) !== g) throw new Error('Paquete de depósito inválido');
+    const allowed = new Map([[8,320],[40,1600],[80,3200],[160,6400],[400,16000]]);
+    if(!allowed.has(ton) || allowed.get(ton) !== g) throw new Error('Paquete de depósito TON inválido');
   } else if(kind === 'tournament'){
-    if(usdt !== 10) throw new Error('El torneo requiere 10 USDT');
+    if(ton !== 8) throw new Error('El torneo requiere 8 TON');
   } else if(kind === 'training'){
-    if(usdt <= 0 || usdt > 5000) throw new Error('Monto de entrenamiento inválido');
+    if(ton <= 0 || ton > 400) throw new Error('Monto de entrenamiento TON inválido');
   } else if(kind === 'bet'){
-    if(usdt < 10 || usdt > 25000) throw new Error('Monto de apuesta inválido');
+    if(ton < 8 || ton > 400) throw new Error('Monto de apuesta TON inválido');
   } else {
     throw new Error('Tipo de pago inválido');
   }
-  return { usdt, gems:g };
+  return { ton, gems:g };
 }
 
 async function getJettonWalletAddress(ownerAddress){
@@ -296,6 +296,63 @@ async function buildUsdtTransaction({ ownerAddress, amountUsdt, kind, gems }){
 }
 
 
+async function buildUsdtDirectTransferTransaction({ ownerAddress, destinationAddress, amountUsdt, comment }){
+  const owner = Address.parse(ownerAddress);
+  const destination = Address.parse(destinationAddress);
+  const senderJettonWallet = await getJettonWalletAddress(ownerAddress);
+  await assertUsdtWalletReady(ownerAddress, senderJettonWallet, amountUsdt);
+  const queryId = BigInt(Date.now());
+  const finalComment = comment || `FUTMUNDI:MANUAL_WITHDRAW:${amountUsdt}:${queryId}`;
+  const forwardPayload = beginCell().storeUint(0, 32).storeStringTail(finalComment).endCell();
+  const body = beginCell()
+    .storeUint(0xf8a7ea5, 32)
+    .storeUint(queryId, 64)
+    .storeCoins(toUsdtUnits(amountUsdt))
+    .storeAddress(destination)
+    .storeAddress(owner)
+    .storeUint(0, 1)
+    .storeCoins(toNano('0.02'))
+    .storeBit(1)
+    .storeRef(forwardPayload)
+    .endCell();
+  return {
+    validUntil: Math.floor(Date.now() / 1000) + 600,
+    messages: [{
+      address: senderJettonWallet.toString({ bounceable: true, urlSafe: true }),
+      amount: toNano('0.08').toString(),
+      payload: body.toBoc().toString('base64')
+    }],
+    meta: {
+      amountUsdt,
+      destination: destination.toString({ bounceable:false, urlSafe:true }),
+      sender: owner.toString({ bounceable:false, urlSafe:true }),
+      senderJettonWallet: senderJettonWallet.toString({ bounceable:true, urlSafe:true }),
+      usdtMaster: Address.parse(USDT_MASTER_ADDRESS).toString({ bounceable:true, urlSafe:true }),
+      comment: finalComment,
+      queryId: queryId.toString()
+    }
+  };
+}
+
+
+function buildTonNativeTransaction({ amountTon, kind, gems, commentSuffix='' }){
+  const ton = Number(amountTon);
+  if(!Number.isFinite(ton) || ton <= 0) throw new Error('Monto TON inválido');
+  const queryId = Date.now();
+  const comment = `FUTMUNDI:${kind}:${ton}:${gems || 0}:${queryId}${commentSuffix}`;
+  const body = beginCell().storeUint(0, 32).storeStringTail(comment).endCell();
+  return {
+    validUntil: Math.floor(Date.now() / 1000) + 600,
+    messages: [{
+      address: Address.parse(TREASURY_CONTRACT_ADDRESS).toString({ bounceable:true, urlSafe:true }),
+      amount: toNano(String(ton)).toString(),
+      payload: body.toBoc().toString('base64')
+    }],
+    meta: { kind, amountTon:ton, gems, treasury:TREASURY_CONTRACT_ADDRESS, comment, queryId }
+  };
+}
+
+
 function requirePayoutWallet(){
   if(!PAYOUT_WALLET_MNEMONIC){
     throw new Error('PAYOUT_WALLET_MNEMONIC no está configurado en Render. Aprobar no puede pagar USDT sin la seed de la wallet pagadora.');
@@ -353,19 +410,21 @@ function buildJettonTransferBody({ amountUsdt, destinationAddress, responseAddre
     .endCell();
   return { body, queryId };
 }
-async function sendTreasuryWithdrawRequest({ toAddress, amountUsdtGross, withdrawalId }){
+async function sendTreasuryWithdrawRequest({ toAddress, amountTonGross, withdrawalId }){
   const payout = await openPayoutWallet();
   const ownerFriendly = payout.address.toString({ bounceable:false, urlSafe:true });
   const ownerVersion = payout.version;
   const expectedOwner = Address.parse(TREASURY_OWNER_ADDRESS).toString({ bounceable:false, urlSafe:true });
   if(ownerFriendly !== expectedOwner){
-    throw new Error(`La seed PAYOUT_WALLET_MNEMONIC firma ${ownerFriendly} (${ownerVersion}), pero el owner del contrato Treasury es ${expectedOwner}. Coloca en Render la seed de la wallet owner/admin del contrato, no la seed del contrato.`);
+    throw new Error(`La seed PAYOUT_WALLET_MNEMONIC firma ${ownerFriendly} (${ownerVersion}), pero el owner del contrato Treasury es ${expectedOwner}.`);
   }
   const destination = Address.parse(toAddress);
-  const amountUnits = toUsdtUnits(amountUsdtGross);
+  const grossNano = toNano(String(amountTonGross));
+  const queryId = BigInt(Date.now());
   const body = beginCell()
     .storeUint(WITHDRAW_REQUEST_OPCODE, 32)
-    .storeCoins(amountUnits)
+    .storeUint(queryId, 64)
+    .storeCoins(grossNano)
     .storeAddress(destination)
     .endCell();
   const seqno = await payout.contract.getSeqno();
@@ -375,23 +434,22 @@ async function sendTreasuryWithdrawRequest({ toAddress, amountUsdtGross, withdra
     sendMode: SendMode.PAY_GAS_SEPARATELY,
     messages: [internal({
       to: Address.parse(TREASURY_CONTRACT_ADDRESS),
-      value: toNano('0.18'),
+      value: toNano('0.12'),
       body
     })]
   });
-  const queryId = `${Date.now()}`;
   return {
     ok:true,
-    mode:'treasury-contract-withdraw-request',
-    opcode:'0xd6ebd015',
+    mode:'ton-treasury-withdraw',
+    opcode:'0x46544d01',
     seqno,
-    queryId,
-    txHash:`treasury-withdraw-${withdrawalId || queryId}`,
+    queryId: queryId.toString(),
+    txHash:`ton-withdraw-${withdrawalId || queryId.toString()}`,
     ownerWallet: ownerFriendly,
     treasuryContract: Address.parse(TREASURY_CONTRACT_ADDRESS).toString({ bounceable:true, urlSafe:true }),
     toAddress: destination.toString({ bounceable:false, urlSafe:true }),
-    amountUsdtGross:Number(amountUsdtGross),
-    expectedUsdtNet:+(Number(amountUsdtGross) * 0.94 - 1).toFixed(6)
+    amountTonGross:Number(amountTonGross),
+    expectedTonNet:+(Number(amountTonGross) * 0.94 - 1).toFixed(6)
   };
 }
 
@@ -534,15 +592,15 @@ function calcWithdrawal(gemsRequested){
   const gems = Number(gemsRequested);
   if(!Number.isInteger(gems)) throw new Error('Monto de gemas inválido');
   if(gems < 160 || gems > 3200) throw new Error('Monto fuera de rango (160–3200 gemas)');
-  const amountUsdtGross = +(gems / 32).toFixed(6);
-  const feePercentUsdt = +(amountUsdtGross * 0.06).toFixed(6);
-  const feeFixedUsdt = 1;
-  const amountUsdtNet = +(amountUsdtGross - feePercentUsdt - feeFixedUsdt).toFixed(6);
+  const amountTonGross = +(gems / 40).toFixed(6);
+  const feePercentTon = +(amountTonGross * 0.06).toFixed(6);
+  const feeFixedTon = 1;
+  const amountTonNet = +(amountTonGross - feePercentTon - feeFixedTon).toFixed(6);
   const feePercentGems = Math.round(gems * 0.06);
-  const feeFixedGems = 32;
-  const gemsNet = Math.max(0, Math.floor(amountUsdtNet * 32));
-  if(amountUsdtNet <= 0) throw new Error('Monto neto inválido después de comisiones');
-  return { gemsRequested:gems, feePercentGems, feeFixedGems, gemsNet, amountUsdtNet, amountUsdtGross, feePercentUsdt, feeFixedUsdt };
+  const feeFixedGems = 40;
+  const gemsNet = Math.max(0, Math.floor(amountTonNet * 40));
+  if(amountTonNet <= 0) throw new Error('Monto neto inválido después de comisiones');
+  return { gemsRequested:gems, feePercentGems, feeFixedGems, gemsNet, amountUsdtNet:amountTonNet, amountUsdtGross:amountTonGross, amountTonNet, amountTonGross, feePercentTon, feeFixedTon };
 }
 
 function requireAdmin(req){
@@ -653,7 +711,7 @@ app.get('/health', async (_req, res) => {
       ownerMatchesTreasury = ownerWalletAddress === Address.parse(TREASURY_OWNER_ADDRESS).toString({ bounceable:false, urlSafe:true });
     }
   }catch(e){ ownerWalletAddress = 'ERROR: ' + e.message; }
-  res.json({ ok:true, service:'futmundi-admin-backend', version:'withdraw-pay-v5-wallet-autodetect', supabase:!!supabase, payoutWalletConfigured:!!PAYOUT_WALLET_MNEMONIC, ownerWalletAddress, ownerWalletVersion, walletCandidates, treasuryOwner:TREASURY_OWNER_ADDRESS, ownerMatchesTreasury, treasuryContract:TREASURY_CONTRACT_ADDRESS, withdrawPayAction:true });
+  res.json({ ok:true, service:'futmundi-admin-backend', version:'ton-only-v1', supabase:!!supabase, payoutWalletConfigured:!!PAYOUT_WALLET_MNEMONIC, ownerWalletAddress, ownerWalletVersion, walletCandidates, treasuryOwner:TREASURY_OWNER_ADDRESS, ownerMatchesTreasury, treasuryContract:TREASURY_CONTRACT_ADDRESS, withdrawPayAction:true });
 });
 
 app.get('/api/admin/payload', (_req, res) => {
@@ -713,7 +771,7 @@ app.post('/api/payments/usdt-order', async (req, res) => {
     const { address, amountUsdt, gems, kind } = req.body || {};
     if(!address) return res.status(400).json({ ok:false, error:'Wallet requerida' });
     const payment = validatePaymentAmount(kind, amountUsdt, gems);
-    const built = await buildUsdtTransaction({ ownerAddress: address, amountUsdt: payment.usdt, gems: payment.gems, kind });
+    const built = buildTonNativeTransaction({ amountTon: payment.ton, gems: payment.gems, kind });
     let order = null;
     let user = null;
     if(supabase){
@@ -723,7 +781,7 @@ app.post('/api/payments/usdt-order', async (req, res) => {
         user_id: user.id,
         wallet_address: friendlyTonAddress(address),
         kind,
-        amount_usdt: payment.usdt,
+        amount_usdt: payment.ton,
         gems: payment.gems,
         status: 'wallet_opened',
         ton_payload: { validUntil: built.validUntil, messages: built.messages },
@@ -737,7 +795,7 @@ app.post('/api/payments/usdt-order', async (req, res) => {
           user_id: user.id,
           payment_order_id: order.id,
           wallet_address: friendlyTonAddress(address),
-          amount_usdt: payment.usdt,
+          amount_usdt: payment.ton,
           gems: payment.gems,
           status: 'pending'
         });
@@ -1012,6 +1070,39 @@ app.get('/api/admin/withdrawals', async (req, res) => {
   }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
 });
 
+app.post('/api/admin/withdrawals/tonconnect-payout-order', async (req, res) => {
+  try{
+    requireAdmin(req);
+    requireSupabase();
+    const { withdrawalId, payerAddress } = req.body || {};
+    if(!withdrawalId) throw new Error('withdrawalId requerido');
+    if(!payerAddress) throw new Error('Wallet pagadora conectada requerida');
+    const { data:w, error } = await supabase.from('withdrawals').select('*').eq('id', withdrawalId).single();
+    if(error) throw new Error(error.message);
+    if(!['pending','approved'].includes(w.status)) throw new Error('Retiro no disponible para pago');
+    const amount = Number(w.amount_usdt_net || 0);
+    if(!amount || amount <= 0) throw new Error('Monto TON neto inválido');
+    const comment = `FUTMUNDI:WITHDRAWAL:${w.id}:${amount}TON`;
+    const body = beginCell().storeUint(0, 32).storeStringTail(comment).endCell();
+    const tx = {
+      validUntil: Math.floor(Date.now() / 1000) + 600,
+      messages: [{
+        address: Address.parse(w.wallet_to).toString({ bounceable:false, urlSafe:true }),
+        amount: toNano(String(amount)).toString(),
+        payload: body.toBoc().toString('base64')
+      }]
+    };
+    return res.json({
+      ok:true,
+      withdrawalId:w.id,
+      amountTon:amount,
+      walletTo:w.wallet_to,
+      transaction:tx,
+      meta:{ amountTon:amount, walletTo:w.wallet_to, payer:payerAddress, comment }
+    });
+  }catch(e){ return res.status(e.status || 400).json({ ok:false, error:e.message }); }
+});
+
 app.post('/api/admin/withdrawals/action', async (req, res) => {
   try{
     requireAdmin(req);
@@ -1029,14 +1120,14 @@ app.post('/api/admin/withdrawals/action', async (req, res) => {
     if(action === 'pay'){
       if(!['pending','approved'].includes(w.status)) throw new Error('Retiro no se puede pagar');
       const calc = calcWithdrawal(Number(w.gems_requested || 0));
-      const gross = Number(calc.amountUsdtGross || 0);
-      if(!gross || gross <= 0) throw new Error('Monto USDT bruto inválido');
+      const gross = Number(calc.amountTonGross || 0);
+      if(!gross || gross <= 0) throw new Error('Monto TON bruto inválido');
       const payment = await sendTreasuryWithdrawRequest({
         toAddress: w.wallet_to,
-        amountUsdtGross: gross,
+        amountTonGross: gross,
         withdrawalId: w.id
       });
-      const paid = await markWithdrawalPaid(w, payment.txHash, note || `Orden enviada al Treasury. El contrato descuenta 6% + 1 USDT. seqno=${payment.seqno}`, payment.expectedUsdtNet);
+      const paid = await markWithdrawalPaid(w, payment.txHash, note || `Orden enviada al TON Treasury. El contrato descuenta 6% + 1 TON. seqno=${payment.seqno}`, payment.expectedTonNet);
       return res.json({ ok:true, ...paid, payment });
     }
     if(action === 'paid'){

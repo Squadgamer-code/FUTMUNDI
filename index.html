@@ -1140,6 +1140,13 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
   .admin-actions .admin-btn{font-size:9px;padding:7px 6px;min-width:82px}
 }
 
+
+
+/* Admin retiros manuales: copiar wallet/monto sin pago automático */
+.manual-withdraw-row .admin-actions .admin-btn{min-width:92px}
+.manual-withdraw-row .meta b{font-size:11px!important;line-height:1.25}
+@media(max-width:520px){.manual-withdraw-row .admin-actions .admin-btn{flex:1 1 45%;min-width:120px}.manual-withdraw-row .admin-pill{margin-bottom:4px}}
+
 </style>
 
 <link rel="stylesheet" href="./futmundi-bet.css" />
@@ -1493,9 +1500,9 @@ const TEMPLATES = {
   retiro: {
     title: t("retiro"),
     body: `
-      <div class="m-broadcast-bar"><span class="live">WITHDRAW</span><span class="sep"></span><span>Red TON · USDT</span></div>
+      <div class="m-broadcast-bar"><span class="live">WITHDRAW</span><span class="sep"></span><span>Red TON · TON</span></div>
       <div class="m-hero"><h3>Saldo disponible</h3><div class="m-bignum" id="r-balance">3200<small>💎</small></div></div>
-      <div class="m-warn">Mínimo 160 💎 · Máximo 3200 💎 · Comisión contrato 6% + 1 USDT</div>
+      <div class="m-warn">Mínimo 160 💎 · Máximo 3200 💎 · Comisión contrato 6% + 1 TON</div>
       <div class="m-section">Wallet TON</div>
       <div class="m-row" style="margin-bottom:10px"><div class="icn">💰</div><div class="meta" style="flex:1"><input id="r-wallet" class="m-input" type="text" autocomplete="off" placeholder="Pega tu wallet TON UQ..." /><span>Pega tu dirección TON</span></div></div>
       <div class="m-section">Monto a retirar</div>
@@ -1508,19 +1515,20 @@ const TEMPLATES = {
   deposito: {
     title: t("deposito"),
     body: `
-      <div class="m-broadcast-bar"><span class="live">DEPOSIT</span><span class="sep"></span><span>USDT · Red TON</span></div>
-      <div class="m-hero"><div class="m-trophy">💎</div><h3>Compra Gemas</h3><div class="m-bignum">USDT<small>TON</small></div></div>
+      <div class="m-broadcast-bar"><span class="live">DEPOSIT</span><span class="sep"></span><span>TON · Red TON</span></div>
+      <div class="m-hero"><div class="m-trophy">💎</div><h3>Compra Gemas</h3><div class="m-bignum">TON<small>native</small></div></div>
       <div class="m-section">Paquetes</div>
       <div class="m-list" id="dep-packs">
-        <div class="m-row dep-pack" data-gems="320" data-usdt="10" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>320 💎</b><span>10 USDT</span></div><div class="right">Comprar</div></div>
-        <div class="m-row dep-pack" data-gems="1600" data-usdt="50" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>1.600 💎</b><span>50 USDT</span></div><div class="right">Comprar</div></div>
-        <div class="m-row dep-pack" data-gems="4000" data-usdt="125" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>4.000 💎</b><span>125 USDT</span></div><div class="right">Comprar</div></div>
-        <div class="m-row dep-pack" data-gems="16000" data-usdt="500" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>16.000 💎</b><span>500 USDT</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="320" data-usdt="8" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>320 💎</b><span>8 TON</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="1600" data-usdt="40" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>1.600 💎</b><span>40 TON</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="3200" data-usdt="80" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>3.200 💎</b><span>80 TON</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="6400" data-usdt="160" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>6.400 💎</b><span>160 TON</span></div><div class="right">Comprar</div></div>
+        <div class="m-row dep-pack" data-gems="16000" data-usdt="400" style="cursor:pointer"><div class="icn">💎</div><div class="meta"><b>16.000 💎</b><span>400 TON</span></div><div class="right">Comprar</div></div>
       </div>
       <div id="dep-detail" style="display:none">
         <div class="m-section">Datos de depósito</div>
-        <div class="m-hero"><h3>Monto</h3><div class="m-bignum" id="dep-usdt">— USDT</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="dep-gems">— 💎</div></div>
-        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente USDT en la red <b>TON</b></div>
+        <div class="m-hero"><h3>Monto</h3><div class="m-bignum" id="dep-usdt">— TON</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="dep-gems">— 💎</div></div>
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente TON nativo</div>
         <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato de depósito</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div><button class="right" id="dep-copy" style="background:none;border:none;color:var(--fm-gold);cursor:pointer;font-family:'Oswald'">Copiar</button></div>
         <div class="deposit-pay-box">
           <div style="font-size:11px;color:var(--fm-text-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">Orden de pago</div>
@@ -1534,7 +1542,7 @@ const TEMPLATES = {
   torneo: {
     title: t("torneo"),
     body: `
-      <div class="m-broadcast-bar"><span class="live">TOURNAMENT</span><span class="sep"></span><span>10 USDT · Red TON</span></div>
+      <div class="m-broadcast-bar"><span class="live">TOURNAMENT</span><span class="sep"></span><span>8 TON · Red TON</span></div>
       <div class="m-hero">
         <div class="m-trophy">🏆</div>
         <h3>Torneo Mundial Semanal</h3>
@@ -1561,10 +1569,10 @@ const TEMPLATES = {
         <div class="m-row"><div class="icn">🥉</div><div class="meta"><b>···a91c</b><span>9.405 PTS</span></div><div class="right">#3</div></div>
       </div>
       <div id="t-deposit" style="display:none">
-        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía <b>10 USDT</b> en red <b>TON</b> al contrato:</div>
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía <b>8 TON</b> nativo al contrato:</div>
         <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div></div>
       </div>
-      <button class="m-cta" id="t-register" onclick="window.__FM_UNIVERSAL_OPEN_GAME('tournament')" type="button">🏆 INSCRIBIRME Y JUGAR TORNEO (10 USDT)</button>
+      <button class="m-cta" id="t-register" onclick="window.__FM_UNIVERSAL_OPEN_GAME('tournament')" type="button">🏆 INSCRIBIRME Y JUGAR TORNEO (8 TON)</button>
       <div id="t-msg" class="m-warn" style="display:none;margin-top:10px"></div>`
   },
   referido: {
@@ -1759,7 +1767,7 @@ const TEMPLATES = {
   entrena: {
     title: t("train"),
     body: `
-      <div class="m-broadcast-bar"><span class="live">TRAINING</span><span class="sep"></span><span>USDT · Red TON</span></div>
+      <div class="m-broadcast-bar"><span class="live">TRAINING</span><span class="sep"></span><span>TON · Red TON</span></div>
       <div class="m-hero">
         <div class="m-trophy">💪</div>
         <h3>Recupera y potencia tu NFT</h3>
@@ -1779,8 +1787,8 @@ const TEMPLATES = {
         <div class="m-row tr-nft" data-nft="Mbappe" data-value="2080" style="cursor:pointer"><div class="icn">🇫🇷</div><div class="meta"><b>Mbappé</b><span>Toca para entrenar</span></div><div class="right">Entrenar</div></div>
       </div>
       <div id="tr-pay" style="display:none">
-        <div class="m-hero"><h3>Pago en USDT (TON)</h3><div class="m-bignum" id="tr-usdt">PAGO TON</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="tr-nft-name">—</div></div>
-        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente USDT en la red <b>TON</b></div>
+        <div class="m-hero"><h3>Pago en TON</h3><div class="m-bignum" id="tr-usdt">PAGO TON</div><div style="font-size:11px;letter-spacing:.18em;color:var(--fm-cyan);text-transform:uppercase;margin-top:4px;position:relative;z-index:1" id="tr-nft-name">—</div></div>
+        <div class="m-warn" style="background:rgba(57,255,136,.08);border-color:rgba(57,255,136,.25);color:var(--fm-cyan)">Envía únicamente TON nativo</div>
         <div class="m-row" style="margin-bottom:10px"><div class="icn">📜</div><div class="meta"><b>Contrato de depósito</b><span style="word-break:break-all;font-size:10px">EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs</span></div></div>
         <button class="m-cta ghost" id="tr-back">Volver</button>
       </div>`
@@ -2112,7 +2120,7 @@ function addInventoryItem(name){
   const itemCost = Number(ITEM_PRICES[name]) || 0;
   if (itemCost > 0) {
     if (STATE.balanceGems < itemCost) {
-      alert("❌ SALDO INSUFICIENTE EN LA BILLETERA: Tu balance en curso es de " + Number(STATE.balanceGems).toLocaleString() + " 💎 y " + name + " requiere una inversión de " + Number(itemCost).toLocaleString() + " 💎. Para incrementar tu saldo, toca el botón de Depósito (💎) en la pantalla central para recargar paquetes de Gemas con USDT en la blockchain de TON, u entra a la arena a ganar partidos.");
+      alert("❌ SALDO INSUFICIENTE EN LA BILLETERA: Tu balance en curso es de " + Number(STATE.balanceGems).toLocaleString() + " 💎 y " + name + " requiere una inversión de " + Number(itemCost).toLocaleString() + " 💎. Para incrementar tu saldo, toca el botón de Depósito (💎) en la pantalla central para recargar paquetes de Gemas con TON nativo, u entra a la arena a ganar partidos.");
       return { ok: false, error: "Saldo insuficiente para completar la transacción." };
     }
     // Liquida el costo
@@ -2303,13 +2311,13 @@ async function payUsdtJetton(kind, usdt, gems=0){
     let data;
     try { data = JSON.parse(raw); }
     catch(e){ throw new Error('Backend Render no devolvió JSON. Revisa que Render redeployó server.js y que la URL API apunta a Render.'); }
-    if(!res.ok || !data.ok) throw new Error(data.error || 'No se pudo crear orden USDT');
+    if(!res.ok || !data.ok) throw new Error(data.error || 'No se pudo crear orden TON');
     const result = await window.tonConnectUI.sendTransaction(data.transaction);
-    toast('Pago USDT enviado. Esperando confirmación blockchain.', true);
+    toast('Pago TON enviado. Esperando confirmación blockchain.', true);
     return { ok:true, result, meta:data.meta };
   }catch(e){
-    console.error('USDT Jetton payment failed', e);
-    toast(e.message || 'Pago USDT cancelado/error', false);
+    console.error('TON nativo payment failed', e);
+    toast(e.message || 'Pago TON cancelado/error', false);
     return false;
   }
 }
@@ -2422,7 +2430,7 @@ function requestDepositPayment(usdt, gems){
     msg.style.background = 'rgba(57,255,136,.08)';
     msg.style.borderColor = 'rgba(57,255,136,.25)';
     msg.style.color = 'var(--fm-cyan)';
-    msg.innerHTML = `Orden lista: <b>${usdt} USDT</b> por <b>${Number(gems).toLocaleString()} 💎</b><br>Contrato: <span style="word-break:break-all">${STATE.contract}</span><br>Abriendo wallet para pago USDT Jetton...`;
+    msg.innerHTML = `Orden lista: <b>${usdt} TON</b> por <b>${Number(gems).toLocaleString()} 💎</b><br>Contrato: <span style="word-break:break-all">${STATE.contract}</span><br>Abriendo wallet para pago TON nativo...`;
   }
   payUsdtJetton('deposit', usdt, gems).then(ok => {
     if(ok && msg){ msg.innerHTML += `<br><br><b>Transacción enviada.</b> Las gemas se acreditarán cuando el backend confirme el pago.`; }
@@ -2600,7 +2608,7 @@ const STATE = {
   miniAppShortName: window.FM_MINIAPP_SHORT_NAME || localStorage.getItem('fm_miniapp_short_name') || 'futmundi',
   useTelegramReferralLink: true,
   incomingRefCode: getIncomingRefCode(),
-  contract: 'EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs',
+  contract: 'EQDfw35pL2OJ48GTKjPH1W3Y7Pi3rxcHN36qyPGdymzqm91s',
   // Seguridad: la validación admin debe hacerse en backend mediante firma de wallet.
   ADMIN_WALLET: null,
   tonWallet: null,
@@ -2615,7 +2623,7 @@ const STATE = {
   selectedPlayerId: localStorage.getItem('fm_selected_player_id') || '',
   tournamentUsers: 42, // <100 → disabled
   trainingPctOfNFT: 0.30, // cálculo usado para entrenamiento
-  gemsPerUSDT: 32, // 320 gems = 10 USDT
+  gemsPerUSDT: 40, // TON-only: 1 TON = 40 gemas
 };
 window.STATE = STATE;
 initInventory();
@@ -2800,10 +2808,10 @@ function wireModal(name){
     const packs  = inner.querySelector('#dep-packs');
     inner.querySelectorAll('.dep-pack').forEach(p => p.addEventListener('click', ()=>{
       const g = p.dataset.gems, u = p.dataset.usdt;
-      inner.querySelector('#dep-usdt').textContent = u + ' USDT';
+      inner.querySelector('#dep-usdt').textContent = u + ' TON';
       inner.querySelector('#dep-gems').textContent = parseInt(g).toLocaleString() + ' 💎';
       const payText = inner.querySelector('#dep-pay-text');
-      if(payText) payText.innerHTML = `<b>${u} USDT</b> → <b>${parseInt(g).toLocaleString()} 💎</b><br><small>Red TON · USDT</small>`;
+      if(payText) payText.innerHTML = `<b>${u} TON</b> → <b>${parseInt(g).toLocaleString()} 💎</b><br><small>Red TON · TON</small>`;
       const payMsg = inner.querySelector('#dep-pay-msg');
       if(payMsg){ payMsg.style.display = 'none'; payMsg.textContent = ''; }
       packs.style.display='none'; detail.style.display='block';
@@ -2833,10 +2841,10 @@ function wireModal(name){
     syncUserState().then(updateWithdrawalBalanceUI);
     amt.addEventListener('input', ()=>{
       const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;
-      const grossUsdt = v>0 ? (v / STATE.gemsPerUSDT) : 0;
-      const recvUsdt = grossUsdt > 0 ? Math.max(0, grossUsdt * 0.94 - 1) : 0;
-      const recv = Math.floor(recvUsdt * STATE.gemsPerUSDT);
-      net.textContent = v>0 ? `Contrato descuenta: 6% + 1 USDT · Recibes: ${recv} 💎 = ${recvUsdt.toFixed(2)} USDT` : 'Recibirás: —';
+      const grossTon = v>0 ? (v / STATE.gemsPerUSDT) : 0;
+      const recvTon = grossTon > 0 ? Math.max(0, grossTon * 0.94 - 1) : 0;
+      const recv = Math.floor(recvTon * STATE.gemsPerUSDT);
+      net.textContent = v>0 ? `Contrato descuenta: 6% + 1 TON · Recibes: ${recv} 💎 = ${recvTon.toFixed(2)} TON` : 'Recibirás: —';
     });
     inner.querySelector('#r-submit').addEventListener('click', async ()=>{
       const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;
@@ -2856,7 +2864,7 @@ function wireModal(name){
         STATE.lockedGems = Number(data.balance?.locked_gems || 0);
         updateWithdrawalBalanceUI();
         msg.style.background='rgba(57,255,136,.1)'; msg.style.borderColor='rgba(57,255,136,.3)'; msg.style.color='var(--fm-cyan)';
-        msg.textContent = `Solicitud registrada: recibes ${data.calc.gemsNet} 💎 = ${Number(data.calc.amountUsdtNet).toFixed(2)} USDT. Estado: pendiente.`;
+        msg.textContent = `Solicitud registrada: recibes ${data.calc.gemsNet} 💎 = ${Number(data.calc.amountUsdtNet).toFixed(2)} TON. Estado: pendiente.`;
         toast('Retiro solicitado', true);
       }catch(e){
         msg.style.background='rgba(193,67,42,.1)'; msg.style.borderColor='rgba(193,67,42,.3)'; msg.style.color='#ffb09b';
@@ -2902,8 +2910,8 @@ function wireModal(name){
       }
       dep.style.display='block';
       msg.style.display='block'; msg.style.background='rgba(57,255,136,.1)'; msg.style.borderColor='rgba(57,255,136,.3)'; msg.style.color='var(--fm-cyan)';
-      msg.textContent='Abriendo wallet para pagar inscripción de torneo con USDT Jetton...';
-      payUsdtJetton('tournament', 10, 0).then(ok => { if(ok) msg.textContent='Pago de torneo enviado. Esperando confirmación blockchain.'; });
+      msg.textContent='Abriendo wallet para pagar inscripción de torneo con TON nativo...';
+      payUsdtJetton('tournament', 8, 0).then(ok => { if(ok) msg.textContent='Pago de torneo enviado. Esperando confirmación blockchain.'; });
     });
   }
   if(name === 'torneo'){
@@ -3194,7 +3202,7 @@ async function adminLoadDeposits(){
     const data = await adminFetch('/api/admin/deposits?status=pending', { method:'GET' });
     adminSetContent(`<div class="admin-list">${(data.deposits || []).map(d => `
       <div class="admin-row">
-        <div class="admin-pill">${adminMoney(d.amount_usdt)} USDT</div>
+        <div class="admin-pill">${adminMoney(d.amount_usdt)} TON</div>
         <div class="meta"><b>${escapeHTML(d.wallet_address)}</b><span>${d.gems} 💎 · ${new Date(d.created_at).toLocaleString()} · Order: ${adminShort(d.payment_order_id)}</span></div>
         <div class="admin-actions"><button class="admin-btn" data-confirm-deposit="${d.id}" type="button">Confirmar</button></div>
       </div>`).join('') || '<div class="empty-inventory">No hay depósitos pendientes.</div>'}</div>`);
@@ -3217,21 +3225,54 @@ async function adminLoadWithdrawals(){
     if(approvedRes.status === 'fulfilled') withdrawals.push(...(approvedRes.value.withdrawals || []));
     const seenWd = new Set();
     const uniqueWithdrawals = withdrawals.filter(w => { if(seenWd.has(w.id)) return false; seenWd.add(w.id); return true; });
-    adminSetContent(`<div class="admin-list">${uniqueWithdrawals.map(w => `
-      <div class="admin-row">
-        <div class="admin-pill">${adminMoney(w.amount_usdt_net)} USDT</div>
-        <div class="meta"><b>${escapeHTML(w.wallet_to)}</b><span>${w.gems_requested} 💎 → neto ${w.gems_net} 💎 · fee ${w.fee_percent_gems}+${w.fee_fixed_gems} · Estado: ${escapeHTML(w.status)} · ${new Date(w.created_at).toLocaleString()}</span></div>
+    adminSetContent(`<div class="admin-list">${uniqueWithdrawals.map(w => {
+      const amount = Number(w.amount_usdt_net || 0).toFixed(2);
+      const wallet = escapeHTML(w.wallet_to || '');
+      const copyLine = `${w.wallet_to || ''} | ${amount} TON | Retiro FUTMUNDI ${w.id}`;
+      return `
+      <div class="admin-row manual-withdraw-row">
+        <div class="admin-pill">${amount} TON</div>
+        <div class="meta">
+          <b>${wallet}</b>
+          <span>${w.gems_requested} 💎 → neto ${w.gems_net} 💎 · Estado: ${escapeHTML(w.status)} · ${new Date(w.created_at).toLocaleString()}</span>
+          <span style="color:var(--fm-gold)">Pago manual: copia datos o abre tu wallet conectada; confirma y luego se marca pagado.</span>
+        </div>
         <div class="admin-actions">
           ${w.status === 'pending' ? `<button class="admin-btn ghost" data-wd-action="approve" data-wd-id="${w.id}" type="button">Aprobar</button>` : ''}
-          <button class="admin-btn" data-wd-action="pay" data-wd-id="${w.id}" type="button">Pagar USDT</button>
+          <button class="admin-btn" data-tonconnect-withdraw-pay="${w.id}" data-pay-amount="${amount}" data-pay-wallet="${wallet}" type="button">Abrir wallet</button>
+          <button class="admin-btn ghost" data-copy-withdraw-wallet="${wallet}" type="button">Copiar wallet</button>
+          <button class="admin-btn ghost" data-copy-withdraw-amount="${amount}" type="button">Copiar monto</button>
+          <button class="admin-btn ghost" data-copy-withdraw-all="${escapeHTML(copyLine)}" type="button">Copiar todo</button>
           <button class="admin-btn ghost" data-wd-action="paid" data-wd-id="${w.id}" type="button">Marcar pagado</button>
           <button class="admin-btn danger" data-wd-action="reject" data-wd-id="${w.id}" type="button">Rechazar</button>
         </div>
-      </div>`).join('') || '<div class="empty-inventory">No hay retiros pendientes/aprobados.</div>'}</div>`);
+      </div>`}).join('') || '<div class="empty-inventory">No hay retiros pendientes/aprobados.</div>'}</div>`);
+    inner.querySelectorAll('[data-copy-withdraw-wallet]').forEach(btn => btn.addEventListener('click', () => copyText(btn.dataset.copyWithdrawWallet).then(()=>toast('Wallet copiada', true))));
+    inner.querySelectorAll('[data-copy-withdraw-amount]').forEach(btn => btn.addEventListener('click', () => copyText(btn.dataset.copyWithdrawAmount).then(()=>toast('Monto copiado', true))));
+    inner.querySelectorAll('[data-copy-withdraw-all]').forEach(btn => btn.addEventListener('click', () => copyText(btn.dataset.copyWithdrawAll).then(()=>toast('Datos copiados', true))));
+    inner.querySelectorAll('[data-tonconnect-withdraw-pay]').forEach(btn => btn.addEventListener('click', async () => {
+      try{
+        if(!window.tonConnectUI){ toast('TON Connect no disponible', false); return; }
+        if(!STATE.tonWallet){ toast('Conecta la wallet pagadora TON', false); try{ window.tonConnectUI.openModal(); }catch(e){} return; }
+        const amount = btn.dataset.payAmount;
+        const wallet = btn.dataset.payWallet;
+        if(!confirm(`Abrir wallet para pagar ${amount} TON a ${wallet}?`)) return;
+        btn.disabled = true;
+        btn.textContent = 'ABRIENDO...';
+        const order = await adminFetch('/api/admin/withdrawals/tonconnect-payout-order', { method:'POST', body: JSON.stringify({ withdrawalId: btn.dataset.tonconnectWithdrawPay, payerAddress: STATE.tonWallet }) });
+        await window.tonConnectUI.sendTransaction(order.transaction);
+        await adminFetch('/api/admin/withdrawals/action', { method:'POST', body: JSON.stringify({ withdrawalId: btn.dataset.tonconnectWithdrawPay, action:'paid', txHash:'tonconnect-sent', note:`Pago manual TonConnect enviado: ${amount} TON a ${wallet}` }) });
+        toast('Pago enviado y retiro marcado pagado', true);
+        adminLoadWithdrawals();
+      }catch(e){
+        toast(e.message || 'Pago cancelado/error', false);
+        btn.disabled = false;
+        btn.textContent = 'Abrir wallet';
+      }
+    }));
     inner.querySelectorAll('[data-wd-action]').forEach(btn => btn.addEventListener('click', async () => {
       const action = btn.dataset.wdAction;
-      if(action === 'pay' && !confirm('Esto enviará USDT REAL desde la wallet pagadora configurada en Render. ¿Continuar?')) return;
-      const txHash = action === 'paid' ? (prompt('TX hash del pago USDT manual:') || '') : '';
+      const txHash = action === 'paid' ? (prompt('Pega el TX hash del pago TON manual (opcional):') || '') : '';
       const note = action === 'reject' ? (prompt('Motivo de rechazo (opcional):') || '') : '';
       try{ await adminFetch('/api/admin/withdrawals/action', { method:'POST', body: JSON.stringify({ withdrawalId: btn.dataset.wdId, action, txHash, note }) }); toast('Retiro actualizado', true); adminLoadWithdrawals(); }
       catch(e){ toast(e.message, false); }

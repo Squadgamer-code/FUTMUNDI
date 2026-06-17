@@ -7,13 +7,13 @@
   if (window.__futmundi_bet_installed) return;
   window.__futmundi_bet_installed = true;
 
-  // --- CONFIGURACIÓN DE PAGO TON (USDT) ---
+  // --- CONFIGURACIÓN DE PAGO TON (TON) ---
   const TonUsdtContractConfig = {
-    contractAddress: "EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs", 
-    jettonUsdtAddress: "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
-    rateGemsPerWinUSD: 32, // 32 gemas equivalen a 1 USDT/USD
-    minimumStakeUSDT: 10,
-    maximumStakeUSDT: 25000
+    contractAddress: "EQDfw35pL2OJ48GTKjPH1W3Y7Pi3rxcHN36qyPGdymzqm91s", 
+    tonUsdtAddress: "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",
+    rateGemsPerWinUSD: 40, // 40 gemas equivalen a 1 TON
+    minimumStakeTON: 8,
+    maximumStakeTON: 25000
   };
 
   const escapeHTML = (value) => String(value ?? "")
@@ -28,7 +28,7 @@
     return str.length > 18 ? `${str.slice(0, 8)}...${str.slice(-6)}` : str;
   };
 
-  const formatUSDT = (num) => Number(num || 0).toFixed(2);
+  const formatTON = (num) => Number(num || 0).toFixed(2);
 
   // --- GESTOR HÍBRIDO DB (SUPABASE REMOTO & LOCAL) ---
   const BetDB = {
@@ -342,7 +342,7 @@
       this.matches = SportsApiProvider.getFallbackMatches();
       this.selectedMatch = null;
       this.selectedOddKey = null; 
-      this.stakeUSDT = TonUsdtContractConfig.minimumStakeUSDT;
+      this.stakeTON = TonUsdtContractConfig.minimumStakeTON;
       this.activeTab = "matches";
       this.activeFilter = "world"; // world, all, leagues
       this.searchQuery = "";
@@ -416,9 +416,9 @@
       this.overlayEl.innerHTML = `
         <div class="fbet-modal-box">
           <div class="fbet-header">
-            <h2 class="fbet-title"><span>⚡</span> FUTMUNDI APUESTAS · USDT TON</h2>
+            <h2 class="fbet-title"><span>⚡</span> FUTMUNDI APUESTAS · TON</h2>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <div class="fbet-balance-badge" title="Premios de apuestas: 32 gemas equivalen a 1 USDT">
+              <div class="fbet-balance-badge" title="Premios de apuestas: 40 gemas equivalen a 1 TON">
                 <span>Saldo:</span>
                 <strong id="fbet-internal-bal-badge">💎 ${BetDB.getUserGems()}</strong>
               </div>
@@ -528,8 +528,8 @@
         const oVal = selObj.odds[this.selectedOddKey];
         const labelStr = this.selectedOddKey === '1' ? selObj.team1.name : this.selectedOddKey === 'X' ? 'Empate' : selObj.team2.name;
         
-        const potWinUSD = (this.stakeUSDT * oVal).toFixed(2);
-        const potWinGems = Math.round(this.stakeUSDT * oVal * TonUsdtContractConfig.rateGemsPerWinUSD);
+        const potWinUSD = (this.stakeTON * oVal).toFixed(2);
+        const potWinGems = Math.round(this.stakeTON * oVal * TonUsdtContractConfig.rateGemsPerWinUSD);
 
         slipHTML = `
           <div class="fbet-slip-minimal" id="active-bet-slip">
@@ -545,22 +545,22 @@
               </div>
 
               <div style="display:flex; align-items:center; gap:8px;">
-                <input class="fbet-stake-minimal-inp" type="number" id="fbet-stake-inp" value="${this.stakeUSDT}" min="10" max="25000" step="5" />
-                <span style="color:#ffe871; font-weight:bold; font-size:0.9rem;">USDT · mínimo 10</span>
+                <input class="fbet-stake-minimal-inp" type="number" id="fbet-stake-inp" value="${this.stakeTON}" min="8" max="25000" step="5" />
+                <span style="color:#ffe871; font-weight:bold; font-size:0.9rem;">TON · mínimo 8</span>
               </div>
 
               <div class="fbet-return-minimal">
                 <span>Premio si aciertas</span>
                 <strong>🎁 ${potWinGems} GEMAS</strong>
-                <span style="color:#39ff88;">$${potWinUSD} USDT aprox. · 32 💎 = 1 USDT</span>
+                <span style="color:#39ff88;">$${potWinUSD} TON aprox. · 40 💎 = 1 TON</span>
               </div>
             </div>
 
-            <button class="fbet-confirm-minimal-btn" type="button" id="pay-ton-usdt-btn">
-              🎫 Abrir ticket y pagar ${this.stakeUSDT.toFixed(2)} USDT
+            <button class="fbet-confirm-minimal-btn" type="button" id="pay-ton-ton-btn">
+              🎫 Abrir ticket y pagar ${this.stakeTON.toFixed(2)} TON
             </button>
             <div class="fbet-slip-contract-note">
-              Contrato inteligente pool USDT TON:<br>
+              Contrato inteligente pool TON:<br>
               <code>${escapeHTML(TonUsdtContractConfig.contractAddress)}</code>
             </div>
           </div>
@@ -576,7 +576,7 @@
           <div class="fbet-empty-state">
             <span>📑</span>
             <b>No tienes boletos registrados.</b>
-            <small>Ve a Encuentros, elige Equipo A / Empate / Equipo B y abre tu ticket para pagar en USDT.</small>
+            <small>Ve a Encuentros, elige Equipo A / Empate / Equipo B y abre tu ticket para pagar en TON.</small>
           </div>
         `;
       }
@@ -622,11 +622,11 @@
             return `
               <div class="fbet-ticket-minimal-card ${escapeHTML(t.status)}">
                 <div class="fbet-ticket-minimal-info">
-                  <span class="fbet-ticket-id-line">${escapeHTML(t.id)} · Depósito: ${formatUSDT(t.stakeUSDT)} USDT · ${paymentStatus === 'confirmed' ? 'Pago confirmado' : 'Pago enviado / por verificar'}</span>
+                  <span class="fbet-ticket-id-line">${escapeHTML(t.id)} · Depósito: ${formatTON(t.stakeTON)} TON · ${paymentStatus === 'confirmed' ? 'Pago confirmado' : 'Pago enviado / por verificar'}</span>
                   <b>${escapeHTML(t.matchName)}</b>
                   <span>Pronóstico: <strong>${escapeHTML(t.selectionLabel)}</strong> · Cuota ${Number(t.odds || 0).toFixed(2)}</span>
-                  <span>Premio si acierta: <strong>${Number(t.prizeGems || 0).toLocaleString()} 💎</strong> (${formatUSDT(t.winUSD)} USDT aprox.) · 32 💎 = 1 USDT</span>
-                  <code class="fbet-contract-pill" title="${escapeHTML(contract)}">Contrato pool USDT TON: ${escapeHTML(shortAddress(contract))}</code>
+                  <span>Premio si acierta: <strong>${Number(t.prizeGems || 0).toLocaleString()} 💎</strong> (${formatTON(t.winUSD)} TON aprox.) · 40 💎 = 1 TON</span>
+                  <code class="fbet-contract-pill" title="${escapeHTML(contract)}">Contrato pool TON: ${escapeHTML(shortAddress(contract))}</code>
                 </div>
 
                 <div class="fbet-ticket-actions">
@@ -642,8 +642,8 @@
 
     normalizeStake(value) {
       const raw = Number(value);
-      if (!Number.isFinite(raw)) return TonUsdtContractConfig.minimumStakeUSDT;
-      return Math.min(TonUsdtContractConfig.maximumStakeUSDT, Math.max(TonUsdtContractConfig.minimumStakeUSDT, raw));
+      if (!Number.isFinite(raw)) return TonUsdtContractConfig.minimumStakeTON;
+      return Math.min(TonUsdtContractConfig.maximumStakeTON, Math.max(TonUsdtContractConfig.minimumStakeTON, raw));
     }
 
     getPendingDraftStorageKey() {
@@ -684,7 +684,7 @@
       if (!this.selectedMatch || !this.selectedOddKey) return null;
       const selObj = this.selectedMatch;
       const odds = Number(selObj.odds[this.selectedOddKey]);
-      const stake = this.normalizeStake(this.stakeUSDT);
+      const stake = this.normalizeStake(this.stakeTON);
       const selectionLabel = this.selectedOddKey === '1' ? selObj.team1.name : this.selectedOddKey === 'X' ? 'Empate' : selObj.team2.name;
       const winUSD = +(stake * odds).toFixed(2);
       const prizeGems = Math.round(winUSD * TonUsdtContractConfig.rateGemsPerWinUSD);
@@ -699,33 +699,32 @@
         selectionKey: this.selectedOddKey,
         selectionLabel,
         odds,
-        stakeUSDT: stake,
+        stakeTON: stake,
         winUSD,
         prizeGems,
         contractAddress: TonUsdtContractConfig.contractAddress,
-        jettonUsdtAddress: TonUsdtContractConfig.jettonUsdtAddress,
+        tonUsdtAddress: TonUsdtContractConfig.tonUsdtAddress,
         wallet: (window.STATE && window.STATE.tonWallet) || "Wallet TON no conectada",
         memo: `FUTMUNDI BET ${draftId}`,
-        amountUnits: Math.round(stake * 1e6)
+        amountUnits: Math.round(stake * 1e9)
       };
     }
 
     buildTonPaymentUrl(draft) {
       const params = new URLSearchParams({
         amount: String(draft.amountUnits),
-        jetton: draft.jettonUsdtAddress,
         text: draft.memo
       });
       return `ton://transfer/${draft.contractAddress}?${params.toString()}`;
     }
 
     openTicketPaymentWindow() {
-      if (this.stakeUSDT < TonUsdtContractConfig.minimumStakeUSDT || !this.selectedMatch || !this.selectedOddKey) {
-        alert("⚠️ El mínimo de apuesta es 10 USDT. Selecciona partido, pronóstico y monto válido.");
+      if (this.stakeTON < TonUsdtContractConfig.minimumStakeTON || !this.selectedMatch || !this.selectedOddKey) {
+        alert("⚠️ El mínimo de apuesta es 8 TON. Selecciona partido, pronóstico y monto válido.");
         return;
       }
 
-      this.stakeUSDT = this.normalizeStake(this.stakeUSDT);
+      this.stakeTON = this.normalizeStake(this.stakeTON);
 
       if (!window.STATE || !window.STATE.tonWallet) {
         const go = confirm("Para asociar tu ticket a tu cuenta debes conectar tu wallet TON.\n\n¿Quieres continuar abriendo el ticket de pago igualmente?");
@@ -769,12 +768,12 @@
       <div class="row"><span>Partido</span><b>${safe.matchName}</b></div>
       <div class="row"><span>Competición</span><b>${safe.competition}</b></div>
       <div class="row highlight"><span>Tu selección</span><b>${safe.selectionLabel} · cuota ${Number(draft.odds).toFixed(2)}</b></div>
-      <div class="row"><span>Monto a apostar</span><b>${formatUSDT(draft.stakeUSDT)} USDT</b></div>
-      <div class="row"><span>Premio si aciertas</span><b>${Number(draft.prizeGems).toLocaleString()} 💎<br><small>${formatUSDT(draft.winUSD)} USDT aprox.</small></b></div>
-      <div class="contract"><span>Contrato inteligente / pool de liquidez USDT TON</span><code id="contract">${safe.contractAddress}</code></div>
-      <div class="note"><b>Regla de pago:</b> paga desde tu wallet TON en USDT Jetton al contrato mostrado. <b>32 gemas equivalen a 1 USDT.</b><br><br><span class="warn">El resultado y el reclamo solo estarán disponibles cuando termine el partido.</span></div>
+      <div class="row"><span>Monto a apostar</span><b>${formatTON(draft.stakeTON)} TON</b></div>
+      <div class="row"><span>Premio si aciertas</span><b>${Number(draft.prizeGems).toLocaleString()} 💎<br><small>${formatTON(draft.winUSD)} TON aprox.</small></b></div>
+      <div class="contract"><span>Contrato inteligente / pool de liquidez TON</span><code id="contract">${safe.contractAddress}</code></div>
+      <div class="note"><b>Regla de pago:</b> paga desde tu wallet TON en TON nativo al contrato mostrado. <b>40 gemas equivalen a 1 TON.</b><br><br><span class="warn">El resultado y el reclamo solo estarán disponibles cuando termine el partido.</span></div>
       <div class="actions">
-        <button class="btn pay" type="button" onclick="requestConnectedPayment()">⚡ Pagar ${formatUSDT(draft.stakeUSDT)} USDT con wallet conectada</button>
+        <button class="btn pay" type="button" onclick="requestConnectedPayment()">⚡ Pagar ${formatTON(draft.stakeTON)} TON con wallet conectada</button>
         <button class="btn ghost" type="button" onclick="copyContract()">Copiar contrato</button>
         <button class="btn ghost" type="button" onclick="confirmTicket()">Registrar manual si ya pagaste</button>
       </div>
@@ -832,11 +831,11 @@
         selectionKey: draft.selectionKey,
         selectionLabel: draft.selectionLabel,
         odds: Number(draft.odds),
-        stakeUSDT: Number(draft.stakeUSDT),
+        stakeTON: Number(draft.stakeTON),
         winUSD: Number(draft.winUSD),
         prizeGems: Number(draft.prizeGems),
         smartContract: draft.contractAddress,
-        jettonUsdtAddress: draft.jettonUsdtAddress,
+        tonUsdtAddress: draft.tonUsdtAddress,
         paymentMemo: draft.memo,
         paymentStatus: "pending_chain_confirmation",
         ...extraTicketData
@@ -887,24 +886,24 @@
         // Usa el mismo puente TON Connect del proyecto principal. Esto evita deeplinks
         // externos y firma el pago desde la wallet ya conectada a la mini app.
         if (typeof window.payUsdtJetton === "function") {
-          result = await window.payUsdtJetton("bet", draft.stakeUSDT, 0);
+          result = await window.payUsdtJetton("bet", draft.stakeTON, 0);
         } else if (window.STATE && window.STATE.adminApiBase) {
-          const res = await fetch(window.STATE.adminApiBase + "/api/payments/usdt-order", {
+          const res = await fetch(window.STATE.adminApiBase + "/api/payments/ton-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               address: window.STATE.tonWallet,
-              amountUsdt: Number(draft.stakeUSDT),
+              amountUsdt: Number(draft.stakeTON),
               gems: 0,
               kind: "bet"
             })
           });
           const data = await res.json();
-          if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo crear orden USDT");
+          if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo crear orden TON");
           const txResult = await window.tonConnectUI.sendTransaction(data.transaction);
           result = { ok: true, result: txResult, meta: data.meta };
         } else {
-          throw new Error("Backend de pagos no disponible para crear la transacción USDT.");
+          throw new Error("Backend de pagos no disponible para crear la transacción TON.");
         }
 
         if (!result || result.ok === false) {
@@ -922,9 +921,9 @@
         notify(true, "Pago enviado desde la wallet conectada. Boleto registrado.");
         return true;
       } catch (err) {
-        console.error("[FUTMUNDI BET] USDT wallet payment failed", err);
-        notify(false, err.message || "Pago USDT cancelado/error.");
-        if (typeof toast === "function") toast(err.message || "Pago USDT cancelado/error", false);
+        console.error("[FUTMUNDI BET] TON wallet payment failed", err);
+        notify(false, err.message || "Pago TON cancelado/error.");
+        if (typeof toast === "function") toast(err.message || "Pago TON cancelado/error", false);
         return false;
       }
     }
@@ -994,20 +993,20 @@
       const stInp = overlay.querySelector("#fbet-stake-inp");
       if (stInp) {
         stInp.addEventListener("input", (e) => {
-          this.stakeUSDT = this.normalizeStake(parseFloat(e.target.value) || TonUsdtContractConfig.minimumStakeUSDT);
+          this.stakeTON = this.normalizeStake(parseFloat(e.target.value) || TonUsdtContractConfig.minimumStakeTON);
           const selObj = this.selectedMatch;
           const oVal = selObj.odds[this.selectedOddKey];
           
-          const potWinUSD = (this.stakeUSDT * oVal).toFixed(2);
-          const potWinGems = Math.round(this.stakeUSDT * oVal * TonUsdtContractConfig.rateGemsPerWinUSD);
+          const potWinUSD = (this.stakeTON * oVal).toFixed(2);
+          const potWinGems = Math.round(this.stakeTON * oVal * TonUsdtContractConfig.rateGemsPerWinUSD);
 
           const retEl = overlay.querySelector(".fbet-return-minimal strong");
           if(retEl) retEl.textContent = `🎁 ${potWinGems} GEMAS`;
           const retMetaEl = overlay.querySelector(".fbet-return-minimal span:nth-child(3)");
-          if(retMetaEl) retMetaEl.textContent = `$${potWinUSD} USDT aprox. · 32 💎 = 1 USDT`;
+          if(retMetaEl) retMetaEl.textContent = `$${potWinUSD} TON aprox. · 40 💎 = 1 TON`;
 
-          const confirmBtn = overlay.querySelector("#pay-ton-usdt-btn");
-          if(confirmBtn) confirmBtn.textContent = `🎫 Abrir ticket y pagar ${this.stakeUSDT.toFixed(2)} USDT`;
+          const confirmBtn = overlay.querySelector("#pay-ton-ton-btn");
+          if(confirmBtn) confirmBtn.textContent = `🎫 Abrir ticket y pagar ${this.stakeTON.toFixed(2)} TON`;
         });
       }
 
@@ -1018,7 +1017,7 @@
       });
 
       // Abrir ticket de pago en una ventana nueva antes de registrar el boleto
-      overlay.querySelector("#pay-ton-usdt-btn")?.addEventListener("click", () => {
+      overlay.querySelector("#pay-ton-ton-btn")?.addEventListener("click", () => {
         this.openTicketPaymentWindow();
       });
 

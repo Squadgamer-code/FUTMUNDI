@@ -31,7 +31,7 @@ services:
       - key: USDT_MASTER_ADDRESS
         value: EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs
       - key: INVOICE_WALLET_ADDRESS
-        value: EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs
+        value: EQDfw35pL2OJ48GTKjPH1W3Y7Pi3rxcHN36qyPGdymzqm91s
       - key: TONCENTER_ENDPOINT
         value: https://toncenter.com/api/v2/jsonRPC
 
@@ -45,6 +45,6 @@ services:
         sync: false
 
       - key: TREASURY_CONTRACT_ADDRESS
-        value: EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs
+        value: EQDfw35pL2OJ48GTKjPH1W3Y7Pi3rxcHN36qyPGdymzqm91s
       - key: TREASURY_OWNER_ADDRESS
         value: EQBoGfQlVqaQPJRqlIPyGkpHlDZsb6zqsgABVNNDtdbbhieR

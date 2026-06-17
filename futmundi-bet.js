@@ -772,9 +772,9 @@
       <div class="contract"><span>Contrato inteligente / pool de liquidez USDT TON</span><code id="contract">${safe.contractAddress}</code></div>
       <div class="note"><b>Regla de pago:</b> paga desde tu wallet TON en USDT Jetton al contrato mostrado. <b>32 gemas equivalen a 1 USDT.</b><br><br><span class="warn">El resultado y el reclamo solo estarán disponibles cuando termine el partido.</span></div>
       <div class="actions">
-        <button class="btn pay" type="button" onclick="payWallet()">⚡ Pagar ${formatUSDT(draft.stakeUSDT)} USDT desde wallet TON</button>
-        <button class="btn confirm" type="button" onclick="confirmTicket()">✅ Ya pagué / registrar boleto</button>
+        <button class="btn pay" type="button" onclick="requestConnectedPayment()">⚡ Pagar ${formatUSDT(draft.stakeUSDT)} USDT con wallet conectada</button>
         <button class="btn ghost" type="button" onclick="copyContract()">Copiar contrato</button>
+        <button class="btn ghost" type="button" onclick="confirmTicket()">Registrar manual si ya pagaste</button>
       </div>
       <div id="status" class="status"></div>
     </section>
@@ -782,8 +782,14 @@
   </main>
 <script>
   const payUrl = ${JSON.stringify(payUrl)};
-  function payWallet(){
-    document.getElementById('status').textContent = 'Abriendo wallet TON...';
+  const draftId = ${JSON.stringify(draft.id)};
+  function requestConnectedPayment(){
+    document.getElementById('status').textContent = 'Enviando orden a la mini app y wallet conectada...';
+    if(window.opener && !window.opener.closed){
+      window.opener.postMessage({ type: 'fbet:pay-draft', draftId: draftId }, '*');
+      return;
+    }
+    document.getElementById('status').textContent = 'No se encontró la mini app. Abriendo deeplink externo...';
     window.location.href = payUrl;
   }
   function confirmTicket(){
@@ -796,6 +802,12 @@
     if(navigator.clipboard){ navigator.clipboard.writeText(c); }
     document.getElementById('status').textContent = 'Contrato copiado.';
   }
+  window.addEventListener('message', function(ev){
+    const data = ev.data || {};
+    if(data.type !== 'fbet:payment-status' || data.draftId !== draftId) return;
+    document.getElementById('status').textContent = data.message || (data.ok ? 'Pago enviado.' : 'No se pudo enviar el pago.');
+    if(data.ok){ setTimeout(function(){ window.close(); }, 1400); }
+  });
 <\/script>
 </body>
 </html>`;
@@ -805,7 +817,7 @@
       try { popup.focus(); } catch {}
     }
 
-    confirmDraftPayment(draftId) {
+    confirmDraftPayment(draftId, extraTicketData = {}) {
       const draft = this.loadPendingDraft(draftId);
       if (!draft) {
         alert("No se encontró el ticket temporal. Vuelve a seleccionar la apuesta.");
@@ -824,7 +836,8 @@
         smartContract: draft.contractAddress,
         jettonUsdtAddress: draft.jettonUsdtAddress,
         paymentMemo: draft.memo,
-        paymentStatus: "pending_chain_confirmation"
+        paymentStatus: "pending_chain_confirmation",
+        ...extraTicketData
       });
 
       this.removePendingDraft(draftId);
@@ -838,13 +851,93 @@
       }
     }
 
+    async payDraftWithConnectedWallet(draftId, sourceWindow = null) {
+      const draft = this.loadPendingDraft(draftId);
+      const notify = (ok, message) => {
+        try {
+          if (sourceWindow && typeof sourceWindow.postMessage === "function") {
+            sourceWindow.postMessage({ type: "fbet:payment-status", draftId: String(draftId), ok, message }, "*");
+          }
+        } catch {}
+      };
+
+      if (!draft) {
+        notify(false, "No se encontró el ticket temporal. Vuelve a seleccionar la apuesta.");
+        alert("No se encontró el ticket temporal. Vuelve a seleccionar la apuesta.");
+        return false;
+      }
+
+      if (!window.tonConnectUI) {
+        notify(false, "TON Connect no está disponible en la mini app.");
+        alert("TON Connect no está disponible en la mini app.");
+        return false;
+      }
+
+      if (!window.STATE || !window.STATE.tonWallet) {
+        notify(false, "Conecta tu wallet TON en la mini app y vuelve a pagar.");
+        try { window.tonConnectUI.openModal(); } catch {}
+        return false;
+      }
+
+      try {
+        let result = null;
+
+        // Usa el mismo puente TON Connect del proyecto principal. Esto evita deeplinks
+        // externos y firma el pago desde la wallet ya conectada a la mini app.
+        if (typeof window.payUsdtJetton === "function") {
+          result = await window.payUsdtJetton("bet", draft.stakeUSDT, 0);
+        } else if (window.STATE && window.STATE.adminApiBase) {
+          const res = await fetch(window.STATE.adminApiBase + "/api/payments/usdt-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              address: window.STATE.tonWallet,
+              amountUsdt: Number(draft.stakeUSDT),
+              gems: 0,
+              kind: "bet"
+            })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo crear orden USDT");
+          const txResult = await window.tonConnectUI.sendTransaction(data.transaction);
+          result = { ok: true, result: txResult, meta: data.meta };
+        } else {
+          throw new Error("Backend de pagos no disponible para crear la transacción USDT.");
+        }
+
+        if (!result || result.ok === false) {
+          notify(false, "Pago cancelado o no confirmado por la wallet.");
+          return false;
+        }
+
+        this.confirmDraftPayment(draftId, {
+          paymentStatus: "payment_sent",
+          paidWithConnectedWallet: true,
+          paymentSentAt: Date.now(),
+          paymentMeta: result.meta || null
+        });
+
+        notify(true, "Pago enviado desde la wallet conectada. Boleto registrado.");
+        return true;
+      } catch (err) {
+        console.error("[FUTMUNDI BET] USDT wallet payment failed", err);
+        notify(false, err.message || "Pago USDT cancelado/error.");
+        if (typeof toast === "function") toast(err.message || "Pago USDT cancelado/error", false);
+        return false;
+      }
+    }
+
     installPaymentBridge() {
       window.FUTMUNDI_BET_CONFIRM_DRAFT = (draftId) => this.confirmDraftPayment(draftId);
+      window.FUTMUNDI_BET_PAY_DRAFT = (draftId) => this.payDraftWithConnectedWallet(draftId);
       window.addEventListener("message", (ev) => {
         const data = ev && ev.data;
         if (!data || typeof data !== "object") return;
         if (data.type === "fbet:confirm-draft" && data.draftId) {
           this.confirmDraftPayment(String(data.draftId));
+        }
+        if (data.type === "fbet:pay-draft" && data.draftId) {
+          this.payDraftWithConnectedWallet(String(data.draftId), ev.source || null);
         }
       });
     }

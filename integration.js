@@ -162,13 +162,18 @@
       }
     } catch {}
 
-    requestAnimationFrame(() => {
+    try {
       window.__current_pes_app = new PesGameClass(mountEl, modeStr, {
         onMatchEnd: handleMatchEnd,
         onConsumeStamina: consumePlayerStamina,
         isRecreationalMode: !hasWallet && isPve
       });
-    });
+    } catch (err) {
+      console.error('[UniversalLauncher] Error al crear el juego:', err);
+      alert('⚠️ No se pudo iniciar el juego: ' + (err.message || 'Error desconocido'));
+      destroyPesGame();
+      return;
+    }
   }
 
   window.__FM_UNIVERSAL_OPEN_GAME = openTruePesGame;

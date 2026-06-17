@@ -211,3 +211,45 @@
   .pes-pg-title { font-size: 1.05rem; }
   .pes-nft-selector-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* === Gameplay v3: botón QUITAR + timer estricto === */
+.pes-btn-tackle {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #39ff88 45%, #116b35 100%);
+  color: #06110b;
+  width: 72px;
+  height: 72px;
+  font-size: 0.78rem;
+  margin-bottom: 14px;
+  border-color: rgba(57,255,136,0.95);
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.85),
+    0 0 18px rgba(57,255,136,0.35),
+    inset 0 3px 6px rgba(255,255,255,0.5);
+}
+
+.pes-btn-tackle:active {
+  background: radial-gradient(circle at 35% 35%, #ffe871 0%, #39ff88 58%, #0b4422 100%);
+}
+
+#pes-time.danger {
+  color: #ff4545;
+  text-shadow: 0 0 10px rgba(255,69,69,0.85);
+  animation: pesTimerDanger .45s infinite alternate;
+}
+
+@keyframes pesTimerDanger {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(1.08); opacity: .78; }
+}
+
+@media (max-width: 640px) {
+  .pes-actions-cluster { gap: 10px; }
+  .pes-btn-tackle { width: 58px; height: 58px; font-size: 0.64rem; margin-bottom: 10px; }
+}
+
+@media (max-width: 420px) {
+  .pes-actions-cluster { gap: 7px; }
+  .pes-btn-arcade { width: 54px; height: 54px; font-size: 0.66rem; border-width: 3px; }
+  .pes-btn-shot { width: 64px; height: 64px; }
+  .pes-btn-tackle { width: 52px; height: 52px; font-size: 0.58rem; }
+}

@@ -1,0 +1,22 @@
+Hola. Necesito que hagas una auditoría profunda y optimices el código del prototipo de fútbol actual para la Mini App de Telegram. El juego carga visualmente bien, pero tiene fallos graves en el bucle del gameplay y faltan mecánicas clave. 
+
+Por favor, aplica las siguientes reparaciones y mejoras en el código (HTML5 Canvas / JavaScript):
+
+1. REPARACIÓN DE LA IA DE LOS DEFENSORES (Bots Congelados):
+   - Revisa el bucle principal (update/render loop). Los jugadores controlados por la IA se quedan completamente quietos y no juegan.
+   - Asegúrate de que la función de búsqueda de objetivos (pathfinding/steering behaviors) se esté ejecutando en cada frame. 
+   - La IA del defensor debe detectar activamente la posición del jugador humano y del balón, cambiar a "Modo Persecución" (Chase State) y confrontarlo para intentar robárselo.
+
+2. NUEVA MECÁNICA: BOTÓN DE "QUITAR BALÓN" (Tackle / Intercepción):
+   - Añade un nuevo botón interactivo a la interfaz de usuario (UI) en la pantalla del juego.
+   - Este botón servirá específicamente para "Quitar el balón" (hacer un tackle o confrontación).
+   - Mapea este botón al evento 'click/touchstart' para Telegram, y también a la tecla [Shift] o [K] en el teclado para pruebas de escritorio.
+   - Lógica: Si el jugador presiona este botón cuando está a una distancia mínima (radio de colisión corto) del rival que tiene la posesión, el balón debe cambiar de dueño inmediatamente.
+
+3. TEMPORIZADOR DE GAMEPLAY (Match Timer):
+   - Implementa un temporizador de cuenta regresiva estricto para el gameplay.
+   - El tiempo de juego debe ser de exactamente 45 segundos por partida.
+   - Muestra el tiempo en la parte superior de la pantalla (UI).
+   - Al llegar a 00:00, detiene por completo el loop del juego, verifica si hubo gol para activar la felicitación/celebración que programamos, y muestra la pantalla de "Fin del Partido".
+
+Por favor, revisa las comunicaciones entre el HTML, el CSS y los archivos JS para asegurarte de que no haya errores de sintaxis bloqueando la lógica de la IA. Devuélveme el código completo, limpio y listo para probar en Telegram hoy mismo.

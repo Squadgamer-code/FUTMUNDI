@@ -1,7 +1,7 @@
 /* ==========================================================================
    FUTMUNDI PES PRO — Gameplay arcade horizontal estilo PES 2005
-   v2: robo de balón, pase/tiro pulidos, consumo de stamina al inicio,
-       anuncio de gemas, integración i18n, sin gemas sin wallet.
+   v3: IA defensiva activa, tackle manual, temporizador estricto 45s,
+       loop robusto para Mini App Telegram.
    ========================================================================== */
 (function () {
   if (window.__fm_pes_gameboy_installed) return;
@@ -88,8 +88,8 @@
 
       this.state = "pregame"; // pregame, playing, goal, ended
       this.half = 1;
-      this.timeLeft = 90;
-      this.totalTime = 90;
+      this.totalTime = 45;
+      this.timeLeft = this.totalTime;
       this.myGoals = 0; this.riGoals = 0; this.points = 0;
       this.opp = TEAMS[Math.floor(Math.random() * TEAMS.length)];
 
@@ -100,6 +100,8 @@
       this.keys = {};
       this.charging = false;
       this.charge = 0;
+      this.tackleCooldown = 0;
+      this.goalTimeout = null;
       this.shake = 0;
       this.msg = { text: "", sub: "", timer: 0 };
       this.parts = [];
@@ -133,8 +135,8 @@
           <span class="pes-hud-goals" id="pes-my-g">0</span>
         </div>
         <div class="pes-hud-timer">
-          <span id="pes-half-lbl">1T</span>
-          <strong id="pes-time">00:00</strong>
+          <span id="pes-half-lbl">⏱</span>
+          <strong id="pes-time">00:45</strong>
         </div>
         <div class="pes-hud-badge">
           <span class="pes-hud-goals" id="pes-ri-g">0</span>
@@ -148,6 +150,7 @@
       this.controlsEl.innerHTML = `
         <div class="pes-joystick-base" id="pes-joy"><div class="pes-joystick-knob" id="pes-knob"></div></div>
         <div class="pes-actions-cluster">
+          <div class="pes-btn-arcade pes-btn-tackle" id="pes-tackle">QUITAR</div>
           <div class="pes-btn-arcade pes-btn-pass" id="pes-pass">${t('pass')}</div>
           <div class="pes-btn-arcade pes-btn-shot" id="pes-shot">${t('shot')}</div>
         </div>
@@ -162,6 +165,7 @@
         knob: this.controlsEl.querySelector("#pes-knob"),
         pass: this.controlsEl.querySelector("#pes-pass"),
         shot: this.controlsEl.querySelector("#pes-shot"),
+        tackle: this.controlsEl.querySelector("#pes-tackle"),
       };
 
       this.pregameEl = document.createElement("div");
@@ -205,10 +209,11 @@
       this.onKeyDown = (e) => {
         const k = e.key.toLowerCase();
         this.keys[k] = true;
-        if (k === " " || k === "k" || k === "enter") {
+        if (k === " " || k === "j" || k === "k" || k === "shift" || k === "enter") {
           e.preventDefault();
           if (k === " " && this.state === "playing") this.startCharge();
-          if (k === "k" && this.state === "playing") this.doPass();
+          if (k === "j" && this.state === "playing") this.doPass();
+          if ((k === "k" || k === "shift") && this.state === "playing") this.doTackle();
           if (k === "enter" && this.state === "pregame") this.startMatch();
         }
       };
@@ -244,10 +249,27 @@
       this.ui.joy.addEventListener("pointerup", joyEnd);
       this.ui.joy.addEventListener("pointercancel", joyEnd);
 
-      this.ui.pass.addEventListener("pointerdown", (e) => { e.preventDefault(); this.doPass(); });
+      const bindAction = (el, fn) => {
+        if (!el) return;
+        let lastTap = 0;
+        const fire = (e) => {
+          if (e) e.preventDefault();
+          const now = performance.now();
+          if (now - lastTap < 120) return;
+          lastTap = now;
+          fn();
+        };
+        el.addEventListener("pointerdown", fire);
+        el.addEventListener("touchstart", fire, { passive: false });
+        el.addEventListener("click", fire);
+      };
+      bindAction(this.ui.pass, () => this.doPass());
+      bindAction(this.ui.tackle, () => this.doTackle());
       this.ui.shot.addEventListener("pointerdown", (e) => { e.preventDefault(); this.startCharge(); });
+      this.ui.shot.addEventListener("touchstart", (e) => { e.preventDefault(); this.startCharge(); }, { passive: false });
       const shotEnd = (e) => { e.preventDefault(); if (this.charging) this.releaseShot(); };
       this.ui.shot.addEventListener("pointerup", shotEnd);
+      this.ui.shot.addEventListener("touchend", shotEnd, { passive: false });
       this.ui.shot.addEventListener("pointerleave", shotEnd);
     }
 
@@ -331,23 +353,24 @@
       this.pregameEl.style.display = "none";
       this.myGoals = 0; this.riGoals = 0; this.points = 0;
       this.half = 1; this.timeLeft = this.totalTime;
+      this.ensureLoop();
       this.initTeams();
       this.kickOff("blue");
-      this.showMsg(t('start'), "1° " + t('half'));
+      this.showMsg(t('start'), "45 segundos");
     }
 
     initTeams() {
       const rc = this.opp.c;
       const c = { x: this.cW / 2, y: this.cH / 2 };
       this.players = [
-        { id: "p1", name: this.myNftName, x: c.x - 120, y: c.y, team: "blue", spd: 5.2, ctrl: true, keeper: false, col: "#ffe871" },
-        { id: "p2", name: "Compañero", x: c.x - 220, y: c.y - 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
-        { id: "p3", name: "Compañero", x: c.x - 220, y: c.y + 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
-        { id: "gk", name: "Portero", x: 50, y: c.y, team: "blue", spd: 3.8, ctrl: false, keeper: true, col: "#39ff88" },
-        { id: "r1", name: this.opp.n, x: c.x + 120, y: c.y, team: "red", spd: 4.8 * this.opp.a, ctrl: false, keeper: false, col: rc },
-        { id: "r2", name: "Defensa", x: c.x + 220, y: c.y - 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc },
-        { id: "r3", name: "Defensa", x: c.x + 220, y: c.y + 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc },
-        { id: "rgk", name: "Portero", x: this.cW - 50, y: c.y, team: "red", spd: 3.8, ctrl: false, keeper: true, col: "#ff4545" }
+        { id: "p1", name: this.myNftName, x: c.x - 120, y: c.y, homeX: c.x - 120, homeY: c.y, team: "blue", spd: 5.2, ctrl: true, keeper: false, col: "#ffe871" },
+        { id: "p2", name: "Compañero", x: c.x - 220, y: c.y - 90, homeX: c.x - 220, homeY: c.y - 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
+        { id: "p3", name: "Compañero", x: c.x - 220, y: c.y + 90, homeX: c.x - 220, homeY: c.y + 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
+        { id: "gk", name: "Portero", x: 50, y: c.y, homeX: 50, homeY: c.y, team: "blue", spd: 3.8, ctrl: false, keeper: true, col: "#39ff88" },
+        { id: "r1", name: this.opp.n, x: c.x + 120, y: c.y, homeX: c.x + 120, homeY: c.y, team: "red", spd: 4.8 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
+        { id: "r2", name: "Defensa", x: c.x + 220, y: c.y - 90, homeX: c.x + 220, homeY: c.y - 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
+        { id: "r3", name: "Defensa", x: c.x + 220, y: c.y + 90, homeX: c.x + 220, homeY: c.y + 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
+        { id: "rgk", name: "Portero", x: this.cW - 50, y: c.y, homeX: this.cW - 50, homeY: c.y, team: "red", spd: 3.8, ctrl: false, keeper: true, col: "#ff4545" }
       ];
       this.active = this.players[0];
     }
@@ -358,10 +381,18 @@
         if (p.team === "blue") { p.x = this.cW / 2 - 80 - rand(0, 40); p.y = this.cH / 2 + rand(-60, 60); }
         else { p.x = this.cW / 2 + 80 + rand(0, 40); p.y = this.cH / 2 + rand(-60, 60); }
       });
-      if (this.active) { this.active.x = this.ball.x - 20; this.active.y = this.ball.y; }
+      this.ball.owner = null;
+      if (team === "blue" && this.active) {
+        this.active.x = this.ball.x - 20; this.active.y = this.ball.y;
+        this.ball.owner = this.active;
+      } else if (team === "red") {
+        const starter = this.players.find(p => p.team === "red" && !p.keeper) || null;
+        if (starter) { starter.x = this.ball.x + 20; starter.y = this.ball.y; this.ball.owner = starter; }
+      }
     }
 
     loop(now) {
+      if (this.state === "ended") { this.raf = null; return; }
       this.raf = requestAnimationFrame((t) => this.loop(t));
       if (this.hidden) return;
       const dt = Math.min(0.05, (now - this.lastT) / 1000 || 0);
@@ -372,18 +403,20 @@
       this.updateHud();
     }
 
-    update(dt) {
-      this.timeLeft -= dt;
-      if (this.timeLeft <= 0) {
-        if (this.half === 1) {
-          this.half = 2; this.timeLeft = this.totalTime;
-          this.showMsg(t('half'), `${this.myGoals} - ${this.riGoals}`);
-          this.audio.whistle();
-          this.kickOff("red");
-        } else { this.endMatch(); return; }
-      }
+    ensureLoop() {
+      if (this.raf || this.state === "ended") return;
+      this.lastT = performance.now();
+      this.raf = requestAnimationFrame((t) => this.loop(t));
+    }
 
-      // Jugador activo
+    update(dt) {
+      this.timeLeft = Math.max(0, this.timeLeft - dt);
+      if (this.timeLeft <= 0) { this.endMatch(); return; }
+
+      const frameScale = 60 * dt;
+      this.tackleCooldown = Math.max(0, this.tackleCooldown - dt);
+
+      // Jugador activo humano
       let mx = 0, my = 0;
       if (this.stick.active) { mx += this.stick.x; my += this.stick.y; }
       if (this.keys["w"] || this.keys["arrowup"]) my -= 1;
@@ -391,95 +424,196 @@
       if (this.keys["a"] || this.keys["arrowleft"]) mx -= 1;
       if (this.keys["d"] || this.keys["arrowright"]) mx += 1;
       if (this.active && (mx !== 0 || my !== 0)) {
-        const ang = Math.atan2(my, mx);
-        this.active.x += Math.cos(ang) * this.active.spd;
-        this.active.y += Math.sin(ang) * this.active.spd;
+        const mag = Math.max(1, Math.hypot(mx, my));
+        this.active.x += (mx / mag) * this.active.spd * frameScale;
+        this.active.y += (my / mag) * this.active.spd * frameScale;
       }
-      if (this.active) {
-        this.active.x = clamp(this.active.x, 20, this.cW - 20);
-        this.active.y = clamp(this.active.y, 20, this.cH - 20);
-      }
+      this.clampPlayer(this.active);
 
-      // Compañeros
+      this.updateBlueSupport(dt);
+      this.updateRedAI(dt);
+      this.updateKeepers(dt);
+      this.updateBallPhysics(dt);
+      this.resolvePossession();
+
+      if (this.charging) this.charge = Math.min(1, this.charge + dt * 1.5);
+    }
+
+    clampPlayer(p) {
+      if (!p) return;
+      p.x = clamp(p.x, 20, this.cW - 20);
+      p.y = clamp(p.y, 20, this.cH - 20);
+    }
+
+    movePlayerTowards(p, tx, ty, speedMul = 1) {
+      if (!p) return;
+      const dx = tx - p.x, dy = ty - p.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 1) return;
+      const step = Math.min(d, p.spd * 60 * speedMul);
+      p.x += (dx / d) * step;
+      p.y += (dy / d) * step;
+      this.clampPlayer(p);
+    }
+
+    updateBlueSupport(dt) {
       this.players.filter(p => p.team === "blue" && !p.ctrl && !p.keeper).forEach(p => {
-        const tx = this.ball.x < this.cW / 2 ? this.cW / 2 - 80 : this.ball.x - 80;
-        const ty = this.ball.y + (p.y > this.cH / 2 ? -60 : 60);
-        p.x += (tx - p.x) * dt * 1.5;
-        p.y += (ty - p.y) * dt * 1.5;
+        const attacking = this.ball.owner && this.ball.owner.team === "blue";
+        const tx = attacking ? Math.min(this.cW - 170, this.ball.x - 70) : Math.max(90, this.ball.x - 90);
+        const ty = clamp(this.ball.y + (p.homeY > this.cH / 2 ? 65 : -65), 40, this.cH - 40);
+        this.movePlayerTowards(p, tx, ty, dt * 0.95);
       });
+    }
 
-      // IA rival con robo realista
-      this.players.filter(p => p.team === "red" && !p.keeper).forEach(p => {
-        const d = dist(p.x, p.y, this.ball.x, this.ball.y);
-        const ang = Math.atan2(this.ball.y - p.y, this.ball.x - p.x);
-        if (d > 18) { p.x += Math.cos(ang) * p.spd; p.y += Math.sin(ang) * p.spd; }
-        // Robar si el balón está libre cerca
-        if (d < 22 && !this.ball.owner) {
-          const goalAng = Math.atan2(this.cH / 2 - p.y, 0 - p.x);
-          this.ball.vx = Math.cos(goalAng) * 16;
-          this.ball.vy = Math.sin(goalAng) * 16;
-          this.audio.kick();
+    updateRedAI(dt) {
+      const redPlayers = this.players.filter(p => p.team === "red" && !p.keeper);
+      redPlayers.forEach((p, idx) => {
+        if (this.ball.owner === p) {
+          p.aiState = "attack";
+          const targetY = clamp(this.cH / 2 + Math.sin(performance.now() / 350 + idx) * 85, 50, this.cH - 50);
+          this.movePlayerTowards(p, 38, targetY, dt * 1.05);
+          if (p.x < this.cW * 0.30 || Math.random() < 0.006) this.redShootOrPass(p);
+          return;
         }
-        // Tackle al jugador con balón
-        if (d < 24 && this.ball.owner && this.ball.owner.team === "blue" && this.ball.owner !== p && Math.random() < 0.025) {
-          this.ball.owner = null;
-          this.ball.vx = Math.cos(ang) * 14;
-          this.ball.vy = Math.sin(ang) * 14;
-          this.audio.steal();
-          this.spawnParts(p.x, p.y, "#ff4545", 8);
+
+        let tx = p.homeX || p.x;
+        let ty = p.homeY || p.y;
+        let aggression = 0.72;
+
+        if (this.ball.owner && this.ball.owner.team === "blue") {
+          const target = this.ball.owner;
+          p.aiState = "chase";
+          tx = target.x + (idx - 1) * 22;
+          ty = target.y + (idx === 1 ? -18 : idx === 2 ? 18 : 0);
+          aggression = 1.08;
+
+          const dOwner = dist(p.x, p.y, target.x, target.y);
+          if (dOwner < 30 && Math.random() < 0.055) {
+            this.stealTo(p, target, "#ff4545");
+            return;
+          }
+        } else if (!this.ball.owner) {
+          p.aiState = "intercept";
+          tx = this.ball.x + this.ball.vx * 5;
+          ty = this.ball.y + this.ball.vy * 5;
+          aggression = 1.12;
+          if (dist(p.x, p.y, this.ball.x, this.ball.y) < 25) {
+            this.ball.owner = p;
+            this.audio.steal();
+            this.spawnParts(p.x, p.y, "#ff4545", 8);
+            return;
+          }
+        } else if (this.ball.owner && this.ball.owner.team === "red") {
+          p.aiState = "support";
+          tx = Math.max(80, this.ball.owner.x - 110 - idx * 18);
+          ty = clamp(this.ball.owner.y + (idx - 1) * 70, 45, this.cH - 45);
+          aggression = 0.82;
         }
+
+        this.movePlayerTowards(p, tx, ty, dt * aggression);
       });
+    }
 
-      // Porteros
+    redShootOrPass(p) {
+      if (this.state !== "playing" || this.ball.owner !== p) return;
+      this.ball.owner = null;
+      const targetY = this.cH / 2 + rand(-70, 70);
+      const ang = Math.atan2(targetY - p.y, 0 - p.x);
+      const power = p.x < this.cW * 0.32 ? 18 : 14;
+      this.ball.vx = Math.cos(ang) * power;
+      this.ball.vy = Math.sin(ang) * power;
+      this.audio.kick();
+      this.spawnParts(p.x, p.y, "#ff4545", 10);
+    }
+
+    updateKeepers(dt) {
       this.players.filter(p => p.keeper).forEach(k => {
         const targetY = clamp(this.ball.y, this.cH / 2 - 70, this.cH / 2 + 70);
         k.y += (targetY - k.y) * dt * 4;
         k.x = k.team === "blue" ? 40 : this.cW - 40;
       });
+    }
 
-      // Balón
+    updateBallPhysics(dt) {
       if (this.ball.owner) {
         const dir = this.ball.owner.team === "blue" ? 1 : -1;
         this.ball.x = this.ball.owner.x + dir * 14;
         this.ball.y = this.ball.owner.y + 8;
         this.ball.vx = 0; this.ball.vy = 0;
-      } else {
-        this.ball.x += this.ball.vx; this.ball.y += this.ball.vy;
-        this.ball.vx *= 0.985; this.ball.vy *= 0.985;
-        if (this.ball.y < this.ball.r || this.ball.y > this.cH - this.ball.r) {
-          this.ball.vy *= -0.8;
-          this.ball.y = clamp(this.ball.y, this.ball.r, this.cH - this.ball.r);
-        }
-        const gy = this.cH / 2; const gh = 90;
-        if (this.ball.x < 20) {
-          if (this.ball.y > gy - gh && this.ball.y < gy + gh) { this.riGoals++; this.goal("red"); }
-          else { this.ball.vx *= -0.8; this.ball.x = 20; }
-        }
-        if (this.ball.x > this.cW - 20) {
-          if (this.ball.y > gy - gh && this.ball.y < gy + gh) { this.myGoals++; this.goal("blue"); }
-          else { this.ball.vx *= -0.8; this.ball.x = this.cW - 20; }
-        }
+        return;
       }
 
-      // Posesión por proximidad
-      let owner = this.ball.owner;
-      if (!owner) {
-        let best = null, bd = 1e9;
-        this.players.forEach(p => {
-          const d = dist(p.x, p.y, this.ball.x, this.ball.y);
-          if (d < 22 && d < bd) { bd = d; best = p; }
-        });
-        if (best) {
-          owner = best;
-          if (owner.team === "blue" && !owner.keeper) {
-            this.players.forEach(p => p.ctrl = false);
-            owner.ctrl = true; this.active = owner;
-          }
-        }
-      }
-      this.ball.owner = owner;
+      const frameScale = 60 * dt;
+      this.ball.x += this.ball.vx * frameScale;
+      this.ball.y += this.ball.vy * frameScale;
+      this.ball.vx *= Math.pow(0.985, frameScale);
+      this.ball.vy *= Math.pow(0.985, frameScale);
+      if (Math.abs(this.ball.vx) < 0.04) this.ball.vx = 0;
+      if (Math.abs(this.ball.vy) < 0.04) this.ball.vy = 0;
 
-      if (this.charging) this.charge = Math.min(1, this.charge + dt * 1.5);
+      if (this.ball.y < this.ball.r || this.ball.y > this.cH - this.ball.r) {
+        this.ball.vy *= -0.8;
+        this.ball.y = clamp(this.ball.y, this.ball.r, this.cH - this.ball.r);
+      }
+      const gy = this.cH / 2; const gh = 90;
+      if (this.ball.x < 20) {
+        if (this.ball.y > gy - gh && this.ball.y < gy + gh) { this.riGoals++; this.goal("red"); }
+        else { this.ball.vx *= -0.8; this.ball.x = 20; }
+      }
+      if (this.ball.x > this.cW - 20) {
+        if (this.ball.y > gy - gh && this.ball.y < gy + gh) { this.myGoals++; this.goal("blue"); }
+        else { this.ball.vx *= -0.8; this.ball.x = this.cW - 20; }
+      }
+    }
+
+    resolvePossession() {
+      if (this.ball.owner) return;
+      let best = null, bd = 1e9;
+      this.players.forEach(p => {
+        const d = dist(p.x, p.y, this.ball.x, this.ball.y);
+        if (d < 24 && d < bd) { bd = d; best = p; }
+      });
+      if (!best) return;
+      this.ball.owner = best;
+      if (best.team === "blue" && !best.keeper) {
+        this.players.forEach(p => p.ctrl = false);
+        best.ctrl = true; this.active = best;
+      }
+    }
+
+    stealTo(taker, victim, color) {
+      if (!taker || !victim) return;
+      this.ball.owner = taker;
+      if (taker.team === "blue" && !taker.keeper) {
+        this.players.forEach(p => p.ctrl = false);
+        taker.ctrl = true; this.active = taker;
+      }
+      this.audio.steal();
+      this.spawnParts((taker.x + victim.x) / 2, (taker.y + victim.y) / 2, color || "#ffe871", 14);
+      this.shake = 5;
+    }
+
+    doTackle() {
+      if (this.state !== "playing" || !this.active || this.tackleCooldown > 0) return;
+      this.tackleCooldown = 0.35;
+
+      const rivalOwner = this.ball.owner && this.ball.owner.team !== "blue" ? this.ball.owner : null;
+      if (rivalOwner && dist(this.active.x, this.active.y, rivalOwner.x, rivalOwner.y) <= 42) {
+        this.stealTo(this.active, rivalOwner, "#39ff88");
+        this.showMsg("¡ROBO!", "Balón recuperado");
+        this.msg.timer = 0.75;
+        return;
+      }
+
+      if (!this.ball.owner && dist(this.active.x, this.active.y, this.ball.x, this.ball.y) <= 30) {
+        this.ball.owner = this.active;
+        this.audio.steal();
+        this.spawnParts(this.active.x, this.active.y, "#39ff88", 10);
+        return;
+      }
+
+      this.audio.steal();
+      this.spawnParts(this.active.x, this.active.y, "rgba(255,255,255,0.7)", 5);
     }
 
     doPass() {
@@ -526,7 +660,12 @@
       const title = team === "blue" ? `${t('goal')} ${this.myNftName.toUpperCase()}` : `${t('goal')} ${this.opp.n.toUpperCase()}`;
       this.showMsg(title, `${t('score')}: ${this.myGoals} - ${this.riGoals}`);
       this.spawnParts(team === "blue" ? this.cW - 30 : 30, this.cH / 2, team === "blue" ? "#3fbfff" : "#ff4545", 40);
-      setTimeout(() => { this.state = "playing"; this.kickOff(team === "blue" ? "red" : "blue"); }, 2200);
+      clearTimeout(this.goalTimeout);
+      this.goalTimeout = setTimeout(() => {
+        if (this.state !== "goal") return;
+        this.state = "playing";
+        this.kickOff(team === "blue" ? "red" : "blue");
+      }, 2200);
     }
 
     showMsg(text, sub) { this.msg = { text, sub, timer: 2.2 }; }
@@ -672,18 +811,24 @@
     updateHud() {
       if (this.ui.myG) this.ui.myG.textContent = this.myGoals;
       if (this.ui.riG) this.ui.riG.textContent = this.riGoals;
-      if (this.ui.halfLbl) this.ui.halfLbl.textContent = this.half === 1 ? "1T" : "2T";
+      if (this.ui.halfLbl) this.ui.halfLbl.textContent = "⏱";
       if (this.ui.time) {
-        const elapsed = this.totalTime - this.timeLeft;
-        const min = Math.floor((elapsed / this.totalTime) * 45) + (this.half === 2 ? 45 : 0);
-        this.ui.time.textContent = String(clamp(min, 0, 90)).padStart(2, "0") + "'";
+        const remaining = Math.max(0, Math.ceil(this.timeLeft));
+        const min = Math.floor(remaining / 60);
+        const sec = remaining % 60;
+        this.ui.time.textContent = `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+        this.ui.time.classList.toggle("danger", remaining <= 10 && this.state === "playing");
       }
     }
 
     endMatch() {
+      if (this.state === "ended") return;
       this.state = "ended";
+      this.timeLeft = 0;
       this.matchCompleted = true;
+      clearTimeout(this.goalTimeout);
       this.audio.whistle();
+      if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
       const win = this.myGoals > this.riGoals;
       const draw = this.myGoals === this.riGoals;
       const res = win ? t('win') : draw ? t('draw') : t('loss');
@@ -716,16 +861,18 @@
       this.state = "pregame";
       this.pregameEl.style.display = "flex";
       this.myGoals = 0; this.riGoals = 0; this.points = 0;
+      this.timeLeft = this.totalTime;
       this.staminaConsumed = false;
       this.matchCompleted = false;
       this.renderPreGame();
+      this.ensureLoop();
     }
 
     emitResult(res, gems, pts) {
       const detail = {
         mode: this.mode, result: res, score: `${this.myGoals} - ${this.riGoals}`,
         gemsDelta: gems, pointsDelta: pts, points: pts, wasPlayed: this.matchCompleted,
-        consumedPlayerId: this.selectedPlayerId
+        consumedPlayerId: null
       };
       try {
         if (typeof this.onMatchEnd === "function") this.onMatchEnd(detail);
@@ -739,7 +886,9 @@
       if (this.staminaConsumed && !this.matchCompleted && !this.isRecreational) {
         if (typeof toast === "function") toast(t('matchAbandoned'), false);
       }
+      clearTimeout(this.goalTimeout);
       cancelAnimationFrame(this.raf);
+      this.raf = null;
       window.removeEventListener("keydown", this.onKeyDown);
       window.removeEventListener("keyup", this.onKeyUp);
       if (this.ro && this.stageEl) try { this.ro.unobserve(this.stageEl); } catch (_) {}

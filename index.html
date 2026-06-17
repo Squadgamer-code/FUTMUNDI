@@ -1026,6 +1026,83 @@ main{justify-content:flex-start!important;padding:3px 7px 7px!important;min-heig
 }
 .stage .rail .icon-btn .glyph .real-ico{display:block!important}
 
+
+
+/* === Poder de Mina / OVR visible en Marketplace e Inventario === */
+.shop-card.has-mine-ovr{
+  overflow:hidden;
+  border-color:rgba(255,232,113,.35);
+}
+.mine-ovr{
+  margin:7px auto 5px;
+  padding:7px 8px;
+  border-radius:12px;
+  background:linear-gradient(180deg,rgba(0,0,0,.48),rgba(7,13,9,.72));
+  border:1px solid rgba(57,255,136,.25);
+  box-shadow:inset 0 0 18px rgba(0,0,0,.22),0 0 12px rgba(57,255,136,.08);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+}
+.mine-ovr div{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+.mine-ovr b{
+  font-family:"Oswald",sans-serif;
+  font-size:16px;
+  line-height:1;
+  letter-spacing:.06em;
+  color:#06110b;
+  background:linear-gradient(180deg,var(--fm-gold-soft),var(--fm-gold));
+  border-radius:999px;
+  padding:3px 9px;
+  box-shadow:0 0 12px rgba(255,232,113,.28);
+}
+.mine-ovr span{
+  font-family:"Oswald",sans-serif;
+  font-size:9px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--fm-cyan);
+}
+.mine-ovr small{
+  display:block;
+  font-size:9px;
+  line-height:1.25;
+  color:rgba(232,245,226,.76);
+}
+.mine-ovr.bronze b{background:linear-gradient(180deg,#d99b56,#7a4b20);color:#fff}
+.mine-ovr.silver b{background:linear-gradient(180deg,#f5f7ff,#8993a4);color:#071018}
+.mine-ovr.gold b{background:linear-gradient(180deg,#fff2a8,#f4c542);color:#1a1003}
+.mine-ovr.pro b{background:linear-gradient(180deg,#9dffbd,#39ff88);color:#06110b}
+.mine-ovr.elite b{background:linear-gradient(180deg,#91ddff,#3fbfff);color:#03101a}
+.mine-ovr.diamond b{background:linear-gradient(180deg,#ffffff,#95f7ff 50%,#3fbfff);color:#03101a}
+.mine-ovr.legend b{background:linear-gradient(135deg,#ffe871,#39ff88,#3fbfff);color:#020805;animation:mineLegendGlow 1.2s infinite alternate}
+@keyframes mineLegendGlow{from{box-shadow:0 0 12px rgba(255,232,113,.35)}to{box-shadow:0 0 24px rgba(57,255,136,.75)}}
+.player-ovr-pill{
+  width:fit-content;
+  max-width:100%;
+  margin:5px auto 3px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(0,0,0,.48);
+  border:1px solid rgba(57,255,136,.26);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-family:"Oswald",sans-serif;
+}
+.player-ovr-pill b{font-size:11px;color:var(--fm-gold);letter-spacing:.08em}
+.player-ovr-pill span{font-size:9px;color:var(--fm-cyan);letter-spacing:.06em}
+.selected-player-box .mine-ovr{
+  max-width:280px;
+  margin:8px auto 6px;
+}
+.nft-summary .right{white-space:nowrap}
+@media(max-width:520px){
+  .mine-ovr b{font-size:14px}.mine-ovr small{font-size:8px}.player-ovr-pill{gap:4px;padding:3px 6px}.player-ovr-pill span{font-size:8px}
+}
+
 </style>
 
 <link rel="stylesheet" href="./futmundi-bet.css" />
@@ -1715,17 +1792,19 @@ function applyMarketImages(scope){
     const nm = card.querySelector('.nm')?.textContent?.trim();
     const src = MARKET_IMAGE_MAP[nm];
     const av = card.querySelector('.av');
-    if(!src || !av) return;
-    const fallback = av.textContent.trim() || '⚽';
-    av.innerHTML = '';
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = nm;
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    img.addEventListener('error', () => { av.textContent = fallback; });
-    av.appendChild(img);
+    if(src && av){
+      const fallback = av.textContent.trim() || '⚽';
+      av.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = nm;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.addEventListener('error', () => { av.textContent = fallback; });
+      av.appendChild(img);
+    }
   });
+  enhanceMarketMiningBadges(scope);
 }
 
 
@@ -1751,6 +1830,78 @@ function nftValueUSDT(name){
   return price / (window.STATE?.gemsPerUSDT || 32); 
 }
 function trainingCostUSDT(name){ return +(nftValueUSDT(name) * (window.STATE?.trainingPctOfNFT || 0.30)).toFixed(2); }
+
+// Poder de Mina / OVR: rating visible de cada Futbolista NFT calculado con
+// su generación diaria de gemas y su valor en Market. Escala 48-99.
+function getPlayerMiningStats(name){
+  const players = window.NFT_CONFIG?.players || {};
+  const cfg = players[name];
+  if(!cfg) return null;
+
+  const entries = Object.entries(players).map(([playerName, data]) => {
+    const daily = Number(data.dailyGems || 0);
+    const price = Number(data.price || 0);
+    // Se usa log para que Cristiano no aplaste a los rangos medios y el ranking
+    // siga siendo proporcional a producción + valor de inversión.
+    const score = Math.log1p(daily) * 0.72 + Math.log1p(price) * 0.28;
+    return { name: playerName, score };
+  }).sort((a,b) => a.score - b.score);
+
+  const rank = Math.max(0, entries.findIndex(x => x.name === name));
+  const maxRank = Math.max(1, entries.length - 1);
+  const ovr = Math.round(48 + (rank / maxRank) * 51);
+  const dailyGems = Number(cfg.dailyGems || 0);
+  const priceGems = Number(cfg.price || 0);
+  const valueUSDT = +(priceGems / (window.STATE?.gemsPerUSDT || 32)).toFixed(2);
+  const roiDays = Number(cfg.roiDays || (dailyGems > 0 && priceGems > 0 ? priceGems / dailyGems : 0));
+  const mineUSDPerDay = +(dailyGems / (window.STATE?.gemsPerUSDT || 32)).toFixed(2);
+  let tier = 'Bronce', cls = 'bronze';
+  if(ovr >= 96){ tier = 'Leyenda'; cls = 'legend'; }
+  else if(ovr >= 90){ tier = 'Diamante'; cls = 'diamond'; }
+  else if(ovr >= 82){ tier = 'Élite'; cls = 'elite'; }
+  else if(ovr >= 74){ tier = 'Pro'; cls = 'pro'; }
+  else if(ovr >= 64){ tier = 'Oro'; cls = 'gold'; }
+  else if(ovr >= 55){ tier = 'Plata'; cls = 'silver'; }
+  return { ovr, tier, cls, dailyGems, priceGems, valueUSDT, roiDays, mineUSDPerDay };
+}
+function miningOVRBadgeHTML(name, compact=false){
+  const st = getPlayerMiningStats(name);
+  if(!st) return '';
+  const daily = Number(st.dailyGems || 0).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+  const price = Number(st.priceGems || 0).toLocaleString('es-ES');
+  if(compact){
+    return `<div class="player-ovr-pill ${st.cls}"><b>OVR ${st.ovr}</b><span>${daily} 💎/día</span></div>`;
+  }
+  return `<div class="mine-ovr ${st.cls}"><div><b>OVR ${st.ovr}</b><span>Poder de Mina</span></div><small>${daily} 💎/día · Valor ${price} 💎 · ${st.tier}</small></div>`;
+}
+function syncMiningStatsOnItem(item){
+  if(!item || item.category !== 'players') return item;
+  const st = getPlayerMiningStats(item.name);
+  if(!st) return item;
+  item.miningOVR = st.ovr;
+  item.minePower = st.ovr;
+  item.mineTier = st.tier;
+  item.dailyGems = st.dailyGems;
+  item.valueGems = st.priceGems;
+  item.valueUSDT = st.valueUSDT;
+  item.mineUSDPerDay = st.mineUSDPerDay;
+  return item;
+}
+function enhanceMarketMiningBadges(scope){
+  (scope || document).querySelectorAll('.shop-card').forEach(card => {
+    const nm = card.querySelector('.nm')?.textContent?.trim();
+    const st = getPlayerMiningStats(nm);
+    if(!st) return;
+    card.classList.add('has-mine-ovr', `mine-tier-${st.cls}`);
+    if(card.querySelector('.mine-ovr')) return;
+    const ref = card.querySelector('.tg') || card.querySelector('.pr') || card.querySelector('.free-tag');
+    const holder = document.createElement('div');
+    holder.innerHTML = miningOVRBadgeHTML(nm);
+    const badge = holder.firstElementChild;
+    if(ref && ref.parentNode) ref.parentNode.insertBefore(badge, ref.nextSibling);
+    else card.appendChild(badge);
+  });
+}
 function makeInventoryItem(name){
   const category = itemCategory(name);
   const item = { id: uid(category), name, category, img: MARKET_IMAGE_MAP[name], createdAt: Date.now() };
@@ -1767,6 +1918,7 @@ function makeInventoryItem(name){
       item.earnedUsd = 0;
       item.earnedUsdCap = FREE_NFT_USD_CAP;
     }
+    syncMiningStatsOnItem(item);
   }
   return item;
 }
@@ -1812,9 +1964,11 @@ function playerStatusText(player){
   if(player?.name === FREE_NFT_NAME){
     const st = freeNftStatus(player);
     const cls = (st.days <= 3 || st.earned >= st.cap) ? 'dur-low' : 'dur-ok';
-    return { cls, text: `Gratis · ${Math.max(0, st.days)} días · $${st.earned.toFixed(2)}/$${st.cap}` };
+    const mine = getPlayerMiningStats(player.name);
+    return { cls, text: `${mine ? 'OVR '+mine.ovr+' · ' : ''}Gratis · ${Math.max(0, st.days)} días · $${st.earned.toFixed(2)}/$${st.cap}` };
   }
-  return { cls: player.durability <= 20 ? 'dur-low' : 'dur-ok', text: `Dur. ${player.durability.toFixed(1)}% · ⚽ ${player.stamina}/${player.maxStamina}` };
+  const mine = getPlayerMiningStats(player?.name);
+  return { cls: player.durability <= 20 ? 'dur-low' : 'dur-ok', text: `${mine ? 'OVR '+mine.ovr+' · ' : ''}Dur. ${player.durability.toFixed(1)}% · ⚽ ${player.stamina}/${player.maxStamina}` };
 }
 
 function normalizeOwnedInventory(){
@@ -1837,6 +1991,7 @@ function normalizeOwnedInventory(){
         item.level = Number(item.level || 1);
         item.exp = Number(item.exp || 0);
         item.equipped = item.equipped || { uniform:null, shoes:null, dt:null };
+        syncMiningStatsOnItem(item);
         if(item.name === FREE_NFT_NAME){
           setupFreeNft(item);
           if(freeNftStatus(item).destroyed) return false;
@@ -1951,6 +2106,7 @@ function renderPlayerCard(player, opts={}){
   return `<div class="player-card ${selected?'selected':''} ${Number(player.stamina??0)<=0?'exhausted':''}" data-player-id="${player.id}" data-select-player="${player.id}">
     <img src="${player.img}" alt="${escapeHTML(player.name)}" loading="lazy" decoding="async">
     <b>${escapeHTML(player.name)}</b>
+    ${miningOVRBadgeHTML(player.name, true)}
     <small><span class="${st.cls}">${staminaBallsHTML(player)} ${escapeHTML(st.text)}</span></small>
     <div class="nft-actions"><button class="mini-cta ${selected?'ghost':''}" type="button" data-select-player="${player.id}">${selected?'Activo':'Seleccionar'}</button></div>
   </div>`;
@@ -1979,6 +2135,7 @@ function renderFutbolistaInventory(){
         <div class="selected-player-box">
           <img src="${selected.img}" alt="${escapeHTML(selected.name)}">
           <b>${escapeHTML(selected.name)}</b>
+          ${miningOVRBadgeHTML(selected.name)}
           <span>${escapeHTML(playerStatusText(selected).text)}</span>
         </div>
         <div class="m-section">Complementos aplicados</div>
@@ -2011,7 +2168,9 @@ function selectedPlayerSummaryHTML(){
   const eq = getEquippedItems(p);
   const comp = [eq.uniform?.name, eq.shoes?.name, eq.dt?.name].filter(Boolean).join(' · ') || 'Sin complementos';
   const st = playerStatusText(p);
-  return `<div class="m-row nft-summary"><img src="${p.img}" alt="${escapeHTML(p.name)}"><div class="meta"><b>${escapeHTML(p.name)}</b><span><span class="${st.cls}">${escapeHTML(st.text)}</span><br>${escapeHTML(comp)}</span></div><div class="right">ACTIVO</div></div>`;
+  const mine = getPlayerMiningStats(p.name);
+  const mineLine = mine ? `OVR ${mine.ovr} · Mina ${Number(mine.dailyGems).toLocaleString('es-ES', {maximumFractionDigits:1})} 💎/día<br>` : '';
+  return `<div class="m-row nft-summary"><img src="${p.img}" alt="${escapeHTML(p.name)}"><div class="meta"><b>${escapeHTML(p.name)}</b><span>${mineLine}<span class="${st.cls}">${escapeHTML(st.text)}</span><br>${escapeHTML(comp)}</span></div><div class="right">${mine ? 'OVR '+mine.ovr : 'ACTIVO'}</div></div>`;
 }
 function injectSelectedPlayerSummary(){
   const ref = inner.querySelector('.m-broadcast-bar') || inner.querySelector('.m-section') || inner.firstElementChild;

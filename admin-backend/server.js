@@ -4,7 +4,7 @@ import cors from 'cors';
 import crypto from 'node:crypto';
 import nacl from 'tweetnacl';
 import { Address, beginCell, toNano, internal, SendMode } from '@ton/core';
-import { TonClient, WalletContractV4 } from '@ton/ton';
+import { TonClient, WalletContractV3R2, WalletContractV4, WalletContractV5R1 } from '@ton/ton';
 import { sha256, mnemonicToPrivateKey } from '@ton/crypto';
 import { createClient } from '@supabase/supabase-js';
 
@@ -313,9 +313,29 @@ async function openPayoutWallet(){
   const words = getPayoutMnemonicWords();
   if(words.length !== 24) throw new Error('PAYOUT_WALLET_MNEMONIC debe contener 24 palabras');
   const keyPair = await mnemonicToPrivateKey(words);
-  const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey });
-  const contract = tonClient.open(wallet);
-  return { keyPair, wallet, contract, address: wallet.address };
+  const candidates = [
+    { version:'v4r2', wallet: WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey }) },
+    { version:'v5r1', wallet: WalletContractV5R1.create({ workchain: 0, publicKey: keyPair.publicKey }) },
+    { version:'v3r2', wallet: WalletContractV3R2.create({ workchain: 0, publicKey: keyPair.publicKey }) }
+  ];
+  const expectedOwner = Address.parse(TREASURY_OWNER_ADDRESS).toString({ bounceable:false, urlSafe:true });
+  let selected = candidates.find(c => c.wallet.address.toString({ bounceable:false, urlSafe:true }) === expectedOwner);
+  if(!selected){
+    selected = candidates.find(c => c.version === PAYOUT_WALLET_VERSION) || candidates[0];
+  }
+  const contract = tonClient.open(selected.wallet);
+  return {
+    keyPair,
+    wallet: selected.wallet,
+    contract,
+    address: selected.wallet.address,
+    version: selected.version,
+    candidates: candidates.map(c => ({
+      version:c.version,
+      address:c.wallet.address.toString({ bounceable:false, urlSafe:true }),
+      matchesTreasuryOwner:c.wallet.address.toString({ bounceable:false, urlSafe:true }) === expectedOwner
+    }))
+  };
 }
 function buildJettonTransferBody({ amountUsdt, destinationAddress, responseAddress, comment }){
   const queryId = BigInt(Date.now());
@@ -336,9 +356,10 @@ function buildJettonTransferBody({ amountUsdt, destinationAddress, responseAddre
 async function sendTreasuryWithdrawRequest({ toAddress, amountUsdtGross, withdrawalId }){
   const payout = await openPayoutWallet();
   const ownerFriendly = payout.address.toString({ bounceable:false, urlSafe:true });
+  const ownerVersion = payout.version;
   const expectedOwner = Address.parse(TREASURY_OWNER_ADDRESS).toString({ bounceable:false, urlSafe:true });
   if(ownerFriendly !== expectedOwner){
-    throw new Error(`La seed PAYOUT_WALLET_MNEMONIC firma ${ownerFriendly}, pero el owner del contrato Treasury es ${expectedOwner}. Coloca en Render la seed de la wallet owner/admin del contrato, no la seed del contrato.`);
+    throw new Error(`La seed PAYOUT_WALLET_MNEMONIC firma ${ownerFriendly} (${ownerVersion}), pero el owner del contrato Treasury es ${expectedOwner}. Coloca en Render la seed de la wallet owner/admin del contrato, no la seed del contrato.`);
   }
   const destination = Address.parse(toAddress);
   const amountUnits = toUsdtUnits(amountUsdtGross);
@@ -621,14 +642,18 @@ async function createNftForUser(userId, catalogCode, source='admin_gift'){
 app.get('/health', async (_req, res) => {
   let ownerWalletAddress = null;
   let ownerMatchesTreasury = null;
+  let ownerWalletVersion = null;
+  let walletCandidates = [];
   try{
     if(PAYOUT_WALLET_MNEMONIC){
       const payout = await openPayoutWallet();
       ownerWalletAddress = payout.address.toString({ bounceable:false, urlSafe:true });
+      ownerWalletVersion = payout.version;
+      walletCandidates = payout.candidates || [];
       ownerMatchesTreasury = ownerWalletAddress === Address.parse(TREASURY_OWNER_ADDRESS).toString({ bounceable:false, urlSafe:true });
     }
   }catch(e){ ownerWalletAddress = 'ERROR: ' + e.message; }
-  res.json({ ok:true, service:'futmundi-admin-backend', version:'withdraw-pay-v4-treasury-contract', supabase:!!supabase, payoutWalletConfigured:!!PAYOUT_WALLET_MNEMONIC, ownerWalletAddress, treasuryOwner:TREASURY_OWNER_ADDRESS, ownerMatchesTreasury, treasuryContract:TREASURY_CONTRACT_ADDRESS, withdrawPayAction:true });
+  res.json({ ok:true, service:'futmundi-admin-backend', version:'withdraw-pay-v5-wallet-autodetect', supabase:!!supabase, payoutWalletConfigured:!!PAYOUT_WALLET_MNEMONIC, ownerWalletAddress, ownerWalletVersion, walletCandidates, treasuryOwner:TREASURY_OWNER_ADDRESS, ownerMatchesTreasury, treasuryContract:TREASURY_CONTRACT_ADDRESS, withdrawPayAction:true });
 });
 
 app.get('/api/admin/payload', (_req, res) => {
@@ -669,14 +694,18 @@ app.get('/api/admin/status', (req, res) => {
 app.get('/api/payments/health', async (_req, res) => {
   let ownerWalletAddress = null;
   let ownerMatchesTreasury = null;
+  let ownerWalletVersion = null;
+  let walletCandidates = [];
   try{
     if(PAYOUT_WALLET_MNEMONIC){
       const payout = await openPayoutWallet();
       ownerWalletAddress = payout.address.toString({ bounceable:false, urlSafe:true });
+      ownerWalletVersion = payout.version;
+      walletCandidates = payout.candidates || [];
       ownerMatchesTreasury = ownerWalletAddress === Address.parse(TREASURY_OWNER_ADDRESS).toString({ bounceable:false, urlSafe:true });
     }
   }catch(e){ ownerWalletAddress = 'ERROR: ' + e.message; }
-  res.json({ ok:true, service:'payments', usdtMaster:USDT_MASTER_ADDRESS, invoiceWallet:INVOICE_WALLET_ADDRESS, treasuryContract:TREASURY_CONTRACT_ADDRESS, payoutWalletConfigured:!!PAYOUT_WALLET_MNEMONIC, ownerWalletAddress, treasuryOwner:TREASURY_OWNER_ADDRESS, ownerMatchesTreasury });
+  res.json({ ok:true, service:'payments', usdtMaster:USDT_MASTER_ADDRESS, invoiceWallet:INVOICE_WALLET_ADDRESS, treasuryContract:TREASURY_CONTRACT_ADDRESS, payoutWalletConfigured:!!PAYOUT_WALLET_MNEMONIC, ownerWalletAddress, ownerWalletVersion, walletCandidates, treasuryOwner:TREASURY_OWNER_ADDRESS, ownerMatchesTreasury });
 });
 
 app.post('/api/payments/usdt-order', async (req, res) => {

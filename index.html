@@ -1495,7 +1495,7 @@ const TEMPLATES = {
     body: `
       <div class="m-broadcast-bar"><span class="live">WITHDRAW</span><span class="sep"></span><span>Red TON · USDT</span></div>
       <div class="m-hero"><h3>Saldo disponible</h3><div class="m-bignum" id="r-balance">3200<small>💎</small></div></div>
-      <div class="m-warn">Mínimo 160 💎 · Máximo 3200 💎 · Comisión 5% + 32 💎</div>
+      <div class="m-warn">Mínimo 160 💎 · Máximo 3200 💎 · Comisión contrato 6% + 1 USDT</div>
       <div class="m-section">Wallet TON</div>
       <div class="m-row" style="margin-bottom:10px"><div class="icn">💰</div><div class="meta" style="flex:1"><input id="r-wallet" class="m-input" type="text" autocomplete="off" placeholder="Pega tu wallet TON UQ..." /><span>Pega tu dirección TON</span></div></div>
       <div class="m-section">Monto a retirar</div>
@@ -2833,8 +2833,10 @@ function wireModal(name){
     syncUserState().then(updateWithdrawalBalanceUI);
     amt.addEventListener('input', ()=>{
       const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;
-      const recv = v>0 ? Math.max(0, Math.floor(v*0.95 - 32)) : 0;
-      net.textContent = v>0 ? `Descuento: ${Math.floor(v*0.05)} 💎 + 32 💎 · Recibes: ${recv} 💎 = ${(recv/STATE.gemsPerUSDT).toFixed(2)} USDT` : 'Recibirás: —';
+      const grossUsdt = v>0 ? (v / STATE.gemsPerUSDT) : 0;
+      const recvUsdt = grossUsdt > 0 ? Math.max(0, grossUsdt * 0.94 - 1) : 0;
+      const recv = Math.floor(recvUsdt * STATE.gemsPerUSDT);
+      net.textContent = v>0 ? `Contrato descuenta: 6% + 1 USDT · Recibes: ${recv} 💎 = ${recvUsdt.toFixed(2)} USDT` : 'Recibirás: —';
     });
     inner.querySelector('#r-submit').addEventListener('click', async ()=>{
       const v = parseInt(String(amt.value).replace(/[^0-9]/g,''))||0;

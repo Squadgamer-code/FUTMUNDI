@@ -43,3 +43,8 @@ services:
         value: v4r2
       - key: TONCENTER_API_KEY
         sync: false
+
+      - key: TREASURY_CONTRACT_ADDRESS
+        value: EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs
+      - key: TREASURY_OWNER_ADDRESS
+        value: EQBoGfQlVqaQPJRqlIPyGkpHlDZsb6zqsgABVNNDtdbbhieR

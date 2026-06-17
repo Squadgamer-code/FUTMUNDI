@@ -1,0 +1,10 @@
+puntos a mejorar Sistema de Apuestas 
+
+1. se abre la interfaz, se ven los juegos disponibles, (como esta esta bien)
+2. selecciona el partido y el equipo que quiere apostar (ganar equipo A) (empate) (ganar Equipo B)
+3. al seleccionar, y darle al boton de pagar en USDT 10$, debe abrir otra ventana,.
+4. donde salga el ticket, con lo que el selecciono, el monto que esta dispuesto a apostar, y abajo pagar en USDT debe salir el contrato inteligente. 
+5. en el contrato inteligente es donde se va a recibir la pool de liquidez en dolares. 
+6. si esta bien la pestaña donde ve su ticket. cuando termine el partido solo cuando termine el partido el puede ver si gano o perdio el cliente. 
+7. reclama si gano, si perdio no reclama nada. (el reclamo de sus ganacias por la apuesta es en Gemas, y 32 gemas equivalen a 1 dolar USDT.) 
+8. este es el contrato inteligente que debe salir cuando van a pagar con sus usdt desde su wallet de ton: EQD3u6SffmoBUVzumsMpfG5qzfvYrASNiwW6IRPVqQmv9MIs

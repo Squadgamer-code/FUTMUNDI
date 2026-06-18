@@ -86,7 +86,7 @@
     if (!player) return;
     if (player.stamina <= 0) return;
     player.stamina = Math.max(0, player.stamina - 1);
-    player.durability = Math.max(0, +(player.durability - 0.8).toFixed(1));
+    player.durability = Math.max(0, +(player.durability - 0.5).toFixed(1));
     if (typeof window.saveInventory === "function") window.saveInventory();
     if (typeof window.renderFutbolistaInventory === "function") window.renderFutbolistaInventory();
     if (typeof toast === "function") {
@@ -179,6 +179,13 @@
   window.__FM_UNIVERSAL_OPEN_GAME = openTruePesGame;
   window.openGame = openTruePesGame;
 
+  function mapMatchResultToCode(detail) {
+    const r = String((detail && detail.result) || '').toLowerCase();
+    if (r.includes('victoria') || r.includes('victory') || r.includes('win') || r.includes('vitória')) return 'win';
+    if (r.includes('empate') || r.includes('draw') || r.includes('tabla')) return 'draw';
+    return 'loss';
+  }
+
   function handleMatchEnd(detail) {
     console.log("[Futmundi Integration] Partido terminado:", detail);
 
@@ -198,7 +205,7 @@
       submitTournamentResult(detail);
     } else if (typeof playMatchBackend === "function") {
       const fmMode = detail.mode === "pve" ? "cancha" : "estadio";
-      try { playMatchBackend(fmMode); } catch (e) { console.warn(e); }
+      try { playMatchBackend(fmMode, detail.resultCode || mapMatchResultToCode(detail)); } catch (e) { console.warn(e); }
     }
 
     if (typeof toast === "function") {

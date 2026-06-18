@@ -2287,10 +2287,10 @@ function useSelectedPlayer(mode){
   if(p.stamina <= 0){ toast(`${p.name} no tiene estamina. Entrénalo para recuperar balones.`, false); return false; }
   if(p.durability <= 0){ toast(`${p.name} tiene durabilidad agotada. Entrénalo.`, false); return false; }
   p.stamina = Math.max(0, p.stamina - 1);
-  p.durability = Math.max(0, +(p.durability - 0.8).toFixed(1));
+  p.durability = Math.max(0, +(p.durability - 0.5).toFixed(1));
   p.exp = (p.exp || 0) + (mode === 'torneo' ? 10 : 5);
   saveInventory();
-  toast(`${p.name} usado en ${mode}. Durabilidad -0.8%, estamina -1`, true);
+  toast(`${p.name} usado en ${mode}. Durabilidad -0.5%, estamina -1`, true);
   return true;
 }
 async function payUsdtJetton(kind, usdt, gems=0){
@@ -2411,10 +2411,12 @@ async function loadRankingPanel(){
     }
   }catch(e){ toast(e.message, false); }
 }
-async function playMatchBackend(mode){
+async function playMatchBackend(mode, forcedResult=null){
   if(!STATE.tonWallet){ toast('Conecta wallet para generar gemas', false); return null; }
   try{
-    const data = await backendJSON('/api/matches/play', { address: STATE.tonWallet, mode });
+    const payload = { address: STATE.tonWallet, mode };
+    if(forcedResult) payload.result = forcedResult;
+    const data = await backendJSON('/api/matches/play', payload);
     STATE.balanceGems = Number(data.balance?.gems || STATE.balanceGems || 0);
     STATE.points = Math.max(0, Number(STATE.points || 0) + Number(data.pointsDelta || 0));
     updateHeaderStats({ points: STATE.points });

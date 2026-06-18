@@ -88,7 +88,7 @@
 
       this.state = "pregame"; // pregame, playing, goal, ended
       this.half = 1;
-      this.totalTime = 45;
+      this.totalTime = 60;
       this.timeLeft = this.totalTime;
       this.myGoals = 0; this.riGoals = 0; this.points = 0;
       this.opp = TEAMS[Math.floor(Math.random() * TEAMS.length)];
@@ -136,7 +136,7 @@
         </div>
         <div class="pes-hud-timer">
           <span id="pes-half-lbl">⏱</span>
-          <strong id="pes-time">00:45</strong>
+          <strong id="pes-time">01:00</strong>
         </div>
         <div class="pes-hud-badge">
           <span class="pes-hud-goals" id="pes-ri-g">0</span>
@@ -343,7 +343,7 @@
           return;
         }
         this.sp.stamina = Math.max(0, this.sp.stamina - 1);
-        this.sp.durability = Math.max(0, +(this.sp.durability - 0.8).toFixed(1));
+        this.sp.durability = Math.max(0, +(this.sp.durability - 0.5).toFixed(1));
         this.staminaConsumed = true;
         if (typeof window.saveInventory === "function") window.saveInventory();
         if (typeof window.renderFutbolistaInventory === "function") window.renderFutbolistaInventory();
@@ -356,7 +356,7 @@
       this.ensureLoop();
       this.initTeams();
       this.kickOff("blue");
-      this.showMsg(t('start'), "45 segundos");
+      this.showMsg(t('start'), "60 segundos");
     }
 
     initTeams() {
@@ -367,9 +367,9 @@
         { id: "p2", name: "Compañero", x: c.x - 220, y: c.y - 90, homeX: c.x - 220, homeY: c.y - 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
         { id: "p3", name: "Compañero", x: c.x - 220, y: c.y + 90, homeX: c.x - 220, homeY: c.y + 90, team: "blue", spd: 4.6, ctrl: false, keeper: false, col: "#ffe871" },
         { id: "gk", name: "Portero", x: 50, y: c.y, homeX: 50, homeY: c.y, team: "blue", spd: 3.8, ctrl: false, keeper: true, col: "#39ff88" },
-        { id: "r1", name: this.opp.n, x: c.x + 120, y: c.y, homeX: c.x + 120, homeY: c.y, team: "red", spd: 4.8 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
-        { id: "r2", name: "Defensa", x: c.x + 220, y: c.y - 90, homeX: c.x + 220, homeY: c.y - 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
-        { id: "r3", name: "Defensa", x: c.x + 220, y: c.y + 90, homeX: c.x + 220, homeY: c.y + 90, team: "red", spd: 4.4 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
+        { id: "r1", name: this.opp.n, x: c.x + 120, y: c.y, homeX: c.x + 120, homeY: c.y, team: "red", spd: 4.35 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
+        { id: "r2", name: "Defensa", x: c.x + 220, y: c.y - 90, homeX: c.x + 220, homeY: c.y - 90, team: "red", spd: 4.0 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
+        { id: "r3", name: "Defensa", x: c.x + 220, y: c.y + 90, homeX: c.x + 220, homeY: c.y + 90, team: "red", spd: 4.0 * this.opp.a, ctrl: false, keeper: false, col: rc, aiState: "mark" },
         { id: "rgk", name: "Portero", x: this.cW - 50, y: c.y, homeX: this.cW - 50, homeY: c.y, team: "red", spd: 3.8, ctrl: false, keeper: true, col: "#ff4545" }
       ];
       this.active = this.players[0];
@@ -471,8 +471,8 @@
         if (this.ball.owner === p) {
           p.aiState = "attack";
           const targetY = clamp(this.cH / 2 + Math.sin(performance.now() / 350 + idx) * 85, 50, this.cH - 50);
-          this.movePlayerTowards(p, 38, targetY, dt * 1.05);
-          if (p.x < this.cW * 0.30 || Math.random() < 0.006) this.redShootOrPass(p);
+          this.movePlayerTowards(p, 38, targetY, dt * 0.92);
+          if (p.x < this.cW * 0.28 || Math.random() < 0.004) this.redShootOrPass(p);
           return;
         }
 
@@ -485,10 +485,10 @@
           p.aiState = "chase";
           tx = target.x + (idx - 1) * 22;
           ty = target.y + (idx === 1 ? -18 : idx === 2 ? 18 : 0);
-          aggression = 1.08;
+          aggression = 0.86;
 
           const dOwner = dist(p.x, p.y, target.x, target.y);
-          if (dOwner < 30 && Math.random() < 0.055) {
+          if (dOwner < 28 && Math.random() < 0.028) {
             this.stealTo(p, target, "#ff4545");
             return;
           }
@@ -496,7 +496,7 @@
           p.aiState = "intercept";
           tx = this.ball.x + this.ball.vx * 5;
           ty = this.ball.y + this.ball.vy * 5;
-          aggression = 1.12;
+          aggression = 0.96;
           if (dist(p.x, p.y, this.ball.x, this.ball.y) < 25) {
             this.ball.owner = p;
             this.audio.steal();
@@ -598,7 +598,7 @@
       this.tackleCooldown = 0.35;
 
       const rivalOwner = this.ball.owner && this.ball.owner.team !== "blue" ? this.ball.owner : null;
-      if (rivalOwner && dist(this.active.x, this.active.y, rivalOwner.x, rivalOwner.y) <= 42) {
+      if (rivalOwner && dist(this.active.x, this.active.y, rivalOwner.x, rivalOwner.y) <= 46) {
         this.stealTo(this.active, rivalOwner, "#39ff88");
         this.showMsg("¡ROBO!", "Balón recuperado");
         this.msg.timer = 0.75;
@@ -834,8 +834,8 @@
       const res = win ? t('win') : draw ? t('draw') : t('loss');
       let gems = 0, pts = 0;
       if (!this.isRecreational) {
-        gems = win ? 25 : draw ? 5 : 0;
-        pts = win ? 150 : draw ? 30 : 0;
+        gems = win ? 25 : draw ? 10 : 0;
+        pts = win ? 150 : draw ? 50 : 0;
       }
       const headline = win ? `🏆 ${t('win').toUpperCase()}` : draw ? `🤝 ${t('draw').toUpperCase()}` : `😔 ${t('loss').toUpperCase()}`;
       let sub = `${t('score')}: ${this.myGoals} - ${this.riGoals}`;
@@ -869,8 +869,9 @@
     }
 
     emitResult(res, gems, pts) {
+      const resultCode = this.myGoals > this.riGoals ? 'win' : this.myGoals === this.riGoals ? 'draw' : 'loss';
       const detail = {
-        mode: this.mode, result: res, score: `${this.myGoals} - ${this.riGoals}`,
+        mode: this.mode, result: res, resultCode, score: `${this.myGoals} - ${this.riGoals}`,
         gemsDelta: gems, pointsDelta: pts, points: pts, wasPlayed: this.matchCompleted,
         consumedPlayerId: null
       };

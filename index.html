@@ -2583,9 +2583,10 @@ function buildTelegramMiniAppReferralLink(){
   return `https://t.me/${bot}/${shortName}?startapp=${code}`;
 }
 function buildReferralLink(){
-  // Link Telegram robusto. No usa /short_name porque si el short_name no coincide Telegram dice “no existe”.
-  // Abre el bot con start=CODIGO. Si luego confirmas el short_name real, puede usarse buildTelegramMiniAppReferralLink().
-  return buildTelegramBotReferralLink();
+  // Short name confirmado en BotFather: https://t.me/Futmundi_bot/futmundi
+  // Link de referido abre directamente la Mini App con startapp=CODIGO.
+  const miniAppLink = buildTelegramMiniAppReferralLink();
+  return miniAppLink || buildTelegramBotReferralLink();
 }
 
 // ===== App State (mini-app) =====
@@ -2785,7 +2786,7 @@ function wireModal(name){
       const helpEl = inner.querySelector('#ref-link-help');
       if(linkEl) linkEl.textContent = link;
       if(helpEl){
-        helpEl.textContent = (STATE.useTelegramReferralLink && tgLink) ? 'Link del bot Telegram activo' : 'Link del bot Telegram · toca para copiar';
+        helpEl.textContent = (STATE.useTelegramReferralLink && tgLink) ? 'Link Mini App Telegram activo' : 'Link Mini App Telegram · toca para copiar';
       }
       return { link, tgLink, txt };
     };

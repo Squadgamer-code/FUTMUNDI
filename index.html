@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>FUTMUNDI — El juego de fútbol NFT más épico del mundo</title>
 <meta name="description" content="FUTMUNDI: torneos globales, futbolistas NFT y partidos en vivo." />
+
+<script async src="https://tganalytics.xyz/index.js" onload="initAnalytics()" type="text/javascript"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,6 +18,26 @@ window.FM_ADMIN_API_BASE = 'https://futmundi-admin-backend.onrender.com';
 window.FM_BOT_USERNAME = window.FM_BOT_USERNAME || 'Futmundi_bot';
 window.FM_MINIAPP_SHORT_NAME = window.FM_MINIAPP_SHORT_NAME || 'futmundi';
 window.FM_REFERRAL_USE_TELEGRAM = true;
+
+// Telegram Mini Apps Analytics SDK config.
+// IMPORTANTE: reemplaza FM_ANALYTICS_TOKEN por el token real generado en TON Builders → Analytics.
+window.FM_ANALYTICS_TOKEN = window.FM_ANALYTICS_TOKEN || 'eyJhcHBfbmFtZSI6ImZ1dG11bmRpIiwiYXBwX3VybCI6Imh0dHBzOi8vdC5tZS9GdXRtdW5kaV9ib3QiLCJhcHBfZG9tYWluIjoiaHR0cHM6Ly9mdXRtdW5kaS13aW5lLnZlcmNlbC5hcHAifQ==!My3kBwMHWrrq2b6eAIrYOz9nM3C6sbkZ96ILtdTdUTY=';
+window.FM_ANALYTICS_APP_NAME = window.FM_ANALYTICS_APP_NAME || 'futmundi';
+window.initAnalytics = function initAnalytics() {
+  try {
+    if (!window.telegramAnalytics || !window.FM_ANALYTICS_TOKEN) {
+      console.warn('[FUTMUNDI] Telegram Analytics no inicializado: falta token o SDK.');
+      return;
+    }
+    window.telegramAnalytics.init({
+      token: window.FM_ANALYTICS_TOKEN,
+      appName: window.FM_ANALYTICS_APP_NAME,
+    });
+    console.info('[FUTMUNDI] Telegram Mini Apps Analytics inicializado.');
+  } catch (e) {
+    console.warn('[FUTMUNDI] Error inicializando Telegram Analytics:', e);
+  }
+};
 
 // SINGLE SOURCE OF TRUTH: NFT & TOKENOMICS CONFIGURATION
 window.NFT_CONFIG = {
@@ -170,7 +192,16 @@ window.FM_I18N = {
     roiHidden: '수익성', buy: '구매', claim: '수령', claimed: '수령 완료', stamina: '스태미나', durability: '내구도'
   }
 };
-window.FM_LANG = localStorage.getItem('fm_lang') || 'es';
+window.getTelegramPreferredLanguage = function() {
+  try {
+    const raw = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user && window.Telegram.WebApp.initDataUnsafe.user.language_code) || navigator.language || 'en';
+    const code = String(raw || 'en').toLowerCase();
+    const base = code.split('-')[0];
+    const map = { es:'es', en:'en', pt:'pt', ru:'ru', zh:'zh', ja:'ja', ko:'ko', fil:'fil', tl:'fil' };
+    return map[base] || 'en';
+  } catch (e) { return 'en'; }
+};
+window.FM_LANG = localStorage.getItem('fm_lang') || window.getTelegramPreferredLanguage();
 window.t = function(key, replacements) {
   const dict = window.FM_I18N[window.FM_LANG] || window.FM_I18N.es;
   let text = dict[key] || window.FM_I18N.es[key] || key;
